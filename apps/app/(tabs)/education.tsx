@@ -12,11 +12,11 @@ export default function EducationScreen() {
 
   return (
     <ScreenBackground>
-      
-      <ScrollView>
-        <View style={styles.learnSection}>
+              <View style={styles.learnSection}>
           <Text style={styles.learnTitle}>LEARN</Text>
         </View>
+      <ScrollView>
+
 
         <View style={styles.articlesContainer}>
             <ArticleCard
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   learnSection: {
     paddingHorizontal: 20,
     paddingTop: 70,
-    paddingBottom: 20,
+    paddingBottom: 10,
   },
   learnTitle: {
     fontSize: 24,
