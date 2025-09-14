@@ -30,7 +30,7 @@ const navItems: NavItem[] = [
     icon: 's-logo',
   },
   {
-    name: 'Education',
+    name: 'Learn',
     path: '/(tabs)/education',
     icon: 'history',
   },

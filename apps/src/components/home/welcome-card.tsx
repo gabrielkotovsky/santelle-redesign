@@ -14,6 +14,7 @@ import { Colors } from '../../theme/colors';
 import { LogoCrossIcon } from '../icons/svg/LogoCrossIcon';
 import { SLogoIcon } from '../icons/svg/SLogoIcon';
 import { UserIcon } from '../icons/svg/UserIcon';
+import { router } from 'expo-router';
 
 interface WelcomeCardProps {
   displayName?: string;
@@ -75,8 +76,7 @@ export default function WelcomeCard({
       buttonScale.value = withTiming(1, { duration: 100 });
     });
 
-    // Call the parent handler
-    onActivateKitPress();
+    router.push('/log-test/questionnaire');
   };
 
   const handleViewRecentTestPress = () => {

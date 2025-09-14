@@ -31,7 +31,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const animatedStyle = useAnimatedStyle(() => {
     return {
       opacity: opacity.value,
-      transform: [{ translateY: translateY.value }],
     };
   });
 
