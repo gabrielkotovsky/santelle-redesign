@@ -6,18 +6,20 @@ import { supabase } from "@/src/services/supabase";
 import { Stack, SplashScreen } from "expo-router";
 import { useFonts } from "expo-font";
 import { useEffect, useState } from "react";
+import SessionHydrator from "@/src/features/test-session/sessionHydrator";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
+  
   const [loaded] = useFonts({
     "Chunko-Bold": require("../assets/fonts/Chunko-Bold.otf"),
     "Poppins-Regular": require("../assets/fonts/Poppins-Regular.ttf"),
     "Poppins-Medium": require("../assets/fonts/Poppins-Medium.ttf"),
     "Poppins-SemiBold": require("../assets/fonts/Poppins-SemiBold.ttf"),
   });
-  const [booted, setBooted] = useState(false);
 
+  const [booted, setBooted] = useState(false);
   useEffect(() => {
     if (!loaded) return;
     let mounted = true;
@@ -43,6 +45,8 @@ export default function RootLayout() {
   if (!loaded || !booted) return null;
 
   return (
+    <>
+    <SessionHydrator />
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -50,5 +54,6 @@ export default function RootLayout() {
       <Stack.Screen name="(modals)" options={{ headerShown: false }} />
       <Stack.Screen name="log-test" options={{ headerShown: false }} />
     </Stack>
+    </>
   );
 }

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
     TestSession,
     createSession as apiCreate,
@@ -28,7 +29,7 @@ type State = {
     resetLocal: () => void;
   };
   
-  export const useTestSession = create<State>()(
+export const useTestSession = create<State>()(
     persist(
       (set, get) => ({
         session: undefined,
@@ -40,7 +41,11 @@ type State = {
           try {
             const s = await apiFetchOpen();
             if (s) {
-              set({ session: { id: s.id, current_step: s.current_step, status: s.status, results_ready_at: s.results_ready_at } });
+              set({ session: { 
+                id: s.id, 
+                current_step: s.current_step, 
+                status: s.status, 
+                results_ready_at: s.results_ready_at } });
             } else {
               set({ session: undefined });
             }
@@ -147,6 +152,6 @@ type State = {
   
         resetLocal: () => set({ session: undefined, error: undefined }),
       }),
-      { name: "santelle-test-session" }
+      { name: "santelle-test-session", storage: createJSONStorage(() => AsyncStorage) }
     )
   );

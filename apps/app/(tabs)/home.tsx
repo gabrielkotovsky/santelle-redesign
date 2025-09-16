@@ -3,16 +3,28 @@ import Animated, { useSharedValue } from 'react-native-reanimated';
 import { ScreenBackground } from '../../src/components/layout/ScreenBackground';
 import { LottieRefreshIcon } from '../../src/components/animations/LottieRefreshIcon';
 import WelcomeCard from '../../src/components/home/welcome-card';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ArticleCard } from '../../src/components/home/article-card';
 import * as Haptics from 'expo-haptics';
 import { ArticleModal } from '../../src/components/modals/article-modal';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useTestSession } from '../../src/features/test-session/testSession.store';
 
 
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useSharedValue(0);
   const [articleModalVisible, setArticleModalVisible] = useState(false);
+  const router = useRouter();
+  const session = useTestSession(s => s.session);
+  const hydrateFromServer = useTestSession(s => s.hydrateFromServer);
+  useEffect(() => {
+    hydrateFromServer();
+  }, [hydrateFromServer]);
+  useFocusEffect(useCallback(() => {
+    hydrateFromServer();
+  }, [hydrateFromServer]));
+  const hasActive = !!session && session.status === 'in_progress';
 
 
   const handleScroll = (event: any) => {
@@ -35,8 +47,12 @@ export default function HomeScreen() {
     // Navigate to test results or modal
   };
   const handleActivateKitPress = () => {
-    console.log('Activate kit pressed');
-    // Navigate to test activation flow
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/log-test/questionnaire');
+  };
+  const handleResumeTestPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/log-test/test');
   };
   const handleAccountPress = () => {
     console.log('Account pressed');
@@ -81,6 +97,8 @@ export default function HomeScreen() {
             healthSummary={"Your health is looking great!"}
             hasTests={true}
             selectedTestResult={true ? { id: 1, result: 'positive' } : undefined}
+            hasActiveSession={hasActive}
+            onResumeTestPress={handleResumeTestPress}
             onViewRecentTestPress={handleViewRecentTestPress}
             onActivateKitPress={handleActivateKitPress}
             onAccountPress={handleAccountPress}

@@ -32,12 +32,13 @@ export async function fetchOpenSession(): Promise<TestSession | null> {
       .limit(1)
       .maybeSingle();
     if (error) throw error;
+    console.log('📡 [API] Fetched open session:', data);
     return data;
 }
 export async function createSession(): Promise<TestSession> {
     const { data, error } = await supabase
       .from("test_sessions")
-      .insert({})
+      .insert({ user_id: 'c0ac0096-11db-48ee-b1ae-4cfdfae91c7c' }) 
       .select("*")
       .single();
     if (error) throw error;
@@ -76,7 +77,7 @@ export async function completeSession(sessionId: string): Promise<TestSession> {
 export async function abortSession(sessionId: string, reason?: string): Promise<void> {
     const { error } = await supabase
       .from("test_sessions")
-      .update({ status: "aborted", aborted_reason: reason ?? null })
+      .update({ status: "aborted"})
       .eq("id", sessionId);
     if (error) throw error;
 }

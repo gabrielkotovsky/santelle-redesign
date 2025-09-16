@@ -21,12 +21,6 @@ export default function LogTestLayout() {
           title: 'Test',
         }}
       />
-      <Stack.Screen 
-        name="recommendation" 
-        options={{
-          title: 'Recommendation',
-        }}
-      />
     </Stack>
   );
 }

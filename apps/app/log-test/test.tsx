@@ -12,6 +12,7 @@ import Animated, { FadeInUp, FadeOutUp, LinearTransition } from "react-native-re
 import { scheduleResultsReady } from "@/src/services/notifications";
 import { ensureNotifPermission, cancelNotification } from "@/src/services/notifications";
 import { router } from "expo-router";
+import { useTestSession } from "@/src/features/test-session/testSession.store";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -22,6 +23,15 @@ type Step = {
 };
 
 export default function TestScreen() {
+
+  // Zustand variables
+  const session = useTestSession(s => s.session);
+  const storeSetStep = useTestSession(s => s.setStep);
+  const storeSetResults = useTestSession(s => s.setResultsReadyAt);
+  const abortSession = useTestSession(s => s.abort);
+  const hydrate = useTestSession(s => s.hydrateFromServer);
+
+  // Test steps data
   const steps: Step[] = useMemo(
     () => [
       {
@@ -95,14 +105,34 @@ export default function TestScreen() {
   const resultsRemaining = resultsEndsAt ? Math.max(0, new Date(resultsEndsAt).getTime() - now) : 0;
   const isResultsTimerRunning = !!resultsEndsAt && resultsRemaining > 0;
   const [resultsNotifId, setResultsNotifId] = useState<string | undefined>(undefined);
+  const programmaticScroll = useRef(false);
+  const hasSyncedFromServer = useRef(false);
+  const [ step3Confirmed, setStep3Confirmed ] = useState<boolean>(() => {
+    const s = useTestSession.getState().session;
+    return (s?.current_step ?? 1) >= 4;
+  });
+  const [minAllowedStep, setMinAllowedStep] = useState<number>(1);
 
   const onStepChanged = async (newStep: number) => {
+    if (newStep === 4 && !step3Confirmed) {
+      programmaticScroll.current = true;
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToIndex({ index: 2, animated: true });
+        setTimeout(() => { programmaticScroll.current = false; }, 50);
+      });
+      return;
+    }
+    
     setCurrentStep(newStep);
 
     if (newStep === 4) {
       const t = Date.now();
-      if (!phEndsAt) setPhEndsAt(new Date(t + 60 * 1000).toISOString());
-      if (!resultsEndsAt) setResultsEndsAt(new Date(t + 600 * 1000).toISOString());
+      if (!phEndsAt) 
+        setPhEndsAt(new Date(t + 60 * 1000).toISOString());
+      if (!resultsEndsAt) 
+        setResultsEndsAt(new Date(t + 600 * 1000).toISOString());
+      if (session && !resultsEndsAt) 
+        await storeSetResults(new Date(t + 600 * 1000).toISOString());
 
       try {
         await ensureNotifPermission();
@@ -111,6 +141,10 @@ export default function TestScreen() {
         setResultsNotifId(id);
       } catch (e) {
         console.warn('Notification scheduling skipped:', e);
+      }
+
+      if (session) {
+        await storeSetStep(newStep);
       }
     }
 
@@ -121,8 +155,28 @@ export default function TestScreen() {
   };
 
   const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (programmaticScroll.current) return;
     const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-    onStepChanged(index + 1);
+    const step = index + 1;
+    if (step === 4 && !step3Confirmed) {
+      programmaticScroll.current = true;
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToIndex({ index: 2, animated: true });
+        setTimeout(() => { programmaticScroll.current = false; }, 50);
+      });
+      return;
+    }
+    if (step < minAllowedStep) {
+      programmaticScroll.current = true;
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToIndex({ index: minAllowedStep - 1, animated: true });
+        setTimeout(() => { programmaticScroll.current = false; }, 50);
+      });
+      return;
+    }
+    if (step !== currentStep) {
+      onStepChanged(step);
+    }
   };
 
   useEffect(() => {
@@ -130,19 +184,52 @@ export default function TestScreen() {
     return () => clearInterval(id);
   }, []);
 
-  const goToStep = (index0: number) => {
-    // index is 0-based internally
-    listRef.current?.scrollToIndex({ index: index0, animated: true });
-    onStepChanged(index0 + 1);
-  };
+  useEffect(() => {
+    (async () => {
+      if (!session) await hydrate();
+    })();
+  },[])
 
-  const handleCancelTest = () => {
-    // Cancel any scheduled notifications
-    if (resultsNotifId) {
-      cancelNotification(resultsNotifId);
+  useEffect(() => {
+    if (!session || !listRef.current) return;
+    const step = Math.max(1, Math.min(7, session.current_step || 1));
+    setMinAllowedStep(step);
+    if (session.results_ready_at && !resultsEndsAt) {
+      setResultsEndsAt(session.results_ready_at);
+      setCurrentStep(step);
+      if (step >= 4) setStep3Confirmed(true);
+      programmaticScroll.current = true;
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToIndex({ index: step - 1, animated: false });
+        hasSyncedFromServer.current = true;
+        setTimeout(() => { programmaticScroll.current = false; }, 50);
+      });
     }
-    // Navigate back to tests screen
-    router.push('/(tabs)/tests');
+  }, [session, resultsEndsAt]);
+
+  const goToStep = (index0: number) => {
+    const targetStep = index0 + 1;
+    const clampedStep = Math.max(minAllowedStep, targetStep);
+    const clampedIndex = clampedStep - 1;
+    if (clampedIndex !== index0) {
+      // prevent jumping behind the lock
+      programmaticScroll.current = true;
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToIndex({ index: clampedIndex, animated: true });
+        setTimeout(() => { programmaticScroll.current = false; }, 50);
+      });
+    } else {
+      listRef.current?.scrollToIndex({ index: clampedIndex, animated: true });
+    }
+    onStepChanged(clampedStep);
+    };
+
+  const handleCancelTest = async () => {
+    if (resultsNotifId) {
+      await cancelNotification(resultsNotifId);
+    }
+    await abortSession();
+    router.replace('/(tabs)/tests');
   };
 
   return (
@@ -174,7 +261,38 @@ export default function TestScreen() {
         keyExtractor={(_, i) => String(i)}
         renderItem={({ item, index }) => (
           <View style={{ width: SCREEN_WIDTH }}>
-            {index === 4 ? (
+            {index === 2 ? (
+              <>
+                <StepCard title={item.title} image={item.image} description={item.description} />
+                <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: '#721422',
+                      borderRadius: 28,
+                      paddingVertical: 12,
+                      marginBottom: 30,
+                      alignItems: 'center',
+                    }}
+                    onPress={() => {
+                      setStep3Confirmed(true);
+                      setMinAllowedStep(4);
+                      onStepChanged(4);
+                      programmaticScroll.current = true;
+                      requestAnimationFrame(() => {
+                        listRef.current?.scrollToIndex({ index: 3, animated: true }); // 0-based -> step 4
+                        setTimeout(() => { programmaticScroll.current = false; }, 50);
+                      });
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Confirm you have added one drop to each well"
+                  >
+                    <Text style={{ color: 'white', fontFamily: 'Poppins-SemiBold', fontSize: 16 }}>
+                      I've added 1 drop to each well
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : index === 4 ? (
               isPHTimerRunning ? (
                 <PHTimerCard 
                   timeRemaining={Math.floor(phRemaining / 1000)}
@@ -216,7 +334,7 @@ export default function TestScreen() {
           offset: SCREEN_WIDTH * index,
           index,
         })}
-        initialScrollIndex={currentStep - 1}
+        initialScrollIndex={0}
       />
       </Animated.View>
     </ScreenBackground>

@@ -10,11 +10,9 @@ import Animated, {
     withTiming
 } from 'react-native-reanimated';
 import { Colors } from '../../theme/colors';
-
 import { LogoCrossIcon } from '../icons/svg/LogoCrossIcon';
 import { SLogoIcon } from '../icons/svg/SLogoIcon';
 import { UserIcon } from '../icons/svg/UserIcon';
-import { router } from 'expo-router';
 
 interface WelcomeCardProps {
   displayName?: string;
@@ -26,6 +24,8 @@ interface WelcomeCardProps {
   onActivateKitPress: () => void;
   onAccountPress: () => void;
   dataReady: boolean;
+  hasActiveSession: boolean;
+  onResumeTestPress: () => void;
 }
 
 export default function WelcomeCard({
@@ -37,13 +37,18 @@ export default function WelcomeCard({
   onViewRecentTestPress,
   onActivateKitPress,
   onAccountPress,
-  dataReady
+  dataReady,
+  hasActiveSession,
+  onResumeTestPress,
 }: WelcomeCardProps) {  
+  const isResume = !!hasActiveSession;
+
   // Animation refs for button feedback and welcome card
   const buttonScale = useSharedValue(1);
   const welcomeCardTranslateY = useSharedValue(-200); // Start above screen
   const welcomeCardOpacity = useSharedValue(0);
   const welcomeCardShadowOpacity = useSharedValue(0);
+
 
   // Trigger welcome card animation when data is ready
   useEffect(() => {
@@ -67,7 +72,7 @@ export default function WelcomeCard({
     }
   }, [dataReady]);
 
-  const handleActivateKitPress = () => {
+  const handlePrimaryCtaPress = () => {
     // Trigger haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
@@ -76,7 +81,11 @@ export default function WelcomeCard({
       buttonScale.value = withTiming(1, { duration: 100 });
     });
 
-    router.push('/log-test/questionnaire');
+    if (isResume) {
+      onResumeTestPress?.();
+    } else {
+      onActivateKitPress?.();
+    }
   };
 
   const handleViewRecentTestPress = () => {
@@ -235,14 +244,16 @@ export default function WelcomeCard({
         <Animated.View style={buttonAnimatedStyle}>
           <ShrinkableTouchable 
             style={dynamicStyles.logTestButton}
-            onPress={handleActivateKitPress}
+            onPress={handlePrimaryCtaPress}
             activeOpacity={1}
           >
             <SLogoIcon 
               size={20} 
               color="#FFFFFF" 
             />
-            <Text style={dynamicStyles.buttonText}>Activate Kit</Text>
+            <Text style={dynamicStyles.buttonText}>
+              {isResume ? 'Resume Test' : 'Activate Kit'}
+            </Text>
           </ShrinkableTouchable>
         </Animated.View>
       </BlurView>
