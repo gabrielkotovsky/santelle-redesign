@@ -71,13 +71,13 @@ export default function TestScreen() {
         ],
       },
       {
-        title: "5. Wait for the pH result",
+        title: "5. Log your pH results",
         description: [
           "**Log your pH results**"
         ],
       },
       {
-        title: "6. Wait for the rest of the results",
+        title: "6. Stop the NAG reaction",
         image: require("@/assets/images/step6.png"),
         description: [
           "**Add 1 drop** of stop solution (grey cap) to the NAG well",
@@ -85,7 +85,7 @@ export default function TestScreen() {
         ],
       },
       {
-        title: "7. Log Final Results",
+        title: "7. Log your final test results",
         description: [
           "**Log your final test results**"
         ],
@@ -300,7 +300,7 @@ export default function TestScreen() {
                 />
               ) : (
                 <PHResultSelector 
-                  title="5. Log pH Results"
+                  title="5. Log your pH results"
                   onPHChange={(pH) => console.log('pH result:', pH)}
                 />
               )
@@ -315,7 +315,7 @@ export default function TestScreen() {
               )
             ) : index === 6 ? (
               <ResultSelector 
-                title="7. Log Final Results"
+                title="7. Log your final test results"
                 onResultsChange={(results) => console.log('Test results:', results)}
               />
             ) : (
