@@ -8,12 +8,15 @@ import PHResultSelector from "@/src/components/steps/pH-result-selector";
 import PHTimerCard from "@/src/components/steps/pH-timer-card";
 import TestTimerCard from "@/src/components/steps/test-timer-card";
 import SmallTimerCard from "@/src/components/steps/small-timer-card";
+import Animated, { FadeInUp, FadeOutUp, LinearTransition } from "react-native-reanimated";
+import { scheduleResultsReady } from "@/src/services/notifications";
+import { ensureNotifPermission, cancelNotification } from "@/src/services/notifications";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 type Step = {
   title: string;
-  image?: any;          // require(...) - optional
+  image?: any;
   description: string[];
 };
 
@@ -82,108 +85,54 @@ export default function TestScreen() {
 
   const totalSteps = steps.length;
   const [currentStep, setCurrentStep] = useState(1); // 1-based for UI
-  const [timerActive, setTimerActive] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(0);
-  const [canAccessStep5, setCanAccessStep5] = useState(false);
-  const [timerStarted, setTimerStarted] = useState(false);
-  
-  const [step6TimerActive, setStep6TimerActive] = useState(false);
-  const [step6TimeRemaining, setStep6TimeRemaining] = useState(0);
-  const [canAccessStep7, setCanAccessStep7] = useState(false);
-  const [step6TimerStarted, setStep6TimerStarted] = useState(false);
+  const [phEndsAt, setPhEndsAt] = useState<string | null>(null);
+  const [resultsEndsAt, setResultsEndsAt] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
   const listRef = useRef<FlatList<Step>>(null);
+  const phRemaining = phEndsAt ? Math.max(0, new Date(phEndsAt).getTime() - now) : 0;
+  const isPHTimerRunning = !!phEndsAt && phRemaining > 0;
+  const resultsRemaining = resultsEndsAt ? Math.max(0, new Date(resultsEndsAt).getTime() - now) : 0;
+  const isResultsTimerRunning = !!resultsEndsAt && resultsRemaining > 0;
+  const [resultsNotifId, setResultsNotifId] = useState<string | undefined>(undefined);
+
+  const onStepChanged = async (newStep: number) => {
+    setCurrentStep(newStep);
+
+    if (newStep === 4) {
+      const t = Date.now();
+      if (!phEndsAt) setPhEndsAt(new Date(t + 60 * 1000).toISOString());
+      if (!resultsEndsAt) setResultsEndsAt(new Date(t + 600 * 1000).toISOString());
+
+      try {
+        await ensureNotifPermission();
+        if (resultsNotifId) await cancelNotification(resultsNotifId);
+        const id = await scheduleResultsReady(new Date(t + 600 * 1000).toISOString());
+        setResultsNotifId(id);
+      } catch (e) {
+        console.warn('Notification scheduling skipped:', e);
+      }
+    }
+
+    if (newStep === 7 && isResultsTimerRunning) {
+      goToStep(5);
+      return;
+    }
+  };
 
   const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-    const newStep = index + 1;
-    setCurrentStep(newStep);
-    
-    // Start both timers only once when reaching step 4
-    if (newStep === 4 && !timerStarted) {
-      startTimer(60); // 1 minute timer for pH
-      setTimerStarted(true);
-    }
-    if (newStep === 4 && !step6TimerStarted) {
-      startStep6Timer(600); // 10 minute timer for step 6
-      setStep6TimerStarted(true);
-    }
-    
-    // Prevent access to step 7 (final results) if step 6 timer hasn't completed
-    if (newStep === 7 && !canAccessStep7) {
-      goToStep(5); // Go back to step 6 (timer/final results card)
-    }
-  };
-
-  const startTimer = (seconds: number) => {
-    setTimeRemaining(seconds);
-    setTimerActive(true);
-    setCanAccessStep5(false);
-  };
-
-  const skipTimer = () => {
-    setTimerActive(false);
-    setCanAccessStep5(true);
-    setTimeRemaining(0);
-  };
-
-  const startStep6Timer = (seconds: number) => {
-    setStep6TimeRemaining(seconds);
-    setStep6TimerActive(true);
-    setCanAccessStep7(false);
-  };
-
-  const skipStep6Timer = () => {
-    setStep6TimerActive(false);
-    setCanAccessStep7(true);
-    setStep6TimeRemaining(0);
+    onStepChanged(index + 1);
   };
 
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    
-    if (timerActive && timeRemaining > 0) {
-      interval = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
-            setTimerActive(false);
-            setCanAccessStep5(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [timerActive, timeRemaining]);
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    
-    if (step6TimerActive && step6TimeRemaining > 0) {
-      interval = setInterval(() => {
-        setStep6TimeRemaining((prev) => {
-          if (prev <= 1) {
-            setStep6TimerActive(false);
-            setCanAccessStep7(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [step6TimerActive, step6TimeRemaining]);
-
-  const goToStep = (index: number) => {
+  const goToStep = (index0: number) => {
     // index is 0-based internally
-    listRef.current?.scrollToIndex({ index, animated: true });
-    setCurrentStep(index + 1);
+    listRef.current?.scrollToIndex({ index: index0, animated: true });
+    onStepChanged(index0 + 1);
   };
 
   return (
@@ -197,11 +146,17 @@ export default function TestScreen() {
       <View style={styles.divider} />
 
       {/* Timer card above all steps except step 6+ */}
-      {step6TimerActive && currentStep < 6 && currentStep > 3 && (
-        <SmallTimerCard timeRemaining={step6TimeRemaining} />
+      {isResultsTimerRunning && currentStep < 6 && currentStep > 3 && (
+        <Animated.View
+          entering={FadeInUp.duration(200)}
+          exiting={FadeOutUp.duration(200)}
+        >
+          <SmallTimerCard timeRemaining={Math.floor(resultsRemaining / 1000)} />
+        </Animated.View>
       )}
 
       {/* Swipeable steps */}
+      <Animated.View layout={LinearTransition.duration(200)} style={{ flex: 1 }}>
       <FlatList
         ref={listRef}
         data={steps}
@@ -209,10 +164,10 @@ export default function TestScreen() {
         renderItem={({ item, index }) => (
           <View style={{ width: SCREEN_WIDTH }}>
             {index === 4 ? (
-              timerActive ? (
+              isPHTimerRunning ? (
                 <PHTimerCard 
-                  timeRemaining={timeRemaining}
-                  onSkip={skipTimer}
+                  timeRemaining={Math.floor(phRemaining / 1000)}
+                  onSkip={() => setPhEndsAt(new Date().toISOString())}
                 />
               ) : (
                 <PHResultSelector 
@@ -221,10 +176,10 @@ export default function TestScreen() {
                 />
               )
             ) : index === 5 ? (
-              step6TimerActive ? (
+              isResultsTimerRunning ? (
                 <TestTimerCard 
-                  timeRemaining={step6TimeRemaining}
-                  onSkip={skipStep6Timer}
+                  timeRemaining={Math.floor(resultsRemaining / 1000)}
+                  onSkip={() => setResultsEndsAt(new Date().toISOString())}
                 />
               ) : (
                 <StepCard title={item.title} image={item.image} description={item.description} />
@@ -242,6 +197,8 @@ export default function TestScreen() {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
+        windowSize={2}
+        maxToRenderPerBatch={1}
         onMomentumScrollEnd={onMomentumEnd}
         getItemLayout={(_, index) => ({
           length: SCREEN_WIDTH,
@@ -250,6 +207,7 @@ export default function TestScreen() {
         })}
         initialScrollIndex={currentStep - 1}
       />
+      </Animated.View>
     </ScreenBackground>
   );
 }
