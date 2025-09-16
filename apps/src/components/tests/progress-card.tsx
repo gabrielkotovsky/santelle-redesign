@@ -1,15 +1,17 @@
 import React from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 
 interface ProgressCardProps {
   currentStep: number;
   totalSteps: number;
   colorScheme?: 'light' | 'dark';
+  onCancel?: () => void;
 }
 
 export default function ProgressCard({ 
   currentStep, 
   totalSteps,
+  onCancel,
 }: ProgressCardProps) {
 
   const dynamicStyles = StyleSheet.create({
@@ -18,7 +20,7 @@ export default function ProgressCard({
       position: 'absolute',
       top: 17.5, // Center of 25px circle (25/2 = 12.5)
       left: 10,
-      right: 10,
+      right: 60, // Stop before the cancel button (30px button + 10px margin + 10px padding)
       height: 2,
       zIndex: 1,
     },
@@ -92,9 +94,18 @@ export default function ProgressCard({
     <View style={[styles.progressCard, dynamicStyles.progressCard]}>
       <View style={styles.progressContainer}>
         <View style={dynamicStyles.progressLine} />
-        <View style={styles.stepsContainer}>
-          {renderSteps()}
-        </View>
+          <View style={styles.stepsContainer}>
+            {renderSteps()}
+            {onCancel && (
+              <TouchableOpacity 
+                style={styles.cancelButton} 
+                onPress={onCancel}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.cancelButtonText}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
       </View>
     </View>
   );
@@ -119,7 +130,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 5,
     paddingVertical: 5,
+  },
+  cancelButton: {
+    width: 25,
+    height: 25,
+    borderRadius: 15,
+    backgroundColor: '#FF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 0,
+  },
+  cancelButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'Poppins-SemiBold',
+    textAlign: 'center',
   },
 });

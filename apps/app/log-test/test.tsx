@@ -11,6 +11,7 @@ import SmallTimerCard from "@/src/components/steps/small-timer-card";
 import Animated, { FadeInUp, FadeOutUp, LinearTransition } from "react-native-reanimated";
 import { scheduleResultsReady } from "@/src/services/notifications";
 import { ensureNotifPermission, cancelNotification } from "@/src/services/notifications";
+import { router } from "expo-router";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -135,12 +136,22 @@ export default function TestScreen() {
     onStepChanged(index0 + 1);
   };
 
+  const handleCancelTest = () => {
+    // Cancel any scheduled notifications
+    if (resultsNotifId) {
+      cancelNotification(resultsNotifId);
+    }
+    // Navigate back to tests screen
+    router.push('/(tabs)/tests');
+  };
+
   return (
     <ScreenBackground>
       {/* Progress at the top (you can add Next/Back buttons here if desired) */}
       <ProgressCard
         currentStep={currentStep}
         totalSteps={totalSteps}
+        onCancel={handleCancelTest}
       />
 
       <View style={styles.divider} />
