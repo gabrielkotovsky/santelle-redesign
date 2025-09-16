@@ -5,6 +5,8 @@ import React, { useState, useMemo } from 'react';
 import { Colors } from '../../src/theme/colors';
 import StartTest from '../../src/components/tests/start-test';
 import CompactTest from '../../src/components/tests/compact-test';
+import { useRouter } from 'expo-router';
+import { useTestSession } from '../../src/features/test-session/testSession.store';
 
 export default function TestsScreen() {
   // Mock data for current test

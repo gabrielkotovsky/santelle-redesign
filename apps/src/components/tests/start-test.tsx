@@ -1,17 +1,17 @@
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, Text } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming
 } from 'react-native-reanimated';
 import { Colors } from '../../theme/colors';
 import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 import { SLogoIcon } from '../icons/svg/SLogoIcon';
 import { router } from 'expo-router';
+import { useTestSession } from '@/src/features/test-session/testSession.store';
 
 export default function StartTest() {
   // Animation values

@@ -4,19 +4,21 @@ import { ShrinkableTouchable } from "@/src/components/animations/ShrinkableTouch
 import { useState } from "react";
 import { router } from "expo-router";
 import WarningModal from "@/src/components/modals/test-warning";
+import { useTestSession } from "@/src/features/test-session/testSession.store";
 
 export default function Questionnaire() {
   const [onPeriod, setOnPeriod] = useState<boolean | null>(null);
   const [hadIntercourse, setHadIntercourse] = useState<boolean | null>(null);
   const [showWarningModal, setShowWarningModal] = useState(false);
-
-  const handleQuestionnaireSubmit = () => {
+  const { startSession } = useTestSession.getState();
+  const handleQuestionnaireSubmit = async () => {
     // Navigate to next step in the test process
     console.log('Questionnaire submitted:', { onPeriod, hadIntercourse });
     // You can add navigation logic here
     // router.push('/next-step');
     if (onPeriod === false && hadIntercourse === false) {
-      router.push('/log-test/test');
+      await startSession();
+      router.replace('/log-test/test');
     } else {
       setShowWarningModal(true);
     }
@@ -27,9 +29,10 @@ export default function Questionnaire() {
     router.push('/(tabs)/home');
   };
 
-  const handleContinueAnyway = () => {
+  const handleContinueAnyway = async () => {
     setShowWarningModal(false);
-    router.push('/log-test/test');
+    await startSession();
+    router.replace('/log-test/test');
   };
 
   const dynamicStyles = StyleSheet.create({
