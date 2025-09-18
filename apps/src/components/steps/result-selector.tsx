@@ -1,74 +1,98 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
+import { useTestSession } from '@/src/features/test-session/testSession.store';
+import { upsertLogResultsFlat } from '@/src/features/test-logs/testLogs.api';
+import { router } from 'expo-router';
 
 interface ResultSelectorProps {
   title?: string;
-  onResultsChange?: (results: TestResults) => void;
 }
 
-interface TestResults {
-  'H₂O₂': string;
-  'LE': string;
-  'SNA': string;
-  'β-G': string;
-  'NAG': string;
-}
+type BiomarkerKeyUI = 'H₂O₂' | 'LE' | 'SNA' | 'β-G' | 'NAG';
 
-export default function ResultSelector({ title = "Select your results", onResultsChange }: ResultSelectorProps) {
-  const [selectedTestResults, setSelectedTestResults] = useState<TestResults>({
+type TestResultsState = Record<BiomarkerKeyUI, string>;
+
+export default function ResultSelector({ title = "Select your results" }: ResultSelectorProps) {
+  const [selectedTestResults, setSelectedTestResults] = useState<TestResultsState>({
     'H₂O₂': '',
-    'LE': '',
-    'SNA': '',
-    'β-G': '',
-    'NAG': ''
+    'LE':   '',
+    'SNA':  '',
+    'β-G':  '',
+    'NAG':  ''
   });
+  const [saving, setSaving] = useState(false);
 
-  const setSelectedTestResultsWithSave = (newResults: TestResults) => {
-    setSelectedTestResults(newResults);
-    onResultsChange?.(newResults);
+  const session = useTestSession(s => s.session);
+  const complete = useTestSession(s => s.complete);
+
+  const allSelected = useMemo(
+    () => Object.values(selectedTestResults).every(v => !!v),
+    [selectedTestResults]
+  );
+
+  const setOne = (k: BiomarkerKeyUI, v: string) => {
+    setSelectedTestResults(prev => ({ ...prev, [k]: v }));
   };
 
-  const getTestResultColor = (testType: string, intensity: string): string => {
+  const getTestResultColor = (testType: BiomarkerKeyUI, intensity: string): string => {
     const colors = {
       'H₂O₂': { '+': '#fdf7f9', '±': '#fee9f0', '-': '#fdd6db' },
-      'LE': { '+++': '#a275a0', '++': '#d18eaf', '+': '#cfaebf', '±': '#d8c9ce', '-': '#f7ecea' },
-      'SNA': { '+': '#fbd4e7', '±': '#fcedf2', '-': '#ffffff' },
-      'β-G': { '+': '#bde4f3', '±': '#d8f1ed', '-': '#fcfef3' },
-      'NAG': { '+': '#ffcbb7', '±': '#fee8da', '-': '#f2e8cd' }
-    };
-    return colors[testType as keyof typeof colors]?.[intensity as keyof typeof colors[keyof typeof colors]] || '#FFFFFF';
+      'LE':   { '+++': '#a275a0', '++': '#d18eaf', '+': '#cfaebf', '±': '#d8c9ce', '-': '#f7ecea' },
+      'SNA':  { '+': '#fbd4e7', '±': '#fcedf2', '-': '#ffffff' },
+      'β-G':  { '+': '#bde4f3', '±': '#d8f1ed', '-': '#fcfef3' },
+      'NAG':  { '+': '#ffcbb7', '±': '#fee8da', '-': '#f2e8cd' }
+    } as const;
+    // @ts-ignore
+    return colors[testType]?.[intensity] ?? '#FFFFFF';
   };
 
+  async function handleCompletePress() {
+    if (!session || saving || !allSelected) return;
+    setSaving(true);
+    try {
+      // map UI keys -> DB columns
+      await upsertLogResultsFlat(session.id, {
+        h2o2:   selectedTestResults['H₂O₂'],
+        le:     selectedTestResults['LE'],
+        sna:    selectedTestResults['SNA'],
+        beta_g: selectedTestResults['β-G'],
+        nag:    selectedTestResults['NAG'],
+        status: 'finalized',
+      });
+
+      await complete(); // sets status=completed & completed_at in test_sessions
+      router.replace('/(tabs)/tests');
+    } catch (e) {
+      console.error('Failed to finalize test', e);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const dynamicStyles = StyleSheet.create({
-    resultCard: {
-      backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    resultCard: { backgroundColor: 'rgba(255, 255, 255, 0.4)' },
+    resultCardTitle: { color: '#721422' },
+    instructionText: { fontSize: 16, fontFamily: 'Poppins-Regular', color: '#721422' },
+    testResultOptionSelected: { borderColor: '#721422', backgroundColor: 'rgba(114, 20, 34, 0.1)' },
+    testResultValue: { fontSize: 12, fontFamily: 'Poppins-SemiBold', color: '#721422' },
+    testResultLabel: { fontSize: 16, fontFamily: 'Poppins-SemiBold', color: '#721422' },
+    completeBtn: {
+      backgroundColor: allSelected && !saving ? '#721422' : 'rgba(114,20,34,0.3)',
+      borderRadius: 28,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 8,
+      marginBottom: 10,
     },
-    resultCardTitle: {
-      color: '#721422',
-    },
-    instructionText: {
-      fontSize: 16,
-      fontFamily: 'Poppins-Regular',
-      color: '#721422',
-    },
-    testResultOptionSelected: {
-      borderColor: '#721422',
-      backgroundColor: 'rgba(114, 20, 34, 0.1)',
-    },
-    testResultValue: {
-      fontSize: 12,
+    completeText: {
+      color: 'white',
       fontFamily: 'Poppins-SemiBold',
-      color: '#721422',
-    },
-    testResultLabel: {
       fontSize: 16,
-      fontFamily: 'Poppins-SemiBold',
-      color: '#721422',
     },
   });
 
-  const renderTestResultRow = (testType: keyof TestResults, intensities: string[]) => (
+  const renderRow = (testType: BiomarkerKeyUI, intensities: string[]) => (
     <View key={testType} style={styles.testResultRow}>
       <View style={styles.testResultOptions}>
         {intensities.map((intensity) => (
@@ -78,13 +102,8 @@ export default function ResultSelector({ title = "Select your results", onResult
               styles.testResultOption,
               selectedTestResults[testType] === intensity && dynamicStyles.testResultOptionSelected
             ] as any}
-            onPress={() => {
-              const newResults = {
-                ...selectedTestResults,
-                [testType]: intensity
-              };
-              setSelectedTestResultsWithSave(newResults);
-            }}
+            onPress={() => setOne(testType, intensity)}
+            disabled={saving}
           >
             <View style={[styles.testResultColor, { backgroundColor: getTestResultColor(testType, intensity) }]} />
             <Text style={[styles.testResultValue, dynamicStyles.testResultValue]}>{intensity}</Text>
@@ -97,30 +116,38 @@ export default function ResultSelector({ title = "Select your results", onResult
 
   return (
     <View style={[styles.resultCard, dynamicStyles.resultCard]}>
-      <Text style={[styles.resultCardTitle, dynamicStyles.resultCardTitle]}>
-        {title}
-      </Text>
-      
+      <Text style={[styles.resultCardTitle, dynamicStyles.resultCardTitle]}>{title}</Text>
       <Text style={[styles.instructionText, dynamicStyles.instructionText]}>
         Refer to the color guide in the kit, and select your final test results:
       </Text>
-      
+
       <View style={styles.testResultsGrid}>
-        {renderTestResultRow('H₂O₂', ['+', '±', '-'])}
-        {renderTestResultRow('LE', ['+++', '++', '+', '±', '-'])}
-        {renderTestResultRow('SNA', ['+', '±', '-'])}
-        {renderTestResultRow('β-G', ['+', '±', '-'])}
-        {renderTestResultRow('NAG', ['+', '±', '-'])}
+        {renderRow('H₂O₂', ['+', '±', '-'])}
+        {renderRow('LE', ['+++', '++', '+', '±', '-'])}
+        {renderRow('SNA', ['+', '±', '-'])}
+        {renderRow('β-G', ['+', '±', '-'])}
+        {renderRow('NAG', ['+', '±', '-'])}
       </View>
+
+      {/** The simple “Complete test” button */}
+      {(
+        <ShrinkableTouchable
+          style={dynamicStyles.completeBtn as any}
+          onPress={handleCompletePress}
+          disabled={!allSelected || saving}
+          accessibilityRole="button"
+          accessibilityLabel="Complete test"
+        >
+          <Text style={dynamicStyles.completeText}>
+            {saving ? 'Saving…' : 'Complete test'}
+          </Text>
+        </ShrinkableTouchable>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  /**
-   * Main result card container that holds the title and selector
-   * Uses glassmorphism effect and rounded corners matching other step cards
-   */
   resultCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
     borderTopLeftRadius: 40,
@@ -138,11 +165,6 @@ const styles = StyleSheet.create({
     maxHeight: '100%',
     overflow: 'scroll',
   },
-  
-  /**
-   * Title text for the result selector card
-   * Uses Chunko-Bold font for emphasis, matching other step cards
-   */
   resultCardTitle: {
     fontSize: 20,
     fontFamily: 'Chunko-Bold',
@@ -150,11 +172,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-  
-  /**
-   * Instruction text above the result selector
-   * Guides users to refer to the color guide
-   */
   instructionText: {
     fontSize: 14,
     fontFamily: 'Poppins-Regular',
@@ -162,87 +179,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-  
-  /**
-   * Grid container for test result selection
-   * Full width container for the selection grid, centered in card
-   */
-  testResultsGrid: {
-    width: '100%',
-    flex: 1,
-    justifyContent: 'flex-start',
-  },
-  
-  /**
-   * Individual row for each test type (H₂O₂, LE, SNA, etc.)
-   * Horizontal layout with label on left, options on right
-   */
-  testResultRow: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    paddingHorizontal: 0,
-    justifyContent: 'space-between',
-  },
-  
-  /**
-   * Test type label (H₂O₂, LE, SNA, β-G, NAG)
-   * Fixed width for consistent alignment
-   */
-  testResultLabel: {
-    fontSize: 16,
-    fontFamily: 'Poppins-SemiBold',
-    color: '#721422',
-    width: 60,
-    textAlign: 'left',
-    alignSelf: 'flex-start',
-    marginTop: 15,
-  },
-  
-  /**
-   * Container for test result intensity options (+, ±, -)
-   * Horizontal layout aligned to the right
-   */
-  testResultOptions: {
-    flexDirection: 'row',
-    flex: 1,
-    justifyContent: 'flex-end',
-    marginRight: 15,
-  },
-  
-  /**
-   * Individual test result option container
-   * Contains color block and intensity symbol
-   */
-  testResultOption: {
-    alignItems: 'center',
-    padding: 8,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    marginLeft: 8,
-  },
-  
-  /**
-   * Color block showing test result color
-   * Square block with rounded corners
-   */
-  testResultColor: {
-    width: 30,
-    height: 30,
-    borderRadius: 6,
-    marginBottom: 6,
-    borderWidth: 0,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  
-  /**
-   * Test result intensity symbol (+, ±, -)
-   * Centered below color block
-   */
-  testResultValue: {
-    fontSize: 12,
-    fontFamily: 'Poppins-SemiBold',
-    color: '#721422',
-    textAlign: 'center',
-  },
+  testResultsGrid: { width: '100%', flex: 1, justifyContent: 'flex-start' },
+  testResultRow: { flexDirection: 'row', marginBottom: 20, paddingHorizontal: 0, justifyContent: 'space-between' },
+  testResultLabel: { fontSize: 16, fontFamily: 'Poppins-SemiBold', color: '#721422', width: 60, textAlign: 'left', alignSelf: 'flex-start', marginTop: 15 },
+  testResultOptions: { flexDirection: 'row', flex: 1, justifyContent: 'flex-end', marginRight: 15 },
+  testResultOption: { alignItems: 'center', padding: 8, borderRadius: 12, borderWidth: 2, borderColor: 'transparent', marginLeft: 8 },
+  testResultColor: { width: 30, height: 30, borderRadius: 6, marginBottom: 6, borderWidth: 0, borderColor: 'rgba(0, 0, 0, 0.1)' },
+  testResultValue: { fontSize: 12, fontFamily: 'Poppins-SemiBold', color: '#721422', textAlign: 'center' },
 });

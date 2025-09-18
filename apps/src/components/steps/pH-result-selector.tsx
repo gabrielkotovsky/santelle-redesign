@@ -1,19 +1,56 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
+import { useTestSession } from '@/src/features/test-session/testSession.store';
+import { upsertLogResultsFlat } from '@/src/features/test-logs/testLogs.api';
+import { getLogBySession } from '@/src/features/test-logs/testLogs.api';
+
 
 interface PHResultSelectorProps {
   title?: string;
-  onPHChange?: (pH: number) => void;
 }
 
-export default function PHResultSelector({ title = "Log pH Results", onPHChange }: PHResultSelectorProps) {
+export default function PHResultSelector({ title = "Log pH Results" }: PHResultSelectorProps) {
   const [selectedPH, setSelectedPH] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+  const session = useTestSession(s => s.session);
+  const [loadingInitial, setLoadingInitial] = useState(true);
 
-  const setSelectedPHWithSave = (pH: number) => {
+  useEffect(() => {
+      let cancelled = false;
+      (async () => {
+        if (!session?.id) {
+          setSelectedPH(null);
+          setLoadingInitial(false);
+          return;
+        }
+        try {
+          setLoadingInitial(true);
+          const log = await getLogBySession(session.id);
+          if (!cancelled && log?.ph != null) {
+            setSelectedPH(log.ph);
+          }
+        } catch (e) {
+          console.warn("[PHSelector] load existing ph failed:", e);
+        } finally {
+          if (!cancelled) setLoadingInitial(false);
+        }
+      })();
+      return () => { cancelled = true; };
+    }, [session?.id]);
+
+  async function setSelectedPHWithSave(pH: number) {
+    if (!session || saving) return;
     setSelectedPH(pH);
-    onPHChange?.(pH);
-  };
+    try {
+      setSaving(true);
+      await upsertLogResultsFlat(session.id, { ph: pH });
+    } catch (error) {
+      console.error("Failed to save pH", error);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const dynamicStyles = StyleSheet.create({
     resultCard: {
@@ -65,6 +102,7 @@ export default function PHResultSelector({ title = "Log pH Results", onPHChange 
               selectedPH === option.value && dynamicStyles.phOptionSelected
             ] as any}
             onPress={() => setSelectedPHWithSave(option.value)}
+            disabled={saving || loadingInitial}
           >
             <View style={[styles.phColorBlock, { backgroundColor: option.color }]} />
             <Text style={[styles.phValue, dynamicStyles.phValue]}>{option.value}</Text>

@@ -183,6 +183,13 @@ export default function TestScreen() {
   };
 
   useEffect(() => {
+    if (resultsNotifId && resultsRemaining <= 0) {
+      cancelNotification(resultsNotifId);
+      setResultsNotifId(undefined);
+    }
+  }, [resultsRemaining, resultsNotifId]);
+
+  useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
@@ -232,6 +239,7 @@ export default function TestScreen() {
   const handleCancelTest = async () => {
     if (resultsNotifId) {
       await cancelNotification(resultsNotifId);
+      setResultsNotifId(undefined);
     }
     await abortSession();
     router.replace('/(tabs)/tests');
@@ -301,12 +309,15 @@ export default function TestScreen() {
               isPHTimerRunning ? (
                 <PHTimerCard 
                   timeRemaining={Math.floor(phRemaining / 1000)}
-                  onSkip={() => setPhEndsAt(new Date().toISOString())}
+                  onSkip={async () => {
+                    if (resultsNotifId) await cancelNotification(resultsNotifId);
+                    setResultsNotifId(undefined);
+                    setPhEndsAt(new Date().toISOString())
+                  }}
                 />
               ) : (
                 <PHResultSelector 
                   title="5. Log your pH results"
-                  onPHChange={(pH) => console.log('pH result:', pH)}
                 />
               )
             ) : index === 5 ? (
@@ -321,7 +332,6 @@ export default function TestScreen() {
             ) : index === 6 ? (
               <ResultSelector 
                 title="7. Log your final test results"
-                onResultsChange={(results) => console.log('Test results:', results)}
               />
             ) : (
               <StepCard title={item.title} image={item.image} description={item.description} />
