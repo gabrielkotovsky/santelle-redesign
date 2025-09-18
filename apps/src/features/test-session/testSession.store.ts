@@ -6,22 +6,23 @@ import {
     createSession as apiCreate,
     fetchOpenSession as apiFetchOpen,
     setStep as apiSetStep,
+    setPhResultsReadyAt as apiSetPhResults,
     setResultsReadyAt as apiSetResults,
     completeSession as apiComplete,
     abortSession as apiAbort,
     upsertResults as apiUpsertResults,
 } from "./testSession.api";
 
-type SessionUI = Pick<TestSession, "id" | "current_step" | "status" | "results_ready_at">;
+type SessionUI = Pick<TestSession, "id" | "current_step" | "status" | "ph_result_ready_at" | "results_ready_at">;
 
 type State = {
     session?: SessionUI;
     loading: boolean;
     error?: string;
-    // actions
     hydrateFromServer: () => Promise<void>;
     startSession: () => Promise<void>;
     setStep: (step: number) => Promise<void>;
+    setPhResultsReadyAt: (iso: string) => Promise<void>;
     setResultsReadyAt: (iso: string) => Promise<void>;
     complete: () => Promise<void>;
     abort: (reason?: string) => Promise<void>;
@@ -45,7 +46,8 @@ export const useTestSession = create<State>()(
                 id: s.id, 
                 current_step: s.current_step, 
                 status: s.status, 
-                results_ready_at: s.results_ready_at } });
+                results_ready_at: s.results_ready_at,
+                ph_result_ready_at: s.ph_result_ready_at } });
             } else {
               set({ session: undefined });
             }
@@ -60,7 +62,12 @@ export const useTestSession = create<State>()(
           set({ loading: true, error: undefined });
           try {
             const s = await apiCreate();
-            set({ session: { id: s.id, current_step: s.current_step, status: s.status, results_ready_at: s.results_ready_at } });
+            set({ session: { 
+              id: s.id, 
+              current_step: s.current_step, 
+              status: s.status,
+              ph_result_ready_at: s.ph_result_ready_at,
+              results_ready_at: s.results_ready_at } });
           } catch (e: any) {
             set({ error: e.message ?? "Failed to start session" });
           } finally {
@@ -81,6 +88,7 @@ export const useTestSession = create<State>()(
                 current_step: updated.current_step,
                 status: updated.status,
                 results_ready_at: updated.results_ready_at,
+                ph_result_ready_at: updated.ph_result_ready_at,
               },
             });
           } catch (e: any) {
@@ -103,11 +111,34 @@ export const useTestSession = create<State>()(
                 current_step: updated.current_step,
                 status: updated.status,
                 results_ready_at: updated.results_ready_at,
+                ph_result_ready_at: updated.ph_result_ready_at,
               },
             });
           } catch (e: any) {
             await get().hydrateFromServer();
             set({ error: e.message ?? "Failed to set results time" });
+          }
+        },
+
+        setPhResultsReadyAt: async (iso: string) => {
+          const s = get().session;
+          if (!s) return;
+          // optimistic
+          set({ session: { ...s, ph_result_ready_at: iso } });
+          try {
+            const updated = await apiSetPhResults(s.id, iso);
+            set({
+              session: {
+                id: updated.id,
+                current_step: updated.current_step,
+                status: updated.status,
+                results_ready_at: updated.results_ready_at,
+                ph_result_ready_at: updated.ph_result_ready_at,
+              },
+            });
+          } catch (e: any) {
+            await get().hydrateFromServer();
+            set({ error: e.message ?? "Failed to set pH results time" });
           }
         },
   
@@ -122,6 +153,7 @@ export const useTestSession = create<State>()(
                 current_step: updated.current_step,
                 status: updated.status,
                 results_ready_at: updated.results_ready_at,
+                ph_result_ready_at: updated.ph_result_ready_at,
               },
             });
           } catch (e: any) {

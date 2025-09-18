@@ -28,6 +28,7 @@ export default function TestScreen() {
   const session = useTestSession(s => s.session);
   const storeSetStep = useTestSession(s => s.setStep);
   const storeSetResults = useTestSession(s => s.setResultsReadyAt);
+  const storeSetPhResults = useTestSession(s => s.setPhResultsReadyAt);
   const abortSession = useTestSession(s => s.abort);
   const hydrate = useTestSession(s => s.hydrateFromServer);
 
@@ -131,6 +132,8 @@ export default function TestScreen() {
         setPhEndsAt(new Date(t + 60 * 1000).toISOString());
       if (!resultsEndsAt) 
         setResultsEndsAt(new Date(t + 600 * 1000).toISOString());
+      if (session && !phEndsAt) 
+        await storeSetPhResults(new Date(t + 60 * 1000).toISOString());
       if (session && !resultsEndsAt) 
         await storeSetResults(new Date(t + 600 * 1000).toISOString());
 
@@ -194,6 +197,9 @@ export default function TestScreen() {
     if (!session || !listRef.current) return;
     const step = Math.max(1, Math.min(7, session.current_step || 1));
     setMinAllowedStep(step);
+    if (session.ph_result_ready_at && !phEndsAt) {
+      setPhEndsAt(session.ph_result_ready_at);
+    }
     if (session.results_ready_at && !resultsEndsAt) {
       setResultsEndsAt(session.results_ready_at);
       setCurrentStep(step);
@@ -205,14 +211,13 @@ export default function TestScreen() {
         setTimeout(() => { programmaticScroll.current = false; }, 50);
       });
     }
-  }, [session, resultsEndsAt]);
+  }, [session, phEndsAt, resultsEndsAt]);
 
   const goToStep = (index0: number) => {
     const targetStep = index0 + 1;
     const clampedStep = Math.max(minAllowedStep, targetStep);
     const clampedIndex = clampedStep - 1;
     if (clampedIndex !== index0) {
-      // prevent jumping behind the lock
       programmaticScroll.current = true;
       requestAnimationFrame(() => {
         listRef.current?.scrollToIndex({ index: clampedIndex, animated: true });

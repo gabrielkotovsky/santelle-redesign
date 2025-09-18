@@ -12,10 +12,6 @@ export default function Questionnaire() {
   const [showWarningModal, setShowWarningModal] = useState(false);
   const { startSession } = useTestSession.getState();
   const handleQuestionnaireSubmit = async () => {
-    // Navigate to next step in the test process
-    console.log('Questionnaire submitted:', { onPeriod, hadIntercourse });
-    // You can add navigation logic here
-    // router.push('/next-step');
     if (onPeriod === false && hadIntercourse === false) {
       await startSession();
       router.replace('/log-test/test');

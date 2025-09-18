@@ -7,6 +7,7 @@ export type TestSession = {
     current_step: number;
     started_at: string;
     results_ready_at: string | null;
+    ph_result_ready_at: string | null;
     completed_at: string | null;
     meta: Record<string, unknown>;
 };
@@ -53,6 +54,16 @@ export async function setStep(sessionId: string, step: number): Promise<TestSess
       .single();
     if (error) throw error;
     return data;
+}
+export async function setPhResultsReadyAt(sessionId: string, iso: string): Promise<TestSession> {
+  const { data, error } = await supabase
+    .from("test_sessions")
+    .update({ ph_result_ready_at: iso })
+    .eq("id", sessionId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
 }
 export async function setResultsReadyAt(sessionId: string, iso: string): Promise<TestSession> {
     const { data, error } = await supabase
