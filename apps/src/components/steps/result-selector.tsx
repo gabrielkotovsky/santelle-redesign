@@ -58,7 +58,6 @@ export default function ResultSelector({ title = "Select your results" }: Result
         sna:    selectedTestResults['SNA'],
         beta_g: selectedTestResults['β-G'],
         nag:    selectedTestResults['NAG'],
-        status: 'finalized',
       });
 
       await complete(); // sets status=completed & completed_at in test_sessions
