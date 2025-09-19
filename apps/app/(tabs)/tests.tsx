@@ -1,20 +1,44 @@
-// app/(tabs)/tests.tsx
 import { ScrollView, StyleSheet, Text, View, FlatList, Dimensions } from 'react-native';
 import { ScreenBackground } from '../../src/components/layout/ScreenBackground';
 import CurrentTest from '../../src/components/tests/current-test';
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Colors } from '../../src/theme/colors';
 import StartTest from '../../src/components/tests/start-test';
 import CompactTest from '../../src/components/tests/compact-test';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTestSession } from '../../src/features/test-session/testSession.store';
+import { supabase } from '../../src/services/supabase';
+import type { TestLog } from '../../src/features/test-logs/testLogs.api';
+import TestLogModal from '../../src/components/modals/test-result';
+
 
 export default function TestsScreen() {
   const router = useRouter();
-
-  // ---- session from store + hydrate on focus ----
   const session = useTestSession(s => s.session);
   const hydrateFromServer = useTestSession(s => s.hydrateFromServer);
+  const [now, setNow] = useState(() => Date.now());
+  const isActive = !!session && session.status === 'in_progress';
+  const currentStep = session?.current_step ?? 1;
+  const [testHistory, setTestHistory] = useState<TestLog[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedTestLog, setSelectedTestLog] = useState<TestLog | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchTestHistory = async () => {
+        const { data, error } = await supabase
+          .from('test_logs')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) {
+          console.error('Error fetching test history:', error);
+          return;
+        }
+        setTestHistory((data ?? []) as TestLog[]);
+      };
+      fetchTestHistory();
+    }, [])
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -22,16 +46,11 @@ export default function TestsScreen() {
     }, [hydrateFromServer])
   );
 
-  // ---- ticking clock so CurrentTest countdown stays live ----
-  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // ---- derive UI state for CurrentTest ----
-  const isActive = !!session && session.status === 'in_progress';
-  const currentStep = session?.current_step ?? 1;
   const totalSteps = 7; // update if your flow changes
   const resultsEndsAt = session?.results_ready_at
     ? new Date(session.results_ready_at).getTime()
@@ -39,11 +58,10 @@ export default function TestsScreen() {
   const timeRemaining = resultsEndsAt ? Math.max(0, Math.ceil((resultsEndsAt - now) / 1000)) : 0;
   const dataReady = true; // toggle if you want skeletons
 
-  // ---- handlers ----
   const handleResumeTest = () => router.push('/log-test/test');
-  const handleTestPress = (testId: string) => {
-    // open details / modal
-    console.log('Test pressed:', testId);
+  const handleTestPress = (testLog: TestLog) => {
+    setSelectedTestLog(testLog);
+    setModalVisible(true);
   };
 
   // ---- grid layout for history ----
@@ -57,29 +75,24 @@ export default function TestsScreen() {
     return Math.max(2, Math.min(4, columns));
   }, []);
 
-  // ---- mock history (unchanged) ----
-  const testHistory = [
-    { id: '1', date: '01-01-2025', time: '12:00', pH: 4.4, H2O2: '-', LE: '++', SNA: '±', betaG: '+', NAG: '+' },
-    { id: '2', date: '31-12-2024', time: '09:30', pH: 4.2, H2O2: '+', LE: '+++', SNA: '+', betaG: '+', NAG: '±' },
-    { id: '3', date: '30-12-2024', time: '15:45', pH: 4.0, H2O2: '-', LE: '-', SNA: '-', betaG: '-', NAG: '-' },
-    { id: '4', date: '29-12-2024', time: '11:20', pH: 4.6, H2O2: '±', LE: '+', SNA: '+', betaG: '+', NAG: '+' },
-    { id: '5', date: '28-12-2024', time: '14:15', pH: 4.1, H2O2: '-', LE: '±', SNA: '-', betaG: '±', NAG: '-' },
-    { id: '6', date: '27-12-2024', time: '16:30', pH: 4.3, H2O2: '+', LE: '++', SNA: '+', betaG: '+', NAG: '+' },
-  ];
-
-  const renderTestItem = ({ item }: { item: typeof testHistory[0] }) => (
-    <CompactTest
-      date={item.date}
-      time={item.time}
-      pH={item.pH}
-      H2O2={item.H2O2}
-      LE={item.LE}
-      SNA={item.SNA}
-      betaG={item.betaG}
-      NAG={item.NAG}
-      onPress={() => handleTestPress(item.id)}
-    />
-  );
+  const renderTestItem = ({ item }: { item: TestLog }) => {
+    const created = new Date(item.created_at);
+    const date = created.toLocaleDateString();
+    const time = created.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return (
+      <CompactTest
+        date={date}
+        time={time}
+        pH={item.ph}
+        H2O2={item.h2o2}
+        LE={item.le}
+        SNA={item.sna}
+        betaG={item.beta_g}
+        NAG={item.nag}
+        onPress={() => handleTestPress(item)}
+      />
+    )
+  }
 
   return (
     <ScreenBackground>
@@ -112,6 +125,12 @@ export default function TestsScreen() {
           columnWrapperStyle={styles.row}
         />
       </ScrollView>
+      
+      <TestLogModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        log={selectedTestLog}
+      />
     </ScreenBackground>
   );
 }

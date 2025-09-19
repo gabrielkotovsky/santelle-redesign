@@ -275,15 +275,16 @@ export default function TestScreen() {
         renderItem={({ item, index }) => (
           <View style={{ width: SCREEN_WIDTH }}>
             {index === 2 ? (
-              <>
-                <StepCard title={item.title} image={item.image} description={item.description} />
-                <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
+              <StepCard 
+                title={item.title} 
+                image={item.image} 
+                description={item.description}
+                button={
                   <TouchableOpacity
                     style={{
                       backgroundColor: '#721422',
-                      borderRadius: 28,
+                      borderRadius: 99,
                       paddingVertical: 12,
-                      marginBottom: 30,
                       alignItems: 'center',
                     }}
                     onPress={() => {
@@ -303,8 +304,8 @@ export default function TestScreen() {
                       I've added 1 drop to each well
                     </Text>
                   </TouchableOpacity>
-                </View>
-              </>
+                }
+              />
             ) : index === 4 ? (
               isPHTimerRunning ? (
                 <PHTimerCard 

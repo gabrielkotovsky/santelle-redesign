@@ -85,12 +85,12 @@ export async function completeSession(sessionId: string): Promise<TestSession> {
     if (error) throw error;
     return data;
 }
-export async function abortSession(sessionId: string, reason?: string): Promise<void> {
-    const { error } = await supabase
-      .from("test_sessions")
-      .update({ status: "aborted"})
-      .eq("id", sessionId);
-    if (error) throw error;
+export async function abortSession(sessionId: string): Promise<void> {
+  const { error } = await supabase
+    .from("test_sessions")
+    .delete()
+    .eq("id", sessionId);
+  if (error) throw error;
 }
 export async function upsertResults(sessionId: string, patch: Partial<Omit<TestResults, "id" | "session_id" | "created_at">>) {
     const { data: existing, error: selErr } = await supabase

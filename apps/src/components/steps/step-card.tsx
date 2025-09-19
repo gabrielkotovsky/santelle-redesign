@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, ImageSourcePropType, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ImageSourcePropType, ScrollView, StyleSheet, Text, View, TouchableOpacity, ReactNode } from 'react-native';
 
 interface StepCardProps {
   title: string;
@@ -8,6 +8,7 @@ interface StepCardProps {
   colorScheme?: 'light' | 'dark';
   maxImageHeight?: number;
   maxDescriptionHeight?: number;
+  button?: ReactNode;
 }
 
 export default function StepCard({ 
@@ -16,7 +17,8 @@ export default function StepCard({
   description,
   colorScheme: propColorScheme,
   maxImageHeight = 300,
-  maxDescriptionHeight = 200
+  maxDescriptionHeight = 200,
+  button
 }: StepCardProps) {
 
   const dynamicStyles = StyleSheet.create({
@@ -82,6 +84,11 @@ export default function StepCard({
       <View style={styles.stepDescriptionContainer}>
         {renderDescription()}
       </View>
+      {button && (
+        <View style={styles.buttonContainer}>
+          {button}
+        </View>
+      )}
     </View>
   );
 }
@@ -199,5 +206,15 @@ const styles = StyleSheet.create({
   stepDescriptionBold: {
     fontFamily: 'Poppins-SemiBold',
     fontWeight: 'bold',
+  },
+  
+  /**
+   * Container for optional button at the bottom of the step card
+   * Provides padding and spacing for the button
+   */
+  buttonContainer: {
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
 });

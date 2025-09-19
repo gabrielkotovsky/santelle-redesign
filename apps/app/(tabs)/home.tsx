@@ -9,42 +9,48 @@ import * as Haptics from 'expo-haptics';
 import { ArticleModal } from '../../src/components/modals/article-modal';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTestSession } from '../../src/features/test-session/testSession.store';
+import { fetchLatestTestLog, type TestLog } from '../../src/features/test-logs/testLogs.api';
+import TestLogModal from '../../src/components/modals/test-result';
 
 
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useSharedValue(0);
   const [articleModalVisible, setArticleModalVisible] = useState(false);
+  const [testModalVisible, setTestModalVisible] = useState(false);
+  const [latestTestLog, setLatestTestLog] = useState<TestLog | null>(null);
   const router = useRouter();
   const session = useTestSession(s => s.session);
   const hydrateFromServer = useTestSession(s => s.hydrateFromServer);
   useEffect(() => {
     hydrateFromServer();
+    loadLatestTest();
   }, [hydrateFromServer]);
+  
   useFocusEffect(useCallback(() => {
     hydrateFromServer();
+    loadLatestTest();
   }, [hydrateFromServer]));
+  
+  const loadLatestTest = async () => {
+    try {
+      const latestTest = await fetchLatestTestLog();
+      setLatestTestLog(latestTest);
+    } catch (error) {
+      console.error('Error fetching latest test:', error);
+    }
+  };
+  
   const hasActive = !!session && session.status === 'in_progress';
 
 
   const handleScroll = (event: any) => {
     scrollY.value = event.nativeEvent.contentOffset.y;
   };
-  const onRefresh = async () => {
-    setRefreshing(true);
-    try {
-      // await loadTestData();
-      // Add any other refresh logic here
-      await new Promise(resolve => setTimeout(resolve, 500));
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
   const handleViewRecentTestPress = () => {
-    console.log('View recent test pressed');
-    // Navigate to test results or modal
+    if (latestTestLog) {
+      setTestModalVisible(true);
+    }
   };
   const handleActivateKitPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -82,7 +88,6 @@ export default function HomeScreen() {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={onRefresh}
               tintColor="transparent"
               colors={["transparent"]}
               progressViewOffset={0}
@@ -95,8 +100,8 @@ export default function HomeScreen() {
             displayName={"Gabriel"}
             daysMessage={"It's been 3 days since your last test"}
             healthSummary={"Your health is looking great!"}
-            hasTests={true}
-            selectedTestResult={true ? { id: 1, result: 'positive' } : undefined}
+            hasTests={!!latestTestLog}
+            selectedTestResult={latestTestLog ? { id: latestTestLog.id, result: 'positive' } : undefined}
             hasActiveSession={hasActive}
             onResumeTestPress={handleResumeTestPress}
             onViewRecentTestPress={handleViewRecentTestPress}
@@ -148,6 +153,12 @@ export default function HomeScreen() {
         />
           
         </ScrollView>
+        
+        <TestLogModal
+          visible={testModalVisible}
+          onClose={() => setTestModalVisible(false)}
+          log={latestTestLog}
+        />
     </ScreenBackground>
   );
 }
