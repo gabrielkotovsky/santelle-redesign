@@ -22,6 +22,8 @@ export default function TestsScreen() {
   const [testHistory, setTestHistory] = useState<TestLog[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTestLog, setSelectedTestLog] = useState<TestLog | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -61,6 +63,7 @@ export default function TestsScreen() {
   const handleResumeTest = () => router.push('/log-test/test');
   const handleTestPress = (testLog: TestLog) => {
     setSelectedTestLog(testLog);
+    setAnalyzing(!Boolean(testLog.analysis));
     setModalVisible(true);
   };
 

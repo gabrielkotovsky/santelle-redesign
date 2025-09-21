@@ -109,3 +109,21 @@ export async function fetchLatestTestLog(): Promise<TestLog | null> {
   if (error) throw error;
   return data ?? null;
 }
+
+export async function analyzeLog(logId: string) {
+  const { data, error } = await supabase.functions.invoke('analyze-results', {
+    body: { test_log_id: logId },
+  });
+  if (error) throw error;
+  return data; // your function may return { analysis, logId } or nothing—either is fine
+}
+
+export async function fetchLogById(id: string): Promise<TestLog | null> {
+  const { data, error } = await supabase
+    .from('test_logs')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as TestLog) ?? null;
+}

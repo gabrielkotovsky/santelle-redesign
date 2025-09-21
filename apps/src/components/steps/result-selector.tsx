@@ -1,16 +1,17 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 import { useTestSession } from '@/src/features/test-session/testSession.store';
-import { upsertLogResultsFlat } from '@/src/features/test-logs/testLogs.api';
+import { upsertLogResultsFlat, type TestLog, analyzeLog, fetchLogById } from '@/src/features/test-logs/testLogs.api';
 import { router } from 'expo-router';
+import TestLogModal from '../modals/test-result';
+import { supabase } from '@/src/services/supabase';
 
 interface ResultSelectorProps {
   title?: string;
 }
 
 type BiomarkerKeyUI = 'H₂O₂' | 'LE' | 'SNA' | 'β-G' | 'NAG';
-
 type TestResultsState = Record<BiomarkerKeyUI, string>;
 
 export default function ResultSelector({ title = "Select your results" }: ResultSelectorProps) {
@@ -23,36 +24,61 @@ export default function ResultSelector({ title = "Select your results" }: Result
   });
   const [saving, setSaving] = useState(false);
 
-  const session = useTestSession(s => s.session);
+  const session  = useTestSession(s => s.session);
   const complete = useTestSession(s => s.complete);
 
+  // NEW: state to show modal with the just-completed log
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [completedLog, setCompletedLog] = useState<TestLog | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+
   const allSelected = useMemo(
-    () => Object.values(selectedTestResults).every(v => !!v),
+    () => Object.values(selectedTestResults).every(Boolean),
     [selectedTestResults]
   );
 
-  const setOne = (k: BiomarkerKeyUI, v: string) => {
+  const setOne = (k: BiomarkerKeyUI, v: string) =>
     setSelectedTestResults(prev => ({ ...prev, [k]: v }));
-  };
 
   const getTestResultColor = (testType: BiomarkerKeyUI, intensity: string): string => {
-    const colors = {
+    const colors: Record<BiomarkerKeyUI, Record<string, string>> = {
       'H₂O₂': { '+': '#fdf7f9', '±': '#fee9f0', '-': '#fdd6db' },
       'LE':   { '+++': '#a275a0', '++': '#d18eaf', '+': '#cfaebf', '±': '#d8c9ce', '-': '#f7ecea' },
       'SNA':  { '+': '#fbd4e7', '±': '#fcedf2', '-': '#ffffff' },
       'β-G':  { '+': '#bde4f3', '±': '#d8f1ed', '-': '#fcfef3' },
-      'NAG':  { '+': '#ffcbb7', '±': '#fee8da', '-': '#f2e8cd' }
-    } as const;
-    // @ts-ignore
+      'NAG':  { '+': '#ffcbb7', '±': '#fee8da', '-': '#f2e8cd' },
+    };
     return colors[testType]?.[intensity] ?? '#FFFFFF';
   };
+
+  useEffect(() => {
+    if (!completedLog?.id) return;
+
+    const channel = supabase
+      .channel(`test_logs:${completedLog.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'test_logs', filter: `id=eq.${completedLog.id}` },
+        (payload) => {
+          const next = payload.new as TestLog;
+          setCompletedLog(next);
+          if (next.analysis) setAnalyzing(false);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [completedLog?.id]);
 
   async function handleCompletePress() {
     if (!session || saving || !allSelected) return;
     setSaving(true);
     try {
-      // map UI keys -> DB columns
-      await upsertLogResultsFlat(session.id, {
+      // 1) Save final results
+      const saved = await upsertLogResultsFlat(session.id, {
         h2o2:   selectedTestResults['H₂O₂'],
         le:     selectedTestResults['LE'],
         sna:    selectedTestResults['SNA'],
@@ -60,8 +86,33 @@ export default function ResultSelector({ title = "Select your results" }: Result
         nag:    selectedTestResults['NAG'],
       });
 
-      await complete(); // sets status=completed & completed_at in test_sessions
-      router.replace('/(tabs)/tests');
+      // 2) Mark session complete
+      await complete();
+
+      // 3) Show modal with this completed log (so user sees what they just saved)
+      setCompletedLog(saved);
+      setShowResultModal(true);
+      setAnalysisError(null);
+      setAnalyzing(true);
+
+      // 4) Analyze the log
+      analyzeLog(saved.id)
+        .then(async () => {
+          // Optional fallback poll once after a short delay, in case Realtime is off:
+          setTimeout(async () => {
+            const refreshed = await fetchLogById(saved.id);
+            if (refreshed) {
+              setCompletedLog(refreshed);
+              if (refreshed.analysis) setAnalyzing(false);
+            }
+          }, 1500);
+        })
+        .catch((e) => {
+          console.warn('Analysis failed:', e);
+          setAnalyzing(false);
+          setAnalysisError('Failed to analyze your results. Please try again.');
+        });
+
     } catch (e) {
       console.error('Failed to finalize test', e);
     } finally {
@@ -113,23 +164,24 @@ export default function ResultSelector({ title = "Select your results" }: Result
     </View>
   );
 
+
+
   return (
-    <View style={[styles.resultCard, dynamicStyles.resultCard]}>
-      <Text style={[styles.resultCardTitle, dynamicStyles.resultCardTitle]}>{title}</Text>
-      <Text style={[styles.instructionText, dynamicStyles.instructionText]}>
-        Refer to the color guide in the kit, and select your final test results:
-      </Text>
+    <>
+      <View style={[styles.resultCard, dynamicStyles.resultCard]}>
+        <Text style={[styles.resultCardTitle, dynamicStyles.resultCardTitle]}>{title}</Text>
+        <Text style={[styles.instructionText, dynamicStyles.instructionText]}>
+          Refer to the color guide in the kit, and select your final test results:
+        </Text>
 
-      <View style={styles.testResultsGrid}>
-        {renderRow('H₂O₂', ['+', '±', '-'])}
-        {renderRow('LE', ['+++', '++', '+', '±', '-'])}
-        {renderRow('SNA', ['+', '±', '-'])}
-        {renderRow('β-G', ['+', '±', '-'])}
-        {renderRow('NAG', ['+', '±', '-'])}
-      </View>
+        <View style={styles.testResultsGrid}>
+          {renderRow('H₂O₂', ['+', '±', '-'])}
+          {renderRow('LE', ['+++', '++', '+', '±', '-'])}
+          {renderRow('SNA', ['+', '±', '-'])}
+          {renderRow('β-G', ['+', '±', '-'])}
+          {renderRow('NAG', ['+', '±', '-'])}
+        </View>
 
-      {/** The simple “Complete test” button */}
-      {(
         <ShrinkableTouchable
           style={dynamicStyles.completeBtn as any}
           onPress={handleCompletePress}
@@ -141,8 +193,21 @@ export default function ResultSelector({ title = "Select your results" }: Result
             {saving ? 'Saving…' : 'Complete test'}
           </Text>
         </ShrinkableTouchable>
-      )}
-    </View>
+      </View>
+
+      {/* Modal: shown after saving + completing */}
+      <TestLogModal
+        visible={showResultModal}
+        log={completedLog ?? undefined}
+        analyzing={analyzing}
+        analysisError={analysisError}
+        onClose={() => {
+          setShowResultModal(false);
+          // after user closes the modal, go back to the Tests tab
+          router.replace('/(tabs)/tests');
+        }}
+      />
+    </>
   );
 }
 

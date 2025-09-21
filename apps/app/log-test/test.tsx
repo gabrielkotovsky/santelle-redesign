@@ -254,7 +254,7 @@ export default function TestScreen() {
         onCancel={handleCancelTest}
       />
 
-      <View style={styles.divider} />
+      <View style={{height: 1, backgroundColor: "rgba(255,255,255,0.3)", marginVertical: 10}} />
 
       {/* Timer card above all steps except step 6+ */}
       {isResultsTimerRunning && currentStep < 6 && currentStep > 3 && (
@@ -356,11 +356,3 @@ export default function TestScreen() {
     </ScreenBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  divider: {
-    height: 1,
-    backgroundColor: "rgba(255,255,255,0.3)",
-    marginVertical: 10,
-  },
-});

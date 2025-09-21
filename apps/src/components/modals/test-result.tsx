@@ -6,6 +6,8 @@ import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 import { getBiomarkerDescription, getBiomarkerStatus, getPHStatus } from './biomarker-utils';
 import { ScreenBackground } from '../layout/ScreenBackground';
 import Animated, { FadeInDown, FadeInUp, FadeOutUp, LinearTransition } from 'react-native-reanimated';
+import LottieView from 'lottie-react-native';
+import { ArticleModal } from './article-modal';
 
 type Props = {
   visible: boolean;
@@ -21,10 +23,14 @@ type Props = {
     created_at?: string;
     analysis?: string | null;
   } | null;
+  analyzing?: boolean;
+  analysisError?: string | null;
 };
 
-export default function TestLogModal({ visible, onClose, log }: Props) {
+
+export default function TestLogModal({ visible, onClose, log, analyzing = false, analysisError }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [articleModalVisible, setArticleModalVisible] = useState(false);
   if (!log) return null;
 
   const toggle = (key: string) => {
@@ -83,7 +89,12 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                     <Text style={styles.biomarkerLabel}>{name}</Text>
                     <View style={[styles.circle, { backgroundColor: status?.color }]} />
                   </View>
-                  <Text style={styles.biomarkerValue}>{value}</Text>
+                  <View style={styles.rightSection}>
+                    <Text style={styles.biomarkerValue}>{value}</Text>
+                    <View style={styles.questionMarkContainer}>
+                      <Text style={styles.questionMark}>?</Text>
+                    </View>
+                  </View>
                 </ShrinkableTouchable>
 
                 {isExpanded && (
@@ -168,21 +179,67 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
             );
           })}
 
+          {/* Learn More Button */}
+          <ShrinkableTouchable 
+            style={styles.learnMoreButton}
+            onPress={() => setArticleModalVisible(true)}
+          >
+            <Text style={styles.learnMoreButtonText}>Learn more about your results</Text>
+          </ShrinkableTouchable>
+
+          <View style={styles.divider} />
+
           {/* Analysis */}
           <View style={styles.analysisBox}>
             <Text style={styles.analysisTitle}>Santelle Analysis</Text>
-            {log.analysis ? (
+            {analyzing ? (
+              <View style={styles.loadingContainer}>
+               <LottieView
+                 source={require('@/assets/animations/Loading.json')}
+                 autoPlay
+                 loop
+                 style={styles.loadingAnimation}
+              />
+               <Text style={styles.loadingText}>Analyzing your results…</Text>
+              </View>
+              ) : analysisError ? (
+              <Text style={styles.errorText}>{analysisError}</Text>
+            ) : log.analysis ? (
               <Text style={styles.analysisText}>{log.analysis}</Text>
-            ) : (
-              <Text style={styles.analysisText}>No analysis available. Tap "Analyze".</Text>
-            )}
+              ) : (
+              <Text style={styles.analysisText}>No analysis is available yet.</Text>
+              )}
           </View>
 
         </ScrollView>
         </View>
       </ScreenBackground>
+
+      <ArticleModal
+        visible={articleModalVisible}
+        onClose={() => setArticleModalVisible(false)}
+        title="Learn about your biomarkers"
+        content={`### Potential Hydrogen
+**pH** measures how acidic your vagina is. A healthy vagina is slightly acidic, which helps block infections. When pH rises, it usually means unwanted bacteria or parasites are taking over.
+
+### Hydrogen Peroxide
+**H₂O₂** measures the natural protection made by good bacteria (lactobacilli). If levels are low, it means those "bodyguard" bacteria aren't keeping balance as they should.
+
+### Leukocyte Esterase 
+**LE** measures white blood cell activity. These are your body's natural helpers, and higher activity can show they're responding to something.
+
+### Sialidase
+**SNA** measures an enzyme linked to bacteria that cause BV (bacterial vaginosis). Its presence can point to BV being the reason for your symptoms.
+
+### Beta-Glucuronidase
+**β-G** measures an enzyme linked to bacterial or yeast overgrowth. It highlights when "too much of the wrong microbes" are present.
+
+### N-acetyl-β-D-glucosaminidase
+**NAG** measures signs of gentle irritation in the vaginal lining, helping spot when your tissue is under stress.`}
+        image={require('@/assets/images/fig.png')}
+      />
     </Modal>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -201,9 +258,31 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     gap: 8 
   },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   biomarkerLabel: { fontFamily: 'Poppins-SemiBold', fontSize: 16, color: Colors.light.rush },
   biomarkerValue: { fontFamily: 'Poppins-Bold', fontSize: 16, color: Colors.light.rush },
   circle: { width: 12, height: 12, borderRadius: 6 },
+  questionMarkContainer: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(114, 20, 34, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(114, 20, 34, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 4,
+  },
+  questionMark: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 12,
+    color: Colors.light.rush,
+    opacity: 0.8,
+  },
 
   detailBox: { padding: 12, borderRadius: 8, marginTop: 6, marginRight: 15 },
   detailText: { fontSize: 14, fontFamily: 'Poppins-Regular', color: Colors.light.rush, lineHeight: 20 },
@@ -229,7 +308,7 @@ const styles = StyleSheet.create({
   divider: { 
     height: 1, 
     backgroundColor: Colors.light.rush, 
-    marginVertical: 12, 
+    marginVertical: 20, 
     opacity: 0.3 
   },
   disclaimerText: { 
@@ -241,7 +320,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic'
   },
 
-  analysisBox: { marginTop: 20, padding: 15, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.5)' },
+  analysisBox: { marginTop: -10, padding: 15, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.5)' },
   analysisTitle: { fontSize: 18, fontFamily: 'Poppins-SemiBold', color: Colors.light.rush, marginBottom: 8 },
   analysisText: { fontSize: 14, fontFamily: 'Poppins-Regular', color: Colors.light.rush },
 
@@ -289,5 +368,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Poppins-Regular',
     textAlign: 'center',
+  },
+  loadingContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
+  loadingAnimation: { width: 56, height: 56, marginBottom: 8 },
+  loadingText: { fontSize: 14, fontFamily: 'Poppins-Regular', color: Colors.light.rush, opacity: 0.8 },
+  errorText: { fontSize: 14, fontFamily: 'Poppins-SemiBold', color: '#D92D20' },
+  learnMoreButton: {
+    backgroundColor: 'rgba(114, 20, 34, 0.1)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(114, 20, 34, 0.2)',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  learnMoreButtonText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-SemiBold',
+    color: Colors.light.rush,
   },
 });
