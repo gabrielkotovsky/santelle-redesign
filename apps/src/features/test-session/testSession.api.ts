@@ -33,7 +33,6 @@ export async function fetchOpenSession(): Promise<TestSession | null> {
       .limit(1)
       .maybeSingle();
     if (error) throw error;
-    console.log('📡 [API] Fetched open session:', data);
     return data;
 }
 export async function createSession(): Promise<TestSession> {

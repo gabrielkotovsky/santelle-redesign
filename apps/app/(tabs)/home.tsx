@@ -11,7 +11,39 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useTestSession } from '../../src/features/test-session/testSession.store';
 import { fetchLatestTestLog, type TestLog } from '../../src/features/test-logs/testLogs.api';
 import TestLogModal from '../../src/components/modals/test-result';
+import { buildWelcomeCopy } from '../../src/features/test-logs/welcomeCopy';
 
+// utils local to this screen
+function daysSince(dateStr?: string | null) {
+  if (!dateStr) return null;
+  const testTime = new Date(dateStr).getTime();
+  if (Number.isNaN(testTime)) return null;
+  const now = Date.now();
+  const msPerDay = 24 * 60 * 60 * 1000;
+  // floor to whole days; never negative
+  return Math.max(0, Math.floor((now - testTime) / msPerDay));
+}
+
+function extractSummary(text?: string | null) {
+  if (!text) return null;
+
+  // normalize line endings
+  const s = text.replace(/\r/g, "");
+
+  // match lines like:
+  // "Summary: ..." OR "# Summary: ..." OR "### Summary: ..." OR "- Summary: ..."
+  const re = /(^|\n)\s{0,3}(?:[-*]\s*)?(?:#{1,6}\s*)?summary\s*:\s*(.+?)(?=\n{2,}|$)/gi;
+
+  const all = [...s.matchAll(re)];
+  if (all.length === 0) return null;
+
+  // take the last Summary line if there are multiple
+  const last = all[all.length - 1][2]
+    .replace(/\*\*|__/g, "")   // strip simple bold markdown
+    .trim();
+
+  return last || null;
+}
 
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
@@ -22,6 +54,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const session = useTestSession(s => s.session);
   const hydrateFromServer = useTestSession(s => s.hydrateFromServer);
+
   useEffect(() => {
     hydrateFromServer();
     loadLatestTest();
@@ -31,7 +64,7 @@ export default function HomeScreen() {
     hydrateFromServer();
     loadLatestTest();
   }, [hydrateFromServer]));
-  
+
   const loadLatestTest = async () => {
     try {
       const latestTest = await fetchLatestTestLog();
@@ -40,10 +73,7 @@ export default function HomeScreen() {
       console.error('Error fetching latest test:', error);
     }
   };
-  
   const hasActive = !!session && session.status === 'in_progress';
-
-
   const handleScroll = (event: any) => {
     scrollY.value = event.nativeEvent.contentOffset.y;
   };
@@ -64,6 +94,17 @@ export default function HomeScreen() {
     console.log('Account pressed');
     // Navigate to account/profile screen
   };
+
+  const days = daysSince(latestTestLog?.created_at);
+  const daysMessage = days == null
+    ? "Take your first test to get started!"
+    : days === 0
+      ? "Your last test was today!"
+      : days === 1
+        ? "It's been 1 day since your last test."
+        : `It's been ${days} days since your last test.`;
+  
+  const healthSummary = extractSummary(latestTestLog?.analysis) || "Your health summary will appear here after analysis.";
 
   return (
     <ScreenBackground>
@@ -98,8 +139,8 @@ export default function HomeScreen() {
         >
           <WelcomeCard 
             displayName={"Gabriel"}
-            daysMessage={"It's been 3 days since your last test"}
-            healthSummary={"Your health is looking great!"}
+            daysMessage={daysMessage}
+            healthSummary={healthSummary}
             hasTests={!!latestTestLog}
             selectedTestResult={latestTestLog ? { id: latestTestLog.id, result: 'positive' } : undefined}
             hasActiveSession={hasActive}
@@ -111,6 +152,19 @@ export default function HomeScreen() {
           />
           
           <View style={[styles.divider]} />
+
+          <View style={styles.articlesContainer}>
+            <ArticleCard
+              title="Learn about your biomarkers"
+              description="Understand how to interpret each of your biomarkers."
+              image={require('@/assets/images/fig.png')}
+              delay={800}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setArticleModalVisible(true);
+              }}
+            />
+          </View>
 
           <View style={styles.articlesContainer}>
             <ArticleCard
@@ -174,7 +228,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   scrollContent: {
-    paddingBottom: 75,
+    paddingBottom: 100,
   },
   scrollContainer: {
     flex: 1,
@@ -188,7 +242,7 @@ const styles = StyleSheet.create({
   },
   articlesContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 0,
     paddingTop: 0,
   },
 });

@@ -8,6 +8,7 @@ import { ScreenBackground } from '../layout/ScreenBackground';
 import Animated, { FadeInDown, FadeInUp, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import LottieView from 'lottie-react-native';
 import { ArticleModal } from './article-modal';
+import Markdown from 'react-native-markdown-display';
 
 type Props = {
   visible: boolean;
@@ -205,7 +206,9 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
               ) : analysisError ? (
               <Text style={styles.errorText}>{analysisError}</Text>
             ) : log.analysis ? (
-              <Text style={styles.analysisText}>{log.analysis}</Text>
+              <Markdown style={md}>
+                {log.analysis?.trim() || ''}
+              </Markdown>
               ) : (
               <Text style={styles.analysisText}>No analysis is available yet.</Text>
               )}
@@ -389,3 +392,79 @@ const styles = StyleSheet.create({
     color: Colors.light.rush,
   },
 });
+
+const md = {
+  body: {
+    color: Colors.light.rush,
+    fontFamily: 'Poppins-Regular',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  heading1: {
+    color: Colors.light.rush,
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 22,
+    marginBottom: 6,
+  },
+  heading2: {
+    color: Colors.light.rush,
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 18,
+    marginTop: 6,
+    marginBottom: 6,
+  },
+  heading3: {
+    color: Colors.light.rush,
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 16,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  heading4: {
+    color: Colors.light.rush,
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 15,
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  strong: {
+    fontFamily: 'Poppins-SemiBold',
+  },
+  bullet_list: {
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  ordered_list: {
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  bullet_list_icon: {
+    color: Colors.light.rush,
+  },
+  list_item: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  list_item_content: {
+    flex: 1,
+    color: Colors.light.rush,
+    fontFamily: 'Poppins-Regular',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  hr: {
+    backgroundColor: Colors.light.rush,
+    opacity: 0.25,
+    height: 1,
+    marginVertical: 10,
+  },
+  paragraph: {
+    marginTop: 2,
+    marginBottom: 8,
+  },
+  code_inline: {
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: 4,
+    paddingVertical: 1,
+  },
+} as const;
