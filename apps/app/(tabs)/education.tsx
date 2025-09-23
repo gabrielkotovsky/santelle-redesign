@@ -1,3 +1,5 @@
+// 82 lines
+
 import { StyleSheet, Text, View } from 'react-native';
 import { ScreenBackground } from '../../src/components/layout/ScreenBackground';
 import { ScrollView } from 'react-native';

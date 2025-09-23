@@ -1,3 +1,5 @@
+// 164 lines
+
 import { ScrollView, StyleSheet, Text, View, FlatList, Dimensions } from 'react-native';
 import { ScreenBackground } from '../../src/components/layout/ScreenBackground';
 import CurrentTest from '../../src/components/tests/current-test';

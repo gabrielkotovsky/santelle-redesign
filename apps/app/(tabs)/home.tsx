@@ -1,3 +1,5 @@
+// 246 lines
+
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { ScreenBackground } from '../../src/components/layout/ScreenBackground';

@@ -1,3 +1,5 @@
+// 242 lines
+
 import { ScreenBackground } from "@/src/components/layout/ScreenBackground";
 import { View, Text, StyleSheet } from "react-native";
 import { ShrinkableTouchable } from "@/src/components/animations/ShrinkableTouchable";
@@ -150,10 +152,6 @@ export default function Questionnaire() {
 }
 
 const styles = StyleSheet.create({
-     /**
-   * Main questionnaire screen container
-   * Centers content vertically and horizontally
-   */
   questionnaireScreen: {
     flex: 1,
     justifyContent: 'center',
@@ -161,10 +159,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   
-  /**
-   * Content container for questionnaire
-   * Constrains width for better readability
-   */
   questionnaireContent: {
     flex: 1,
     justifyContent: 'center',
@@ -173,10 +167,6 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   
-  /**
-   * Main title for questionnaire
-   * Uses Chunko-Bold font for emphasis
-   */
   questionnaireTitle: {
     fontSize: 28,
     fontFamily: 'Chunko-Bold',
@@ -185,10 +175,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   
-  /**
-   * Subtitle text explaining questionnaire purpose
-   * Provides context for the questions
-   */
   questionnaireSubtitle: {
     fontSize: 16,
     fontFamily: 'Poppins-Regular',
@@ -198,19 +184,11 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   
-  /**
-   * Container for individual questions
-   * Full width with bottom margin for spacing
-   */
   questionContainer: {
     width: '100%',
     marginBottom: 30,
   },
   
-  /**
-   * Question text styling
-   * Bold, centered text for clarity
-   */
   questionText: {
     fontSize: 18,
     fontFamily: 'Poppins-SemiBold',
@@ -219,20 +197,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   
-  /**
-   * Container for Yes/No buttons
-   * Horizontal layout with gap between buttons
-   */
   yesNoContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 20,
   },
   
-  /**
-   * Individual Yes/No button styling
-   * Glassmorphism effect with border
-   */
   yesNoButton: {
     paddingHorizontal: 30,
     paddingVertical: 12,
@@ -244,20 +214,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   
-  /**
-   * Yes/No button text styling
-   * SemiBold font for emphasis
-   */
   yesNoButtonText: {
     fontSize: 16,
     fontFamily: 'Poppins-SemiBold',
     color: '#721422',
   },
   
-  /**
-   * Submit button for questionnaire
-   * Dark background with white text
-   */
   submitButton: {
     backgroundColor: '#721422',
     paddingHorizontal: 40,
@@ -266,28 +228,16 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   
-  /**
-   * Disabled state for submit button
-   * Reduced opacity when not all questions answered
-   */
   submitButtonDisabled: {
     backgroundColor: 'rgba(114, 20, 34, 0.3)',
   },
   
-  /**
-   * Submit button text styling
-   * White text for contrast
-   */
   submitButtonText: {
     fontSize: 18,
     fontFamily: 'Poppins-SemiBold',
     color: '#FFFFFF',
   },
   
-  /**
-   * Disabled submit button text
-   * Reduced opacity for disabled state
-   */
   submitButtonTextDisabled: {
     color: 'rgba(255, 255, 255, 0.5)',
   },

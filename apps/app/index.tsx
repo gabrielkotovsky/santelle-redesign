@@ -6,5 +6,6 @@ export default function Index() {
   const { session, loading } = useSession();
   if (loading) return null;
 
-  return <Redirect href={session ? "/(tabs)/home" : "/(auth)/landing"} />;
+  //return <Redirect href={session ? "/(tabs)/home" : "/(auth)/landing"} />;
+  return <Redirect href={"/(auth)/landing"} />;
 }
