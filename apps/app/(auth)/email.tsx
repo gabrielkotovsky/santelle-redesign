@@ -39,7 +39,10 @@ export default function Email() {
         'Check your email', 
         'We\'ve sent you a verification code. Please check your inbox.',
         [{ text: 'OK', onPress: () => {
-          router.push('/otp');
+          router.push({
+            pathname: '/otp',
+            params: { email: email }
+          });
         }}]
       );
     } catch (error: any) {
@@ -87,7 +90,7 @@ export default function Email() {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.emailInput}
-              placeholder="Enter your email"
+              placeholder="email"
               placeholderTextColor="#999999"
               value={email}
               onChangeText={setEmail}
@@ -155,14 +158,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
   },
   inputContainer: {
-    width: '85%',            // fixed relative width
+    width: '85%',
     alignSelf: 'center',
-    backgroundColor: 'rgba(255, 255, 255, .8)',
-    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, .9)',
+    borderRadius: 10,
     borderWidth: 0.5,
     borderColor: '#721422',
-    marginTop: 15,
+    marginTop: 30,
     paddingHorizontal: 10,
+    alignItems: 'center',
   },
   emailInput: {
     fontSize: 16,
@@ -174,7 +178,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 30,
     left: 30,
-    right: 30,              // instead of margin
+    right: 30,
     backgroundColor: '#721422',
     borderRadius: 10,
     minHeight: 50,

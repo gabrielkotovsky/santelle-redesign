@@ -52,9 +52,7 @@ export default function EmailSignInButton({
         </View>
       </View>
       <View style={styles.textColumn}>
-        <Text style={[styles.socialButtonText, styles.emailButtonText]}>
-          {loading ? 'Loading...' : 'Continue with Email'}
-        </Text>
+        <Text style={[styles.socialButtonText, styles.emailButtonText]}>Continue with Email</Text>
       </View>
     </Pressable>
   );
