@@ -27,7 +27,6 @@ export default function EmailSignInButton({
         await onPress();
       }
     } catch (e: any) {
-      console.error('📧 [Email Button] Error occurred:', e);
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);

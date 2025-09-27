@@ -7,6 +7,7 @@ import { Stack, SplashScreen } from "expo-router";
 import { useFonts } from "expo-font";
 import { useEffect, useState } from "react";
 import SessionHydrator from "@/src/features/test-session/sessionHydrator";
+import { initializeAuth } from "@/src/features/auth/auth.store";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -25,15 +26,17 @@ export default function RootLayout() {
     let mounted = true;
     (async () => {
       try {
+        // Initialize auth store early
+        await initializeAuth();
+        
         // only sign in if you set the envs
-        if (process.env.EXPO_PUBLIC_DEV_EMAIL && process.env.EXPO_PUBLIC_DEV_PASSWORD) {
-          await devSignIn();
-        }
+        //if (process.env.EXPO_PUBLIC_DEV_EMAIL && process.env.EXPO_PUBLIC_DEV_PASSWORD) {
+          //await devSignIn();
+        //}
         // VERIFY: fetch session and log the user id
         const { data } = await supabase.auth.getSession();
-        console.log("Supabase session user:", data.session?.user?.id ?? "none");
       } catch (e) {
-        console.warn("Dev sign-in error:", e);
+        // Handle dev sign-in error silently
       } finally {
         if (mounted) setBooted(true);
         SplashScreen.hideAsync().catch(() => {});

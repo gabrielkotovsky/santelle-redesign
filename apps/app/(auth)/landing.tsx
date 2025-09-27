@@ -25,11 +25,14 @@ export default function Landing() {
               }}
             />
             <AppleSignInButton
-        onSuccess={(user) => {
-          console.log('✅ Apple sign-in success:', user);
+        onSuccess={async (user) => {
+          // Small delay to ensure auth state is updated
+          setTimeout(() => {
+            router.replace('/(tabs)/home');
+          }, 100);
         }}
         onError={(err) => {
-          console.error('❌ Apple sign-in error:', err);
+          // Handle error silently or show user-friendly message
         }}
       />
       

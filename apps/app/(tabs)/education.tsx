@@ -1,65 +1,79 @@
-// 82 lines
-
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, FlatList, ActivityIndicator } from 'react-native';
 import { ScreenBackground } from '../../src/components/layout/ScreenBackground';
-import { ScrollView } from 'react-native';
 import { ArticleModal } from '../../src/components/modals/article-modal';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArticleCard } from '@/src/components/home/article-card';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../../src/theme/colors';
+import { listArticles } from '@/src/features/articles/articles.api';
 
 export default function EducationScreen() {
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [selected, setSelected] = useState<Article | null>(null);
   const [articleModalVisible, setArticleModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const fetchArticles = useCallback(async () => {
+    setLoading(true);
+    try {
+      const fetchedArticles = await listArticles();
+      setArticles(fetchedArticles);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchArticles();
+  }, [fetchArticles]);
+
+  const openArticle = (article: Article) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelected(article);
+    setArticleModalVisible(true);
+  };
+
+  const renderItem = ({ item }: { item: Article }) => {
+    return (
+      <ArticleCard
+        key={item.id}
+        title={item.title}
+        description={item.subtitle}
+        image={item.hero_image_url ?? undefined}
+        delay={800}
+        onPress={() => openArticle(item)}
+      />
+    );
+  };
 
   return (
     <ScreenBackground>
-              <View style={styles.learnSection}>
-          <Text style={styles.learnTitle}>LEARN</Text>
-        </View>
-      <ScrollView>
+      <View style={styles.learnSection}>
+        <Text style={styles.learnTitle}>LEARN</Text>
+      </View>
+      {loading ? (
+        <ActivityIndicator size="large" color={Colors.light.rush} style={{ marginTop: 20 }} />
+      ) : (
+        <FlatList
+          data={articles}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.articlesContainer}
+        />
+      )}
 
-
-        <View style={styles.articlesContainer}>
-            <ArticleCard
-              title="Learn about your biomarkers"
-              description="Understand how to interpret each of your biomarkers."
-              image={require('@/assets/images/fig.png')}
-              delay={800}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setArticleModalVisible(true);
-              }}
-            />
-          </View>
-      
-      <ArticleModal
+      {selected && (
+        <ArticleModal
           visible={articleModalVisible}
           onClose={() => setArticleModalVisible(false)}
-          title="Learn about your biomarkers"
-          content={`### Potential Hydrogen
-**pH** measures how acidic your vagina is. A healthy vagina is slightly acidic, which helps block infections. When pH rises, it usually means unwanted bacteria or parasites are taking over.
-
-### Hydrogen Peroxide
-**H₂O₂** measures the natural protection made by good bacteria (lactobacilli). If levels are low, it means those “bodyguard” bacteria aren’t keeping balance as they should.
-
-### Leukocyte Esterase 
-**LE** measures white blood cell activity. These are your body’s natural helpers, and higher activity can show they’re responding to something.
-
-### Sialidase
-**SNA** measures an enzyme linked to bacteria that cause BV (bacterial vaginosis). Its presence can point to BV being the reason for your symptoms.
-
-### Beta-Glucuronidase
-**β-G** measures an enzyme linked to bacterial or yeast overgrowth. It highlights when “too much of the wrong microbes” are present.
-
-### N-acetyl-β-D-glucosaminidase
-**NAG** measures signs of gentle irritation in the vaginal lining, helping spot when your tissue is under stress.`}
-          image={require('@/assets/images/fig1.png')}
-          author="Santelle Health Team"
-          publishDate="December 2024"
-          category="Health Education"
+          title={selected.title}
+          content={selected.content_md}
+          image={selected.hero_image_url}
+          author={selected.author}
+          publishDate={selected.publish_date}
+          category={selected.category}
         />
-      </ScrollView>
+      )}
     </ScreenBackground>
   );
 }
@@ -69,6 +83,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 70,
     paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.3)',
   },
   learnTitle: {
     fontSize: 24,
@@ -78,7 +94,7 @@ const styles = StyleSheet.create({
   },
   articlesContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 90,
     paddingTop: 0,
   },
 });

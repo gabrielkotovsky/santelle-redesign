@@ -9,6 +9,7 @@ import Animated, { FadeInDown, FadeInUp, FadeOutUp, LinearTransition } from 'rea
 import LottieView from 'lottie-react-native';
 import { ArticleModal } from './article-modal';
 import Markdown from 'react-native-markdown-display';
+import { XIcon } from '../icons/svg/XIcon';
 
 type Props = {
   visible: boolean;
@@ -68,7 +69,7 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
            </View>
 
            <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
-             <Text style={styles.cancelButtonText}>×</Text>
+             <XIcon size={30} color={Colors.light.rush} />
            </TouchableOpacity>
          </View>
 
@@ -358,17 +359,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   cancelButton: {
-    width: 25,
-    height: 25,
-    borderRadius: 15,
-    backgroundColor: '#FF4444',
+    width: 40,
+    height: 40,
+    borderRadius: 99,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     marginLeft: 0,
   },
   cancelButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    color: '#721422',
+    fontSize: 30,
     fontFamily: 'Poppins-Regular',
     textAlign: 'center',
   },

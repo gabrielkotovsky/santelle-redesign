@@ -46,7 +46,6 @@ export default function Email() {
         }}]
       );
     } catch (error: any) {
-      console.error('Email OTP request error:', error);
       Alert.alert('Error', error.message || 'Failed to send verification code. Please try again.');
     } finally {
       setLoading(false);

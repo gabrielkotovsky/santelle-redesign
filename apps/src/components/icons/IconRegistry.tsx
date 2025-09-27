@@ -4,6 +4,7 @@ import { HomeIcon } from './svg/HomeIcon';
 import { LogTestIcon } from './svg/LogTestIcon';
 import { PersonIcon } from './svg/PersonIcon';
 import { SLogoIcon } from './svg/SLogoIcon';
+import { XIcon } from './svg/XIcon';
 
 export const IconRegistry = {
   home: HomeIcon,
@@ -12,6 +13,7 @@ export const IconRegistry = {
   'log-test': LogTestIcon,
   person: PersonIcon,
   's-logo': SLogoIcon,
+  x: XIcon,
 } as const;
 
 export type RegisteredIconName = keyof typeof IconRegistry; 

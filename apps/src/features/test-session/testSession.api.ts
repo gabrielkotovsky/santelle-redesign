@@ -25,24 +25,36 @@ export type TestResults = {
 }
 
 export async function fetchOpenSession(): Promise<TestSession | null> {
-    const { data, error } = await supabase
-      .from("test_sessions")
-      .select("*")
-      .eq("status", "in_progress")
-      .order("started_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (error) throw error;
-    return data;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+      return null; // No user, no session
+  }
+  
+  const { data, error } = await supabase
+    .from("test_sessions")
+    .select("*")
+    .eq("user_id", user.id) // Filter by current user
+    .eq("status", "in_progress")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
 }
 export async function createSession(): Promise<TestSession> {
-    const { data, error } = await supabase
-      .from("test_sessions")
-      .insert({ user_id: 'c0ac0096-11db-48ee-b1ae-4cfdfae91c7c' }) 
-      .select("*")
-      .single();
-    if (error) throw error;
-    return data;
+  // Get the current authenticated user
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+      throw new Error('User not authenticated');
+  }
+  
+  const { data, error } = await supabase
+    .from("test_sessions")
+    .insert({ user_id: user.id }) // Use actual user ID
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
 } 
 export async function setStep(sessionId: string, step: number): Promise<TestSession> {
     const { data, error } = await supabase

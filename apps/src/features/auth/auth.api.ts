@@ -34,13 +34,7 @@ export async function signInWithApple(identityToken: string, nonce: string) {
       });
 
       if (error) {
-        console.error('🔐 [Apple Sign-In] Authentication failed:', error);
-        console.error('🔐 [Apple Sign-In] Error details:', {
-          message: error.message,
-          status: (error as any).status,
-          name: error.name,
-          stack: error.stack
-        });
+        // Handle authentication error
         return {
           success: false,
           message: error.message || 'Failed to sign in with Apple. Please try again.'
@@ -52,10 +46,7 @@ export async function signInWithApple(identityToken: string, nonce: string) {
         user: data.user
       };
     } catch (error) {
-      console.error('🔐 [Apple Sign-In] Unexpected error:', error);
-      console.error('🔐 [Apple Sign-In] Error type:', typeof error);
-      console.error('🔐 [Apple Sign-In] Error constructor:', error?.constructor?.name);
-      console.error('🔐 [Apple Sign-In] Full error object:', JSON.stringify(error, null, 2));
+      // Handle unexpected error
       return {
         success: false,
         message: 'An unexpected error occurred during Apple sign-in.'

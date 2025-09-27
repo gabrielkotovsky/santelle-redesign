@@ -13,7 +13,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
-import { verifyEmailOtp } from '@/src/features/auth/auth.api';
+import { verifyEmailOtp, requestEmailOtp } from '@/src/features/auth/auth.api';
 
 export default function OTP() {
   const [otp, setOtp] = useState('');
@@ -38,11 +38,7 @@ export default function OTP() {
         return;
       }
       
-      console.log('🔐 [OTP Verification] Attempting to verify:', {
-        email,
-        otpLength: otp.length,
-        otp: otp // Only log in development
-      });
+      // Attempting to verify OTP
       
       const session = await verifyEmailOtp(email, otp);
       
@@ -57,13 +53,7 @@ export default function OTP() {
         );
       }
     } catch (error: any) {
-      console.error('❌ [OTP Verification] Error:', error);
-      console.error('❌ [OTP Verification] Error details:', {
-        message: error.message,
-        status: error.status,
-        name: error.name,
-        code: error.code
-      });
+      // Handle OTP verification error
       
       let errorMessage = 'Invalid verification code. Please try again.';
       
@@ -85,12 +75,9 @@ export default function OTP() {
         Alert.alert('Error', 'Email not found. Please try again.');
         return;
       }
-      
-      // TODO: Import and use requestEmailOtp
-      // await requestEmailOtp(email);
+      await requestEmailOtp(email);
       Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
     } catch (error: any) {
-      console.error('Resend OTP error:', error);
       Alert.alert('Error', 'Failed to resend code. Please try again.');
     }
   };

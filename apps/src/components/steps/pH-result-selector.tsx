@@ -46,7 +46,7 @@ export default function PHResultSelector({ title = "Log pH Results" }: PHResultS
       setSaving(true);
       await upsertLogResultsFlat(session.id, { ph: pH });
     } catch (error) {
-      console.error("Failed to save pH", error);
+      // Handle pH save error
     } finally {
       setSaving(false);
     }

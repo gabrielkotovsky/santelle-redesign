@@ -114,7 +114,7 @@ export default function ResultSelector({ title = "Select your results" }: Result
         });
 
     } catch (e) {
-      console.error('Failed to finalize test', e);
+      // Handle test finalization error
     } finally {
       setSaving(false);
     }

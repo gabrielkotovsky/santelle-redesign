@@ -35,7 +35,6 @@ export default function TestsScreen() {
           .select('*')
           .order('created_at', { ascending: false });
         if (error) {
-          console.error('Error fetching test history:', error);
           return;
         }
         setTestHistory((data ?? []) as TestLog[]);

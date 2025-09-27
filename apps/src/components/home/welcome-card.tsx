@@ -1,7 +1,7 @@
 import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
     useAnimatedStyle,
@@ -13,6 +13,7 @@ import { Colors } from '../../theme/colors';
 import { LogoCrossIcon } from '../icons/svg/LogoCrossIcon';
 import { SLogoIcon } from '../icons/svg/SLogoIcon';
 import { UserIcon } from '../icons/svg/UserIcon';
+import AccountModal from '../modals/account-modal';
 
 interface WelcomeCardProps {
   displayName?: string;
@@ -42,6 +43,7 @@ export default function WelcomeCard({
   onResumeTestPress,
 }: WelcomeCardProps) {  
   const isResume = !!hasActiveSession;
+  const [accountModalVisible, setAccountModalVisible] = useState(false);
 
   // Animation refs for button feedback and welcome card
   const buttonScale = useSharedValue(1);
@@ -97,6 +99,8 @@ export default function WelcomeCard({
   const handleAccountPress = () => {
     // Trigger haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setAccountModalVisible(true);
+    // Still call the original handler in case parent component needs it
     onAccountPress();
   };
 
@@ -257,6 +261,12 @@ export default function WelcomeCard({
           </ShrinkableTouchable>
         </Animated.View>
       </BlurView>
+      
+      {/* Account Modal */}
+      <AccountModal
+        visible={accountModalVisible}
+        onClose={() => setAccountModalVisible(false)}
+      />
     </Animated.View>
   );
 }

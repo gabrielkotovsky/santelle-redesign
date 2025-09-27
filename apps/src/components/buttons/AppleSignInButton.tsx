@@ -3,7 +3,7 @@ import * as Crypto from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
 import { Alert, Pressable, StyleSheet, View, Text } from 'react-native';
-import { signInWithApple } from '@/src/features/auth/auth.api';
+import { useAuthStore } from '@/src/features/auth/auth.store';
 import { AppleIcon } from '@/src/components/icons/svg/AppleIcon';
 
 interface AppleSignInButtonProps {
@@ -20,6 +20,7 @@ export default function AppleSignInButton({
   disabled = false 
 }: AppleSignInButtonProps) {
   const [loading, setLoading] = useState(false);
+  const { signInWithApple: authStoreSignIn } = useAuthStore();
 
   const onApplePress = async () => {
     if (disabled || loading) return;
@@ -49,28 +50,19 @@ export default function AppleSignInButton({
         throw new Error('No identityToken returned by Apple');
       }
 
-      // 3) Send token to Supabase (OIDC)
-      const result = await signInWithApple(credential.identityToken, rawNonce);
-
-      if (!result.success) {
-        throw new Error(result.message);
-      }
+      // 3) Send token to Supabase (OIDC) via auth store
+      await authStoreSignIn(credential.identityToken, rawNonce);
 
       // Optional: First sign-in may give you name/email — store once
       // credential.fullName?.givenName, credential.fullName?.familyName, credential.email
       
       if (onSuccess) {
-        await onSuccess(result.user);
+        // Get the user from auth store after successful sign-in
+        const { user } = useAuthStore.getState();
+        await onSuccess(user);
       }
 
     } catch (e: any) {
-      console.error('🍎 [Apple Button] Error occurred:', e);
-      console.error('🍎 [Apple Button] Error type:', typeof e);
-      console.error('🍎 [Apple Button] Error constructor:', e?.constructor?.name);
-      console.error('🍎 [Apple Button] Error code:', e?.code);
-      console.error('🍎 [Apple Button] Error message:', e?.message);
-      console.error('🍎 [Apple Button] Full error object:', JSON.stringify(e, null, 2));
-      
       // Handle user cancellations
       if (e.code === 'ERR_CANCELED') {
         return;

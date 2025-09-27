@@ -1,7 +1,9 @@
 import { Image } from 'expo-image';
 import React from 'react';
-import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import Markdown from 'react-native-markdown-display';
+import { XIcon } from '../icons/svg/XIcon';
+import { Colors } from '../../theme/colors';
 
 interface ArticleModalProps {
   visible: boolean;
@@ -41,6 +43,13 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
       >
+        <View style={styles.container}>
+          {/* Floating Close Button */}
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <View style={styles.closeButtonCircle}>
+              <XIcon size={30} color="#000000" />
+            </View>
+          </TouchableOpacity>
 
           <ScrollView
             style={styles.scrollView}
@@ -76,13 +85,26 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
                   color: dynamicStyles.contentText.color,
                 },
                 heading3: {
-                  fontSize: 15,
+                  fontSize: 16,
                   fontFamily: 'Poppins-SemiBold',
                   color: dynamicStyles.contentText.color,
-                  marginBottom: -5,
+                  marginBottom: 0,
+                },
+                heading2: {
+                  fontSize: 20,
+                  fontFamily: 'Poppins-SemiBold',
+                  color: dynamicStyles.contentText.color,
+                  marginBottom: 0,
+                },
+                heading1: {
+                  fontSize: 24,
+                  fontFamily: 'Poppins-SemiBold',
+                  color: dynamicStyles.contentText.color,
+                  marginBottom: 0,
                 },
                 strong: {
                   fontFamily: 'Poppins-SemiBold',
+                  fontSize: 14,
                   color: dynamicStyles.contentText.color,
                 },
                 em: {
@@ -106,6 +128,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
                 {content}
               </Markdown>
           </ScrollView>
+        </View>
     </Modal>
   );
 };
@@ -113,6 +136,23 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 1000,
+  },
+  closeButtonCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 99,
+    backgroundColor: 'rgba(255, 255, 255, 0.34)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    marginLeft: 0,
   },
   blurOverlay: {
     flex: 1,
@@ -132,12 +172,12 @@ const styles = StyleSheet.create({
   articleImage: {
     width: '100%',
     height: undefined,
-    aspectRatio: 4/3,
+    aspectRatio: 1.5,
   },
   title: {
-    fontSize: 22,
+    fontSize: 26,
     fontFamily: 'Poppins-SemiBold',
-    marginBottom: 15,
+    marginBottom: 30,
     paddingHorizontal: 30,
   },
   content: {

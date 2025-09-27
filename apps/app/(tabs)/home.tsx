@@ -72,7 +72,7 @@ export default function HomeScreen() {
       const latestTest = await fetchLatestTestLog();
       setLatestTestLog(latestTest);
     } catch (error) {
-      console.error('Error fetching latest test:', error);
+      // Handle error silently
     }
   };
   const hasActive = !!session && session.status === 'in_progress';
@@ -93,7 +93,6 @@ export default function HomeScreen() {
     router.push('/log-test/test');
   };
   const handleAccountPress = () => {
-    console.log('Account pressed');
     // Navigate to account/profile screen
   };
 
