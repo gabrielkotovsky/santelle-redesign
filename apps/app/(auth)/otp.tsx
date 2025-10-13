@@ -13,7 +13,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
-import { verifyEmailOtp, requestEmailOtp } from '@/src/features/auth/auth.api';
+import { 
+  verifyEmailOtp, 
+  requestEmailOtp, 
+  getUserNavigationRoute,
+  getUser,
+  getQuestionnaireEntry,
+  createQuestionnaireEntry
+} from '@/src/features/auth/auth.api';
 
 export default function OTP() {
   const [otp, setOtp] = useState('');
@@ -43,12 +50,25 @@ export default function OTP() {
       const session = await verifyEmailOtp(email, otp);
       
       if (session) {
+        // Get the user
+        const user = await getUser();
+        
+        if (user) {
+          // Check if questionnaire entry exists, if not create it
+          const questionnaireEntry = await getQuestionnaireEntry(user.id);
+          if (!questionnaireEntry) {
+            await createQuestionnaireEntry(user.id);
+          }
+        }
+        
+        // Get the appropriate navigation route based on completion status
+        const navigationRoute = await getUserNavigationRoute();
+        
         Alert.alert(
           'Success!', 
           'You have been successfully verified.',
           [{ text: 'OK', onPress: () => {
-            // TODO: Navigate to main app or onboarding
-            router.push('/(tabs)/home');
+            router.replace(navigationRoute as any);
           }}]
         );
       }

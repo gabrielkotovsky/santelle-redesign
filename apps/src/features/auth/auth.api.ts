@@ -72,3 +72,189 @@ export async function getUser() {
     if (error) throw error;
     return data.user ?? null;
 }
+
+export async function needsOnboarding(): Promise<boolean> {
+    const user = await getUser();
+    if (!user) return false;
+    
+    // Check if user has completed onboarding by querying the onboarding_responses table
+    const { data, error } = await supabase
+        .from('onboarding_responses')
+        .select('onboarding_complete')
+        .eq('user_id', user.id)
+        .single();
+    
+    // If no record exists or onboarding is not complete, user needs onboarding
+    if (error || !data) {
+        return true;
+    }
+    
+    return !data.onboarding_complete;
+}
+
+export async function needsQuestionnaire(): Promise<boolean> {
+    const user = await getUser();
+    if (!user) return false;
+    
+    // Check if user has completed all questionnaire questions
+    const isComplete = await hasCompletedQuestionnaire(user.id);
+    return !isComplete;
+}
+
+export async function getUserNavigationRoute(): Promise<string> {
+    const user = await getUser();
+    if (!user) return '/(auth)/landing';
+    
+    // Check onboarding status first
+    const needsOnboardingFlow = await needsOnboarding();
+    if (needsOnboardingFlow) {
+        return '/(onboarding)/name';
+    }
+    
+    // Check questionnaire status
+    const needsQuestionnaireFlow = await needsQuestionnaire();
+    if (needsQuestionnaireFlow) {
+        return '/(questionnaire)/motivation';
+    }
+    
+    // Both complete, go to home
+    return '/(tabs)/home';
+}
+
+export async function updateUserMetadata(metadata: Record<string, any>) {
+    const { data, error } = await supabase.auth.updateUser({
+        data: metadata
+    });
+    if (error) throw error;
+    return data.user;
+}
+
+// Onboarding database functions
+export async function createOnboardingResponse(userId: string, displayName: string) {
+    const user = await getUser();
+    const { data, error } = await supabase
+        .from('onboarding_responses')
+        .insert({
+            user_id: userId,
+            display_name: displayName,
+            email: user?.email,
+            onboarding_complete: false
+        })
+        .select()
+        .single();
+    
+    if (error) throw error;
+    return data;
+}
+
+export async function updateOnboardingResponse(userId: string, updates: Partial<{
+    display_name: string;
+    date_of_birth: string;
+    country: string;
+    terms_accepted: boolean;
+    privacy_accepted: boolean;
+    marketing_consent: boolean;
+    contact_method: string;
+    language: string;
+    onboarding_complete: boolean;
+}>) {
+    const { data, error } = await supabase
+        .from('onboarding_responses')
+        .update({
+            ...updates,
+            updated_at: new Date().toISOString(),
+            ...(updates.onboarding_complete && { completed_at: new Date().toISOString() })
+        })
+        .eq('user_id', userId)
+        .select()
+        .single();
+    
+    if (error) throw error;
+    return data;
+}
+
+export async function getOnboardingResponse(userId: string) {
+    const { data, error } = await supabase
+        .from('onboarding_responses')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+    
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        throw error;
+    }
+    
+    return data;
+}
+
+export async function getUserDisplayName(userId: string): Promise<string | null> {
+    const data = await getOnboardingResponse(userId);
+    return data?.display_name || null;
+}
+
+// Questionnaire database functions
+export async function createQuestionnaireEntry(userId: string) {
+    const { data, error } = await supabase
+        .from('questionnaire')
+        .insert({
+            user_id: userId,
+            questionnaire_complete: false
+        })
+        .select()
+        .single();
+    
+    if (error) throw error;
+    return data;
+}
+
+export async function getQuestionnaireEntry(userId: string) {
+    const { data, error } = await supabase
+        .from('questionnaire')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+    
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        throw error;
+    }
+    
+    return data;
+}
+
+export async function saveQuestionnaireAnswer(
+    userId: string, 
+    questionNumber: number, 
+    answerValue: number | number[]
+) {
+    const columnName = `q${questionNumber}`;
+    
+    const { data, error } = await supabase
+        .from('questionnaire')
+        .update({ [columnName]: answerValue })
+        .eq('user_id', userId)
+        .select()
+        .single();
+    
+    if (error) throw error;
+    return data;
+}
+
+export async function markQuestionnaireComplete(userId: string) {
+    const { data, error } = await supabase
+        .from('questionnaire')
+        .update({ questionnaire_complete: true })
+        .eq('user_id', userId)
+        .select()
+        .single();
+    
+    if (error) throw error;
+    return data;
+}
+
+export async function hasCompletedQuestionnaire(userId: string): Promise<boolean> {
+    const entry = await getQuestionnaireEntry(userId);
+    
+    if (!entry) return false;
+    
+    return entry.questionnaire_complete === true;
+}

@@ -167,19 +167,6 @@ export default function HomeScreen() {
             />
           </View>
 
-          <View style={styles.articlesContainer}>
-            <ArticleCard
-              title="Learn about your biomarkers"
-              description="Understand how to interpret each of your biomarkers."
-              image={require('@/assets/images/fig.png')}
-              delay={800}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setArticleModalVisible(true);
-              }}
-            />
-          </View>
-
           <ArticleModal
           visible={articleModalVisible}
           onClose={() => setArticleModalVisible(false)}

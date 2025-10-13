@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Modal, 
   StyleSheet, 
@@ -16,6 +16,7 @@ import { UserIcon } from '../icons/svg/UserIcon';
 import { MailIcon } from '../icons/svg/MailIcon';
 import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 import { useAuth } from '../../features/auth/auth.store';
+import { getUserDisplayName } from '../../features/auth/auth.api';
 
 interface AccountModalProps {
   visible: boolean;
@@ -24,6 +25,21 @@ interface AccountModalProps {
 
 export default function AccountModal({ visible, onClose }: AccountModalProps) {
   const { user, signOut, loading } = useAuth();
+  const [displayName, setDisplayName] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchDisplayName() {
+      if (user?.id && visible) {
+        try {
+          const name = await getUserDisplayName(user.id);
+          setDisplayName(name);
+        } catch (error) {
+          // Silently fail, will use fallback
+        }
+      }
+    }
+    fetchDisplayName();
+  }, [user?.id, visible]);
 
   const handleSignOut = async () => {
     try {
@@ -95,7 +111,7 @@ export default function AccountModal({ visible, onClose }: AccountModalProps) {
                   </View>
                   <View style={styles.userDetails}>
                     <Text style={styles.userName}>
-                      {user?.user_metadata?.full_name || user?.email || 'User'}
+                      {displayName || user?.email || 'User'}
                     </Text>
                     <View style={styles.emailContainer}>
                       <MailIcon size={16} color={Colors.light.rush} />

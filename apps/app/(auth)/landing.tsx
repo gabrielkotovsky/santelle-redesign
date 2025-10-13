@@ -6,6 +6,12 @@ import EmailSignInButton from '@/src/components/buttons/EmailSignInButton';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { Text, View } from 'react-native';
+import { 
+  getUserNavigationRoute,
+  getUser,
+  getQuestionnaireEntry,
+  createQuestionnaireEntry
+} from '@/src/features/auth/auth.api';
 
 export default function Landing() {
   return (
@@ -27,8 +33,25 @@ export default function Landing() {
             <AppleSignInButton
         onSuccess={async (user) => {
           // Small delay to ensure auth state is updated
-          setTimeout(() => {
-            router.replace('/(tabs)/home');
+          setTimeout(async () => {
+            try {
+              // Get the user
+              const currentUser = await getUser();
+              
+              if (currentUser) {
+                // Check if questionnaire entry exists, if not create it
+                const questionnaireEntry = await getQuestionnaireEntry(currentUser.id);
+                if (!questionnaireEntry) {
+                  await createQuestionnaireEntry(currentUser.id);
+                }
+              }
+            } catch (error) {
+              // Handle error but continue
+            }
+            
+            // Get the appropriate navigation route
+            const navigationRoute = await getUserNavigationRoute();
+            router.replace(navigationRoute as any);
           }, 100);
         }}
         onError={(err) => {
