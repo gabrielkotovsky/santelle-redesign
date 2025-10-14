@@ -12,9 +12,14 @@ export default function Index() {
     async function determineRoute() {
       if (!loading) {
         if (session) {
-          // User is authenticated, check completion status
-          const route = await getUserNavigationRoute();
-          setNavigationRoute(route);
+          try {
+            // User is authenticated, check completion status
+            const route = await getUserNavigationRoute();
+            setNavigationRoute(route);
+          } catch (error: any) {
+            // If user doesn't exist or any error, go to landing
+            setNavigationRoute("/(auth)/landing");
+          }
         } else {
           // No session, go to landing
           setNavigationRoute("/(auth)/landing");

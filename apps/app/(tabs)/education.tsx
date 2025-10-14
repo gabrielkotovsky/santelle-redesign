@@ -95,6 +95,6 @@ const styles = StyleSheet.create({
   articlesContainer: {
     paddingHorizontal: 20,
     paddingBottom: 90,
-    paddingTop: 0,
+    paddingTop: 15,
   },
 });

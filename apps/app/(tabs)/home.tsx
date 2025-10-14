@@ -167,6 +167,7 @@ export default function HomeScreen() {
             />
           </View>
 
+
           <ArticleModal
           visible={articleModalVisible}
           onClose={() => setArticleModalVisible(false)}

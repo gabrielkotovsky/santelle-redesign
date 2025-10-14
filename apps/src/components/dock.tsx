@@ -167,10 +167,10 @@ export function CustomDockNavbar(props: CustomDockNavbarProps) {
                 })
               }],
               backgroundColor: colorScheme === 'dark' 
-                ? 'rgba(255, 255, 255, 0.15)' 
+                ? 'rgba(255, 255, 255, 0.4)' 
                 : 'rgba(255, 255, 255, 0.4)',
-              borderWidth: colorScheme === 'light' ? 1 : 0,
-              borderColor: colorScheme === 'light' ? 'rgba(255, 255, 255, 0.3)' : 'transparent',
+              borderWidth: colorScheme === 'light' ? 1 : 1,
+              borderColor: colorScheme === 'light' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.3)',
             }
           ]}
         />
@@ -290,10 +290,10 @@ const styles = StyleSheet.create({
     width: 90,
     height: 50,
     borderRadius: 999,
-    shadowColor: 'rgba(0, 0, 0, 0.3)',
+    shadowColor: 'rgba(0, 0, 0, 1)',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 3,
     },
     shadowOpacity: 0.15,
     shadowRadius: 4,

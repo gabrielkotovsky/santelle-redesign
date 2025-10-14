@@ -376,9 +376,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 16,
   },
   signOutButtonDisabled: {
     backgroundColor: 'rgba(114, 20, 34, 0.5)',
+    marginBottom: 16,
   },
   signOutButtonText: {
     fontSize: 16,

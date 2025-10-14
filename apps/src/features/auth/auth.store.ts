@@ -105,7 +105,26 @@ export const useAuthStore = create<AuthState>()(
         try {
           // Get current session
           const session = await apiGetSession();
-          const user = session?.user ? await apiGetUser() : null;
+          let user = null;
+          
+          if (session?.user) {
+            try {
+              user = await apiGetUser();
+            } catch (userError: any) {
+              // If user doesn't exist (deleted from database), clear the session
+              if (userError.message?.includes('User from sub claim in JWT does not exist')) {
+                await apiSignOut();
+                set({
+                  session: null,
+                  user: null,
+                  isAuthenticated: false,
+                  loading: false,
+                });
+                return;
+              }
+              throw userError;
+            }
+          }
           
           set({
             session,
@@ -117,7 +136,25 @@ export const useAuthStore = create<AuthState>()(
           // Set up auth state change listener
           const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, newSession) => {
-              const newUser = newSession?.user ? await apiGetUser() : null;
+              let newUser = null;
+              
+              if (newSession?.user) {
+                try {
+                  newUser = await apiGetUser();
+                } catch (userError: any) {
+                  // If user doesn't exist, clear session
+                  if (userError.message?.includes('User from sub claim in JWT does not exist')) {
+                    await apiSignOut();
+                    set({
+                      session: null,
+                      user: null,
+                      isAuthenticated: false,
+                      loading: false,
+                    });
+                    return;
+                  }
+                }
+              }
               
               set({
                 session: newSession,
@@ -137,11 +174,27 @@ export const useAuthStore = create<AuthState>()(
           // Note: Supabase handles cleanup automatically
           
         } catch (error: any) {
-          set({
-            error: error.message || 'Failed to initialize authentication',
-            loading: false,
-            isAuthenticated: false,
-          });
+          // If it's a user doesn't exist error, clear everything
+          if (error.message?.includes('User from sub claim in JWT does not exist')) {
+            try {
+              await apiSignOut();
+            } catch (e) {
+              // Ignore sign out errors
+            }
+            set({
+              session: null,
+              user: null,
+              error: null,
+              loading: false,
+              isAuthenticated: false,
+            });
+          } else {
+            set({
+              error: error.message || 'Failed to initialize authentication',
+              loading: false,
+              isAuthenticated: false,
+            });
+          }
         }
       },
 

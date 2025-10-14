@@ -102,23 +102,28 @@ export async function needsQuestionnaire(): Promise<boolean> {
 }
 
 export async function getUserNavigationRoute(): Promise<string> {
-    const user = await getUser();
-    if (!user) return '/(auth)/landing';
-    
-    // Check onboarding status first
-    const needsOnboardingFlow = await needsOnboarding();
-    if (needsOnboardingFlow) {
-        return '/(onboarding)/name';
+    try {
+        const user = await getUser();
+        if (!user) return '/(auth)/landing';
+        
+        // Check onboarding status first
+        const needsOnboardingFlow = await needsOnboarding();
+        if (needsOnboardingFlow) {
+            return '/(onboarding)/name';
+        }
+        
+        // Check questionnaire status
+        const needsQuestionnaireFlow = await needsQuestionnaire();
+        if (needsQuestionnaireFlow) {
+            return '/(questionnaire)/motivation';
+        }
+        
+        // Both complete, go to home
+        return '/(tabs)/home';
+    } catch (error: any) {
+        // If user doesn't exist or any error, return to landing
+        return '/(auth)/landing';
     }
-    
-    // Check questionnaire status
-    const needsQuestionnaireFlow = await needsQuestionnaire();
-    if (needsQuestionnaireFlow) {
-        return '/(questionnaire)/motivation';
-    }
-    
-    // Both complete, go to home
-    return '/(tabs)/home';
 }
 
 export async function updateUserMetadata(metadata: Record<string, any>) {
