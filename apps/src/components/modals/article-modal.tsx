@@ -26,7 +26,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
 
   const dynamicStyles = StyleSheet.create({
     modalBackground: {
-      backgroundColor: "#FFFFFF",
+      backgroundColor: "#FFEBCE",
     },
     headerText: {
       color: '#000000',
@@ -79,54 +79,90 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
               </Text>
 
               {/* Article Content */}
-              <Markdown style={{
-                body: {
-                  ...styles.content,
-                  color: dynamicStyles.contentText.color,
-                },
-                heading3: {
-                  fontSize: 16,
-                  fontFamily: 'Poppins-SemiBold',
-                  color: dynamicStyles.contentText.color,
-                  marginBottom: 0,
-                },
-                heading2: {
-                  fontSize: 20,
-                  fontFamily: 'Poppins-SemiBold',
-                  color: dynamicStyles.contentText.color,
-                  marginBottom: 0,
-                },
-                heading1: {
-                  fontSize: 24,
-                  fontFamily: 'Poppins-SemiBold',
-                  color: dynamicStyles.contentText.color,
-                  marginBottom: 0,
-                },
-                strong: {
-                  fontFamily: 'Poppins-SemiBold',
-                  fontSize: 14,
-                  color: dynamicStyles.contentText.color,
-                },
-                em: {
-                  fontStyle: 'italic',
-                  color: dynamicStyles.contentText.color,
-                },
-                paragraph: {
-                  marginBottom: 20,
-                  color: dynamicStyles.contentText.color,
-                },
-                list_item: {
-                  color: dynamicStyles.contentText.color,
-                },
-                bullet_list: {
-                  marginBottom: 10,
-                },
-                ordered_list: {
-                  marginBottom: 10,
-                },
-              }}>
-                {content}
-              </Markdown>
+              <View style={{ paddingHorizontal: 30, marginRight: 20 }}>
+                <Markdown
+                  style={{
+                    body: {
+                      color: dynamicStyles.contentText.color,
+                      flexWrap: 'wrap',
+                      marginTop: 0,
+                    },
+                    paragraph: {
+                      fontSize: 15,
+                      lineHeight: 26,
+                      fontFamily: 'Poppins-Regular',
+                      color: dynamicStyles.contentText.color,
+                      flexWrap: 'wrap',
+                      marginTop: 0,
+                    },
+                    heading1: {
+                      fontSize: 24,
+                      lineHeight: 32,
+                      fontFamily: 'Poppins-SemiBold',
+                      color: dynamicStyles.contentText.color,
+                      flexWrap: 'wrap',
+                    },
+                    heading2: {
+                      fontSize: 20,
+                      lineHeight: 28,
+                      fontFamily: 'Poppins-SemiBold',
+                      color: dynamicStyles.contentText.color,
+                      flexWrap: 'wrap',
+                      marginTop: 20,
+                      marginBottom: 10,
+                    },
+                    heading3: {
+                      fontSize: 18,
+                      lineHeight: 24,
+                      fontFamily: 'Poppins-SemiBold',
+                      color: dynamicStyles.contentText.color,
+                      flexWrap: 'wrap',
+                      marginTop: 20,
+                      marginBottom: 10,
+                    },
+                    strong: {
+                      fontFamily: 'Poppins-SemiBold',
+                      fontSize: 15,
+                      color: dynamicStyles.contentText.color,
+                      flexWrap: 'wrap',
+                    },
+                    em: {
+                      fontStyle: 'italic',
+                      fontSize: 15,
+                      color: dynamicStyles.contentText.color,
+                      flexWrap: 'wrap',
+                    },
+                    list_item: {
+                      color: dynamicStyles.contentText.color,
+                      fontSize: 15,
+                      lineHeight: 26,
+                      fontFamily: 'Poppins-Regular',
+                      flexWrap: 'wrap',
+                      flex: 1,
+                      marginLeft: 0,
+                    },
+                    bullet_list: {
+                      marginLeft: -5,
+                      marginBottom: 10,
+                      marginTop: 0,
+                    },
+                    bullet_list_icon: {
+                      fontSize: 30,
+                      color: dynamicStyles.contentText.color,
+                      marginTop: 7.5,
+                      marginRight: 4,
+                    },
+                    ordered_list: {
+                    },
+                    ordered_list_icon: {
+                      fontSize: 15,
+                      color: dynamicStyles.contentText.color,
+                    },
+                  }}
+                >
+                  {content}
+                </Markdown>
+              </View>
           </ScrollView>
         </View>
     </Modal>
@@ -177,14 +213,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontFamily: 'Poppins-SemiBold',
-    marginBottom: 30,
     paddingHorizontal: 30,
+    marginBottom: 30,
   },
   content: {
-    fontSize: 14,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 26,
     fontFamily: 'Poppins-Regular',
     textAlign: 'left',
-    paddingHorizontal: 30,
   },
 });

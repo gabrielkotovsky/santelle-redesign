@@ -243,7 +243,7 @@ export default function AccountModal({ visible, onClose }: AccountModalProps) {
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFEBCE',
   },
   header: {
     flexDirection: 'row',
