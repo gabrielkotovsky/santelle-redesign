@@ -5,7 +5,58 @@ import { useState, useEffect, useCallback } from 'react';
 import { ArticleCard } from '@/src/components/home/article-card';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../../src/theme/colors';
-import { listArticles } from '@/src/features/articles/articles.api';
+import { listArticles, type Article } from '@/src/features/articles/articles.api';
+import { BlurView } from 'expo-blur';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  withDelay
+} from 'react-native-reanimated';
+
+interface AnimatedArticleCardProps {
+  title: string;
+  description: string;
+  image?: string;
+  index: number;
+  onPress: () => void;
+}
+
+const AnimatedArticleCard = ({ title, description, image, index, onPress }: AnimatedArticleCardProps) => {
+  const translateY = useSharedValue(-100);
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0.8);
+
+  useEffect(() => {
+    // Staggered animation - each card appears with a delay
+    const delay = index * 100; // 100ms delay between each card
+    
+    translateY.value = withDelay(delay, withTiming(0, { duration: 600 }));
+    opacity.value = withDelay(delay, withTiming(1, { duration: 600 }));
+    scale.value = withDelay(delay, withTiming(1, { duration: 600 }));
+  }, [index]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateY: translateY.value },
+        { scale: scale.value }
+      ],
+      opacity: opacity.value,
+    };
+  });
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <ArticleCard
+        title={title}
+        description={description}
+        image={image}
+        onPress={onPress}
+      />
+    </Animated.View>
+  );
+};
 
 export default function EducationScreen() {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -33,14 +84,14 @@ export default function EducationScreen() {
     setArticleModalVisible(true);
   };
 
-  const renderItem = ({ item }: { item: Article }) => {
+  const renderItem = ({ item, index }: { item: Article; index: number }) => {
     return (
-      <ArticleCard
+      <AnimatedArticleCard
         key={item.id}
         title={item.title}
-        description={item.subtitle}
+        description={item.subtitle ?? ''}
         image={item.hero_image_url ?? undefined}
-        delay={800}
+        index={index}
         onPress={() => openArticle(item)}
       />
     );
@@ -48,9 +99,11 @@ export default function EducationScreen() {
 
   return (
     <ScreenBackground>
-      <View style={styles.learnSection}>
+      {/* Fixed LEARN bubble */}
+      <BlurView intensity={20} style={styles.learnBubble}>
         <Text style={styles.learnTitle}>LEARN</Text>
-      </View>
+      </BlurView>
+      
       {loading ? (
         <ActivityIndicator size="large" color={Colors.light.rush} style={{ marginTop: 20 }} />
       ) : (
@@ -68,10 +121,10 @@ export default function EducationScreen() {
           onClose={() => setArticleModalVisible(false)}
           title={selected.title}
           content={selected.content_md}
-          image={selected.hero_image_url}
-          author={selected.author}
-          publishDate={selected.publish_date}
-          category={selected.category}
+          image={selected.hero_image_url ?? undefined}
+          author={selected.author ?? undefined}
+          publishDate={selected.published_at ?? undefined}
+          category={selected.category ?? undefined}
         />
       )}
     </ScreenBackground>
@@ -79,22 +132,29 @@ export default function EducationScreen() {
 }
 
 const styles = StyleSheet.create({
-  learnSection: {
+  learnBubble: {
+    position: 'absolute',
+    top: 70,
+    left: 20,
+    right: 20,
+    borderRadius: 25,
     paddingHorizontal: 20,
-    paddingTop: 70,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.3)',
+    paddingVertical: 12,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    zIndex: 1000,
+    overflow: 'hidden',
   },
   learnTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontFamily: 'Poppins-SemiBold',
     color: Colors.light.rush,
     textAlign: 'center',
   },
   articlesContainer: {
     paddingHorizontal: 20,
+    paddingTop: 135, // Add top padding to account for fixed bubble
     paddingBottom: 90,
-    paddingTop: 15,
   },
 });

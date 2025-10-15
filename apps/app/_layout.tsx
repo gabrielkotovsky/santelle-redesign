@@ -3,13 +3,14 @@ import 'react-native-url-polyfill/auto';
 import 'react-native-get-random-values';
 import { devSignIn } from "@/src/services/devAuth";
 import { supabase } from "@/src/services/supabase";
-import { Stack, SplashScreen } from "expo-router";
+import { Stack, SplashScreen as ExpoSplashScreen } from "expo-router";
 import { useFonts } from "expo-font";
 import { useEffect, useState } from "react";
 import SessionHydrator from "@/src/features/test-session/sessionHydrator";
 import { initializeAuth } from "@/src/features/auth/auth.store";
+import { SplashScreen } from "@/src/components/SplashScreen";
 
-SplashScreen.preventAutoHideAsync().catch(() => {});
+ExpoSplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   
@@ -20,7 +21,9 @@ export default function RootLayout() {
     "Poppins-SemiBold": require("../assets/fonts/Poppins-SemiBold.ttf"),
   });
 
-  const [booted, setBooted] = useState(false);
+  const [appReady, setAppReady] = useState(false);
+  const [showingSplash, setShowingSplash] = useState(true);
+  
   useEffect(() => {
     if (!loaded) return;
     let mounted = true;
@@ -38,14 +41,26 @@ export default function RootLayout() {
       } catch (e) {
         // Handle dev sign-in error silently
       } finally {
-        if (mounted) setBooted(true);
-        SplashScreen.hideAsync().catch(() => {});
+        if (mounted) {
+          setAppReady(true);
+          ExpoSplashScreen.hideAsync().catch(() => {});
+        }
       }
     })();
     return () => { mounted = false; };
   }, [loaded]);
 
-  if (!loaded || !booted) return null;
+  // Show splash screen for 2 seconds after app is ready
+  useEffect(() => {
+    if (appReady) {
+      const timer = setTimeout(() => {
+        setShowingSplash(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [appReady]);
+
+  if (!loaded || !appReady || showingSplash) return <SplashScreen />;
 
   return (
     <>

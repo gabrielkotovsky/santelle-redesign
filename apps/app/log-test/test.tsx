@@ -1,7 +1,7 @@
 // 395 lines
 
 import React, { useMemo, useRef, useState, useEffect } from "react";
-import { View, FlatList, Dimensions, NativeScrollEvent, NativeSyntheticEvent, Text, TouchableOpacity } from "react-native";
+import { View, FlatList, Dimensions, NativeScrollEvent, NativeSyntheticEvent, Text, TouchableOpacity, Alert } from "react-native";
 import Animated, { FadeInUp, FadeOutUp, LinearTransition } from "react-native-reanimated";
 import { router } from "expo-router";
 
@@ -20,6 +20,7 @@ import { scheduleResultsReady, ensureNotifPermission, cancelNotification } from 
 
 // Store imports
 import { useTestSession } from "@/src/features/test-session/testSession.store";
+import { getLogBySession } from "@/src/features/test-logs/testLogs.api";
 
 // Constants
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -121,6 +122,9 @@ export default function TestScreen() {
   const [now, setNow] = useState(Date.now());
   const [resultsNotifId, setResultsNotifId] = useState<string | undefined>(undefined);
   
+  // pH validation state
+  const [phSelected, setPhSelected] = useState<boolean>(false);
+  
   // Refs
   const listRef = useRef<FlatList<Step>>(null);
   const programmaticScroll = useRef(false);
@@ -142,6 +146,21 @@ export default function TestScreen() {
       programmaticScroll.current = true;
       requestAnimationFrame(() => {
         listRef.current?.scrollToIndex({ index: 2, animated: true });
+        setTimeout(() => { programmaticScroll.current = false; }, 50);
+      });
+      return;
+    }
+
+    // Prevent navigation to step 7 without pH selection
+    if (newStep === 7 && !phSelected) {
+      Alert.alert(
+        'pH Required',
+        'Please select your pH result before proceeding to final results.',
+        [{ text: 'OK' }]
+      );
+      programmaticScroll.current = true;
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToIndex({ index: 4, animated: true }); // Go back to step 5 (pH)
         setTimeout(() => { programmaticScroll.current = false; }, 50);
       });
       return;
@@ -188,6 +207,19 @@ export default function TestScreen() {
       programmaticScroll.current = true;
       requestAnimationFrame(() => {
         listRef.current?.scrollToIndex({ index: 2, animated: true });
+        setTimeout(() => { programmaticScroll.current = false; }, 50);
+      });
+      return;
+    }
+    if (step === 7 && !phSelected) {
+      Alert.alert(
+        'pH Required',
+        'Please select your pH result before proceeding to final results.',
+        [{ text: 'OK' }]
+      );
+      programmaticScroll.current = true;
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToIndex({ index: 4, animated: true });
         setTimeout(() => { programmaticScroll.current = false; }, 50);
       });
       return;
@@ -249,6 +281,37 @@ export default function TestScreen() {
       });
     }
   }, [session, phEndsAt, resultsEndsAt]);
+
+  // Check if pH has been selected - poll periodically when on step 5 or later
+  useEffect(() => {
+    if (!session?.id || currentStep < 5) return;
+    
+    let cancelled = false;
+    
+    const checkPH = async () => {
+      try {
+        const log = await getLogBySession(session.id);
+        if (!cancelled && log?.ph != null) {
+          setPhSelected(true);
+        } else if (!cancelled) {
+          setPhSelected(false);
+        }
+      } catch (e) {
+        console.warn("[TestScreen] Failed to check pH selection:", e);
+      }
+    };
+    
+    // Initial check
+    checkPH();
+    
+    // Poll every 2 seconds while on step 5 or later
+    const interval = setInterval(checkPH, 2000);
+    
+    return () => { 
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [session?.id, currentStep]);
 
   const goToStep = (index0: number) => {
     const targetStep = index0 + 1;
@@ -323,20 +386,39 @@ export default function TestScreen() {
                         alignItems: 'center',
                       }}
                       onPress={() => {
-                        setStep3Confirmed(true);
-                        setMinAllowedStep(4);
-                        onStepChanged(4);
-                        programmaticScroll.current = true;
-                        requestAnimationFrame(() => {
-                          listRef.current?.scrollToIndex({ index: 3, animated: true }); // 0-based -> step 4
-                          setTimeout(() => { programmaticScroll.current = false; }, 50);
-                        });
+                        Alert.alert(
+                          'Start Results Timer',
+                          'Have you added 1 drop of solution to each reaction well?',
+                          [
+                            {
+                              text: 'Cancel',
+                              style: 'cancel',
+                            },
+                            {
+                              text: 'Yes, Start Timer',
+                              style: 'default',
+                              onPress: () => {
+                                setStep3Confirmed(true);
+                                setMinAllowedStep(4);
+                                onStepChanged(4);
+                                programmaticScroll.current = true;
+                                requestAnimationFrame(() => {
+                                  listRef.current?.scrollToIndex({ index: 3, animated: true }); // 0-based -> step 4
+                                  setTimeout(() => { programmaticScroll.current = false; }, 50);
+                                });
+                              },
+                            },
+                          ],
+                          { 
+                            cancelable: true
+                          }
+                        );
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel="Confirm you have added one drop to each well"
+                      accessibilityLabel="Start Results Timer"
                     >
                       <Text style={{ color: 'white', fontFamily: 'Poppins-SemiBold', fontSize: 16 }}>
-                        I've added 1 drop to each well
+                        Start Results Timer
                       </Text>
                     </TouchableOpacity>
                   }

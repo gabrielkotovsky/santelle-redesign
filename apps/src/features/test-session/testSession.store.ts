@@ -161,11 +161,11 @@ export const useTestSession = create<State>()(
           }
         },
   
-        abort: async (reason?: string) => {
+        abort: async () => {
           const s = get().session;
           if (!s) return;
           try {
-            await apiAbort(s.id, reason);
+            await apiAbort(s.id);
             set({ session: undefined });
           } catch (e: any) {
             set({ error: e.message ?? "Failed to abort session" });

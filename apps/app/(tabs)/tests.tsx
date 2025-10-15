@@ -12,7 +12,78 @@ import { useTestSession } from '../../src/features/test-session/testSession.stor
 import { supabase } from '../../src/services/supabase';
 import type { TestLog } from '../../src/features/test-logs/testLogs.api';
 import TestLogModal from '../../src/components/modals/test-result';
+import { BlurView } from 'expo-blur';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  withDelay
+} from 'react-native-reanimated';
 
+interface AnimatedCompactTestProps {
+  date: string;
+  time: string;
+  pH: number;
+  H2O2: string;
+  LE: string;
+  SNA: string;
+  betaG: string;
+  NAG: string;
+  onPress: () => void;
+  index: number;
+}
+
+const AnimatedCompactTest = ({ 
+  date, 
+  time, 
+  pH, 
+  H2O2, 
+  LE, 
+  SNA, 
+  betaG, 
+  NAG, 
+  onPress, 
+  index 
+}: AnimatedCompactTestProps) => {
+  const translateY = useSharedValue(-100);
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0.8);
+
+  useEffect(() => {
+    // Staggered animation - each test appears with a delay
+    const delay = index * 100; // 100ms delay between each test
+    
+    translateY.value = withDelay(delay, withTiming(0, { duration: 600 }));
+    opacity.value = withDelay(delay, withTiming(1, { duration: 600 }));
+    scale.value = withDelay(delay, withTiming(1, { duration: 600 }));
+  }, [index]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateY: translateY.value },
+        { scale: scale.value }
+      ],
+      opacity: opacity.value,
+    };
+  });
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <CompactTest
+        date={date}
+        time={time}
+        pH={pH}
+        H2O2={H2O2}
+        LE={LE}
+        SNA={SNA}
+        betaG={betaG}
+        NAG={NAG}
+        onPress={onPress}
+      />
+    </Animated.View>
+  );
+};
 
 export default function TestsScreen() {
   const router = useRouter();
@@ -79,21 +150,22 @@ export default function TestsScreen() {
     return Math.max(2, Math.min(4, columns));
   }, []);
 
-  const renderTestItem = ({ item }: { item: TestLog }) => {
+  const renderTestItem = ({ item, index }: { item: TestLog; index: number }) => {
     const created = new Date(item.created_at);
     const date = created.toLocaleDateString();
     const time = created.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     return (
-      <CompactTest
+      <AnimatedCompactTest
         date={date}
         time={time}
-        pH={item.ph}
-        H2O2={item.h2o2}
-        LE={item.le}
-        SNA={item.sna}
-        betaG={item.beta_g}
-        NAG={item.nag}
+        pH={item.ph ?? 0}
+        H2O2={item.h2o2 ?? ''}
+        LE={item.le ?? ''}
+        SNA={item.sna ?? ''}
+        betaG={item.beta_g ?? ''}
+        NAG={item.nag ?? ''}
         onPress={() => handleTestPress(item)}
+        index={index}
       />
     )
   }
@@ -116,7 +188,9 @@ export default function TestsScreen() {
         <View style={styles.divider} />
 
         <View style={styles.historySection}>
-          <Text style={styles.historyTitle}>HISTORY</Text>
+          <BlurView intensity={20} style={styles.historyBubble}>
+            <Text style={styles.historyTitle}>HISTORY</Text>
+          </BlurView>
         </View>
 
         <FlatList
@@ -140,13 +214,23 @@ export default function TestsScreen() {
 }
 
 const styles = StyleSheet.create({
-  historySection: {},
+  historySection: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  historyBubble: {
+    borderRadius: 25,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    overflow: 'hidden',
+  },
   historyTitle: {
-    fontSize: 25,
+    fontSize: 20,
     fontFamily: 'Poppins-SemiBold',
     color: Colors.light.rush,
     textAlign: 'center',
-    marginBottom: 10,
   },
   divider: {
     height: 2,

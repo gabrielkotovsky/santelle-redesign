@@ -113,7 +113,7 @@ Your task:
    - Use friendlier tone (emojis, bullet points, headings).
    - Shorten long sentences for readability.
    - Highlight reassuring language first (e.g., "YOU ARE GOOD!").
-3. After that, add exactly one summary sentence (≤15 words) starting with "Summary: Your …" with no formatting.`;
+3. After that, add exactly one summary sentence (≤15 words) starting with "Summary: Your …" with no formatting or markdown.`;
 }
 
 Deno.serve(async (req) => {

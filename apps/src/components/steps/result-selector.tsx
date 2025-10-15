@@ -47,7 +47,7 @@ export default function ResultSelector({ title = "Select your results" }: Result
       'LE':   { '+++': '#a275a0', '++': '#d18eaf', '+': '#cfaebf', '±': '#d8c9ce', '-': '#f7ecea' },
       'SNA':  { '+': '#fbd4e7', '±': '#fcedf2', '-': '#ffffff' },
       'β-G':  { '+': '#bde4f3', '±': '#d8f1ed', '-': '#fcfef3' },
-      'NAG':  { '+': '#ffcbb7', '±': '#fee8da', '-': '#f2e8cd' },
+      'NAG':  { '+': '#ffcbb7', '±': '#fee8da', '-': '#fefff8' },
     };
     return colors[testType]?.[intensity] ?? '#FFFFFF';
   };
@@ -171,7 +171,7 @@ export default function ResultSelector({ title = "Select your results" }: Result
       <View style={[styles.resultCard, dynamicStyles.resultCard]}>
         <Text style={[styles.resultCardTitle, dynamicStyles.resultCardTitle]}>{title}</Text>
         <Text style={[styles.instructionText, dynamicStyles.instructionText]}>
-          Refer to the color guide in the kit, and select your final test results:
+        Refer to the color guide in the kit, and select the color that best matches each result:
         </Text>
 
         <View style={styles.testResultsGrid}>
@@ -248,6 +248,6 @@ const styles = StyleSheet.create({
   testResultLabel: { fontSize: 16, fontFamily: 'Poppins-SemiBold', color: '#721422', width: 60, textAlign: 'left', alignSelf: 'flex-start', marginTop: 15 },
   testResultOptions: { flexDirection: 'row', flex: 1, justifyContent: 'flex-end', marginRight: 15 },
   testResultOption: { alignItems: 'center', padding: 8, borderRadius: 12, borderWidth: 2, borderColor: 'transparent', marginLeft: 8 },
-  testResultColor: { width: 30, height: 30, borderRadius: 6, marginBottom: 6, borderWidth: 0, borderColor: 'rgba(0, 0, 0, 0.1)' },
+  testResultColor: { width: 30, height: 30, borderRadius: 6, marginBottom: 6, borderWidth: 0.3, borderColor: 'rgba(0, 0, 0, 1)' },
   testResultValue: { fontSize: 12, fontFamily: 'Poppins-SemiBold', color: '#721422', textAlign: 'center' },
 });

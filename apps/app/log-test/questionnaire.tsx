@@ -1,12 +1,13 @@
 // 242 lines
 
 import { ScreenBackground } from "@/src/components/layout/ScreenBackground";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { ShrinkableTouchable } from "@/src/components/animations/ShrinkableTouchable";
 import { useState } from "react";
 import { router } from "expo-router";
 import WarningModal from "@/src/components/modals/test-warning";
 import { useTestSession } from "@/src/features/test-session/testSession.store";
+import { XIcon } from "@/src/components/icons/svg/XIcon";
 
 export default function Questionnaire() {
   const [onPeriod, setOnPeriod] = useState<boolean | null>(null);
@@ -33,6 +34,10 @@ export default function Questionnaire() {
     router.replace('/log-test/test');
   };
 
+  const handleClose = () => {
+    router.push('/(tabs)/home');
+  };
+
   const dynamicStyles = StyleSheet.create({
     questionnaireTitle: {
         color: '#721422',
@@ -54,6 +59,13 @@ export default function Questionnaire() {
 
   return (
     <ScreenBackground>
+      {/* Floating Close Button */}
+      <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+        <View style={styles.closeButtonCircle}>
+          <XIcon size={30} color="#721422" />
+        </View>
+      </TouchableOpacity>
+
       <View style={styles.questionnaireScreen}>
         <View style={styles.questionnaireContent}>
           <Text style={[styles.questionnaireTitle, dynamicStyles.questionnaireTitle]}>Before You Begin</Text>
@@ -152,6 +164,22 @@ export default function Questionnaire() {
 }
 
 const styles = StyleSheet.create({
+  closeButton: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    zIndex: 1000,
+  },
+  closeButtonCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 99,
+    backgroundColor: 'rgba(255, 255, 255, 0.34)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
   questionnaireScreen: {
     flex: 1,
     justifyContent: 'center',

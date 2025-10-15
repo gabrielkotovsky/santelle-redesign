@@ -170,11 +170,13 @@ export default function CurrentTest({
           </View>
         </View>
 
-        <View style={styles.timerContainer}>
-          <Text style={dynamicStyles.timerText}>
-            {formatTime(displayTime)}
-          </Text>
-        </View>
+        {timeRemaining > 0 && (
+          <View style={styles.timerContainer}>
+            <Text style={dynamicStyles.timerText}>
+              {formatTime(displayTime)}
+            </Text>
+          </View>
+        )}
 
         <ShrinkableTouchable style={dynamicStyles.resumeButton} onPress={handleResumeTest}>
             <SLogoIcon 

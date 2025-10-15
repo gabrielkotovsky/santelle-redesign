@@ -1,7 +1,12 @@
 // 246 lines
 
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { useSharedValue } from 'react-native-reanimated';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  withDelay
+} from 'react-native-reanimated';
 import { ScreenBackground } from '../../src/components/layout/ScreenBackground';
 import { LottieRefreshIcon } from '../../src/components/animations/LottieRefreshIcon';
 import WelcomeCard from '../../src/components/home/welcome-card';
@@ -46,6 +51,50 @@ function extractSummary(text?: string | null) {
 
   return last || null;
 }
+
+interface AnimatedArticleCardProps {
+  title: string;
+  description: string;
+  image?: any;
+  onPress: () => void;
+  index: number;
+}
+
+const AnimatedArticleCard = ({ title, description, image, onPress, index }: AnimatedArticleCardProps) => {
+  const translateY = useSharedValue(-100);
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0.8);
+
+  useEffect(() => {
+    // Staggered animation - each card appears with a delay
+    const delay = index * 100; // 100ms delay between each card
+    
+    translateY.value = withDelay(delay, withTiming(0, { duration: 600 }));
+    opacity.value = withDelay(delay, withTiming(1, { duration: 600 }));
+    scale.value = withDelay(delay, withTiming(1, { duration: 600 }));
+  }, [index]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateY: translateY.value },
+        { scale: scale.value }
+      ],
+      opacity: opacity.value,
+    };
+  });
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <ArticleCard
+        title={title}
+        description={description}
+        image={image}
+        onPress={onPress}
+      />
+    </Animated.View>
+  );
+};
 
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
@@ -155,11 +204,11 @@ export default function HomeScreen() {
           <View style={[styles.divider]} />
 
           <View style={styles.articlesContainer}>
-            <ArticleCard
+            <AnimatedArticleCard
               title="Learn about your biomarkers"
               description="Understand how to interpret each of your biomarkers."
               image={require('@/assets/images/fig.png')}
-              delay={800}
+              index={0}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setArticleModalVisible(true);

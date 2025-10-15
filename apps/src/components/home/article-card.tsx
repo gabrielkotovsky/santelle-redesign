@@ -1,12 +1,13 @@
 import { Image } from 'expo-image';
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { 
   useAnimatedStyle, 
   useSharedValue, 
   withTiming, 
   withDelay 
 } from 'react-native-reanimated';
+import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 
 interface ArticleCardProps {
   title: string;
@@ -45,10 +46,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   }, [delay]);
   return (
     <Animated.View style={animatedStyle}>
-      <TouchableOpacity 
+      <ShrinkableTouchable 
         style={styles.card} 
         onPress={onPress}
-        activeOpacity={0.8}
       >
       {/* Image Section */}
       <View style={styles.imageSection}>
@@ -71,7 +71,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.description}>{description}</Text>
       </View>
-      </TouchableOpacity>
+      </ShrinkableTouchable>
     </Animated.View>
   );
 };

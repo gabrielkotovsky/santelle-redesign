@@ -90,7 +90,7 @@ export default function PHResultSelector({ title = "Log pH Results" }: PHResultS
       </Text>
       
       <Text style={[styles.instructionText, dynamicStyles.instructionText]}>
-        Refer to the color guide in the kit, and select your pH result:
+        Refer to the color guide in the kit, and select the color that best matches your pH result:
       </Text>
       
       <View style={styles.phOptionsContainer}>

@@ -17,7 +17,7 @@ export type User = {
   email?: string;
   phone?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   app_metadata: Record<string, any>;
   user_metadata: Record<string, any>;
   aud: string;

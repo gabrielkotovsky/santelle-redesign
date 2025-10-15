@@ -3,6 +3,7 @@ import { Redirect } from "expo-router";
 import { useSession } from "@/src/features/auth/useSession";
 import { getUserNavigationRoute } from "@/src/features/auth/auth.api";
 import { useEffect, useState } from "react";
+import { SplashScreen } from "@/src/components/SplashScreen";
 
 export default function Index() {
   const { session, loading } = useSession();
@@ -29,8 +30,8 @@ export default function Index() {
     determineRoute();
   }, [session, loading]);
 
-  // Show nothing while loading or determining route
-  if (loading || !navigationRoute) return null;
+  // Show splash screen while loading or determining route
+  if (loading || !navigationRoute) return <SplashScreen />;
 
   return <Redirect href={navigationRoute as any} />;
 }

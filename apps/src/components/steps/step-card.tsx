@@ -1,5 +1,5 @@
-import React from 'react';
-import { Image, ImageSourcePropType, ScrollView, StyleSheet, Text, View, TouchableOpacity, ReactNode } from 'react-native';
+import React, { ReactNode } from 'react';
+import { Image, ImageSourcePropType, ScrollView, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 
 interface StepCardProps {
   title: string;

@@ -26,7 +26,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
 
   const dynamicStyles = StyleSheet.create({
     modalBackground: {
-      backgroundColor: "#FFEBCE",
+      backgroundColor: "rgba(255,235,206,0.3)",
     },
     headerText: {
       color: '#000000',
@@ -54,7 +54,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           <ScrollView
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, dynamicStyles.modalBackground]}
           >
             {/* Article Image */}
             {image && (
@@ -198,7 +198,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 120,
-    backgroundColor: 'rgb(255, 255, 255)',
   },
   imageContainer: {
     marginBottom: 20,

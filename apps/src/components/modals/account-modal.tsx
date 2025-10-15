@@ -225,11 +225,11 @@ export default function AccountModal({ visible, onClose }: AccountModalProps) {
               {/* Sign Out Button */}
               <View style={styles.signOutSection}>
                 <ShrinkableTouchable
-                  style={[styles.signOutButton, loading && styles.signOutButtonDisabled]}
+                  style={StyleSheet.flatten([styles.signOutButton, loading && styles.signOutButtonDisabled])}
                   onPress={handleSignOut}
                   disabled={loading}
                 >
-                  <Text style={[styles.signOutButtonText, loading && styles.signOutButtonTextDisabled]}>
+                  <Text style={[styles.signOutButtonText, loading && styles.signOutButtonTextDisabled].filter(Boolean)}>
                     {loading ? 'Signing Out...' : 'Sign Out'}
                   </Text>
                 </ShrinkableTouchable>
@@ -243,7 +243,7 @@ export default function AccountModal({ visible, onClose }: AccountModalProps) {
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: '#FFEBCE',
+    backgroundColor: 'rgba(255, 235, 206, 0.3)',
   },
   header: {
     flexDirection: 'row',
