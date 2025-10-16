@@ -11,6 +11,7 @@ import { ArticleModal } from './article-modal';
 import Markdown from 'react-native-markdown-display';
 import { XIcon } from '../icons/svg/XIcon';
 import { getArticleBySlug } from '@/src/features/articles/articles.api';
+import { BlurView } from 'expo-blur';
 
 type Props = {
   visible: boolean;
@@ -164,8 +165,8 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <ScreenBackground>
         <View style={styles.container}>
-         {/* Header */}
-         <View style={styles.header}>
+         {/* Header - Fixed Bubble */}
+         <BlurView intensity={20} tint="light" style={styles.headerBubble}>
            <View style={styles.headerLeft}>
              <Text style={styles.dateText} numberOfLines={1}>{date}</Text>
            </View>
@@ -177,7 +178,7 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
            <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
              <XIcon size={30} color={Colors.light.rush} />
            </TouchableOpacity>
-         </View>
+         </BlurView>
 
         <ScrollView contentContainerStyle={styles.scroll}>
           {/* Biomarker Grid */}
@@ -374,7 +375,7 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 20 },
+  scroll: { padding: 20, paddingTop: 95 },
   biomarkerBlock: { marginBottom: 5 },
   biomarkerRow: {
     flexDirection: 'row',
@@ -454,6 +455,22 @@ const styles = StyleSheet.create({
   analysisTitle: { fontSize: 18, fontFamily: 'Poppins-SemiBold', color: Colors.light.rush, marginBottom: 8 },
   analysisText: { fontSize: 14, fontFamily: 'Poppins-Regular', color: Colors.light.rush },
 
+  headerBubble: {
+    position: 'absolute',
+    top: 15,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    overflow: 'hidden',
+    zIndex: 1000,
+  },
    header: {
      flexDirection: 'row',
      alignItems: 'center',

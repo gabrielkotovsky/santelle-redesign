@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   socialButton: {
     height: 50,
     paddingHorizontal: 20,
-    borderRadius: 15,
+    borderRadius: 99,
     alignItems: 'center',
     marginBottom: 12,
     marginHorizontal: 20,

@@ -188,7 +188,7 @@ export default function TestsScreen() {
         <View style={styles.divider} />
 
         <View style={styles.historySection}>
-          <BlurView intensity={20} style={styles.historyBubble}>
+          <BlurView intensity={20} tint="light" style={styles.historyBubble}>
             <Text style={styles.historyTitle}>HISTORY</Text>
           </BlurView>
         </View>

@@ -102,18 +102,31 @@ export default function HomeScreen() {
   const [articleModalVisible, setArticleModalVisible] = useState(false);
   const [testModalVisible, setTestModalVisible] = useState(false);
   const [latestTestLog, setLatestTestLog] = useState<TestLog | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const session = useTestSession(s => s.session);
   const hydrateFromServer = useTestSession(s => s.hydrateFromServer);
 
   useEffect(() => {
-    hydrateFromServer();
-    loadLatestTest();
+    const initData = async () => {
+      setIsLoading(true);
+      await Promise.all([
+        hydrateFromServer(),
+        loadLatestTest()
+      ]);
+      setIsLoading(false);
+    };
+    initData();
   }, [hydrateFromServer]);
   
   useFocusEffect(useCallback(() => {
-    hydrateFromServer();
-    loadLatestTest();
+    const refreshData = async () => {
+      await Promise.all([
+        hydrateFromServer(),
+        loadLatestTest()
+      ]);
+    };
+    refreshData();
   }, [hydrateFromServer]));
 
   const loadLatestTest = async () => {
@@ -187,34 +200,38 @@ export default function HomeScreen() {
             />
           }
         >
-          <WelcomeCard 
-            displayName={"Gabriel"}
-            daysMessage={daysMessage}
-            healthSummary={healthSummary}
-            hasTests={!!latestTestLog}
-            selectedTestResult={latestTestLog ? { id: latestTestLog.id, result: 'positive' } : undefined}
-            hasActiveSession={hasActive}
-            onResumeTestPress={handleResumeTestPress}
-            onViewRecentTestPress={handleViewRecentTestPress}
-            onActivateKitPress={handleActivateKitPress}
-            onAccountPress={handleAccountPress}
-            dataReady={true}
-          />
-          
-          <View style={[styles.divider]} />
+          {!isLoading && (
+            <>
+              <WelcomeCard 
+                displayName={"Gabriel"}
+                daysMessage={daysMessage}
+                healthSummary={healthSummary}
+                hasTests={!!latestTestLog}
+                selectedTestResult={latestTestLog ? { id: latestTestLog.id, result: 'positive' } : undefined}
+                hasActiveSession={hasActive}
+                onResumeTestPress={handleResumeTestPress}
+                onViewRecentTestPress={handleViewRecentTestPress}
+                onActivateKitPress={handleActivateKitPress}
+                onAccountPress={handleAccountPress}
+                dataReady={true}
+              />
+              
+              <View style={[styles.divider]} />
 
-          <View style={styles.articlesContainer}>
-            <AnimatedArticleCard
-              title="Learn about your biomarkers"
-              description="Understand how to interpret each of your biomarkers."
-              image={require('@/assets/images/fig.png')}
-              index={0}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setArticleModalVisible(true);
-              }}
-            />
-          </View>
+              <View style={styles.articlesContainer}>
+                <AnimatedArticleCard
+                  title="Learn about your biomarkers"
+                  description="Understand how to interpret each of your biomarkers."
+                  image={require('@/assets/images/fig.png')}
+                  index={0}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setArticleModalVisible(true);
+                  }}
+                />
+              </View>
+            </>
+          )}
 
 
           <ArticleModal

@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, FlatList, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, useColorScheme } from 'react-native';
 import { ScreenBackground } from '../../src/components/layout/ScreenBackground';
 import { ArticleModal } from '../../src/components/modals/article-modal';
 import { useState, useEffect, useCallback } from 'react';
@@ -100,7 +100,7 @@ export default function EducationScreen() {
   return (
     <ScreenBackground>
       {/* Fixed LEARN bubble */}
-      <BlurView intensity={20} style={styles.learnBubble}>
+      <BlurView intensity={20} tint="light" style={styles.learnBubble}>
         <Text style={styles.learnTitle}>LEARN</Text>
       </BlurView>
       
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     top: 70,
     left: 20,
     right: 20,
-    borderRadius: 25,
+    borderRadius: 99,
     paddingHorizontal: 20,
     paddingVertical: 12,
     alignSelf: 'center',

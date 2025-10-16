@@ -9,29 +9,40 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "developmentClient": false,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     },
     "testflight": {
-      "distribution": "internal",
+      "extends": "production",
+      "distribution": "store",
       "ios": {
         "simulator": false,
         "buildConfiguration": "Release"
-      },
-      "autoIncrement": true,
-      "channel": "testflight"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "ios": {
+        "simulator": false
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
     }
   },
   "submit": {
-    "production": {},
-    "testflight": {
+    "production": {
       "ios": {
         "appleId": "gabrielkotovsky@hotmail.com",
         "ascAppId": "6751502854",
         "appleTeamId": "FRUTCZH76F"
       }
+    },
+    "testflight": {
+      "extends": "production"
     }
   }
 }
