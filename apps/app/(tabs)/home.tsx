@@ -19,6 +19,8 @@ import { useTestSession } from '../../src/features/test-session/testSession.stor
 import { fetchLatestTestLog, type TestLog } from '../../src/features/test-logs/testLogs.api';
 import TestLogModal from '../../src/components/modals/test-result';
 import { buildWelcomeCopy } from '../../src/features/test-logs/welcomeCopy';
+import { useAuth } from '../../src/features/auth/auth.store';
+import { getUserDisplayName } from '../../src/features/auth/auth.api';
 
 // utils local to this screen
 function daysSince(dateStr?: string | null) {
@@ -103,16 +105,19 @@ export default function HomeScreen() {
   const [testModalVisible, setTestModalVisible] = useState(false);
   const [latestTestLog, setLatestTestLog] = useState<TestLog | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const router = useRouter();
   const session = useTestSession(s => s.session);
   const hydrateFromServer = useTestSession(s => s.hydrateFromServer);
+  const { user } = useAuth();
 
   useEffect(() => {
     const initData = async () => {
       setIsLoading(true);
       await Promise.all([
         hydrateFromServer(),
-        loadLatestTest()
+        loadLatestTest(),
+        loadDisplayName()
       ]);
       setIsLoading(false);
     };
@@ -123,7 +128,8 @@ export default function HomeScreen() {
     const refreshData = async () => {
       await Promise.all([
         hydrateFromServer(),
-        loadLatestTest()
+        loadLatestTest(),
+        loadDisplayName()
       ]);
     };
     refreshData();
@@ -133,6 +139,17 @@ export default function HomeScreen() {
     try {
       const latestTest = await fetchLatestTestLog();
       setLatestTestLog(latestTest);
+    } catch (error) {
+      // Handle error silently
+    }
+  };
+
+  const loadDisplayName = async () => {
+    try {
+      if (user?.id) {
+        const name = await getUserDisplayName(user.id);
+        setDisplayName(name);
+      }
     } catch (error) {
       // Handle error silently
     }
@@ -203,7 +220,7 @@ export default function HomeScreen() {
           {!isLoading && (
             <>
               <WelcomeCard 
-                displayName={"Gabriel"}
+                displayName={displayName || undefined}
                 daysMessage={daysMessage}
                 healthSummary={healthSummary}
                 hasTests={!!latestTestLog}
