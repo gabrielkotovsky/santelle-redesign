@@ -38,7 +38,7 @@ const TEST_STEPS: Step[] = [
     title: "1. Collect your sample",
     image: require("@/assets/images/step1.png"),
     description: [
-      "**Insert** the swab gently about 5 cm into your vagina",
+      "**Insert** the swab gently about half an index into your vagina",
       "**Rotate** the swab slowly and evenly against the vaginal wall for 10–15 seconds",
       "**Make sure** vaginal secretions are visible on the swab",
       "**Remove** the swab and do not touch it to any surface"
