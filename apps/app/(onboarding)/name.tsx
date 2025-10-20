@@ -79,7 +79,7 @@ export default function Name() {
           
           <Text style={styles.title}>What should we call you?</Text>
           <Text style={styles.subtitle}>
-            This is how you'll appear in the app
+            This is how you&apos;ll appear in the app
           </Text>
 
           <View style={styles.inputContainer}>

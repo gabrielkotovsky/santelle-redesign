@@ -166,7 +166,7 @@ export default function ConfidenceLevel() {
         >
           <View style={styles.headerSection}>
             <LogoCrossIcon size={60} color="#721422" />
-            <Text style={styles.title}>Do you feel confident knowing what "normal" discharge is for you?</Text>
+            <Text style={styles.title}>Do you feel confident knowing what &quot;normal&quot; discharge is for you?</Text>
             <Text style={styles.subtitle}>Select one</Text>
           </View>
 

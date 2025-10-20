@@ -198,7 +198,7 @@ export default function EmotionalReaction() {
         >
           <View style={styles.headerSection}>
             <LogoCrossIcon size={60} color="#721422" />
-            <Text style={styles.title}>When something feels "off" down there, how do you usually feel?</Text>
+            <Text style={styles.title}>When something feels &quot;off&quot; down there, how do you usually feel?</Text>
             <Text style={styles.subtitle}>Question 7 of 7 • Select one</Text>
           </View>
 

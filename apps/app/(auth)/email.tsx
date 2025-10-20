@@ -83,7 +83,7 @@ export default function Email() {
           
           <Text style={styles.title}>Enter your email</Text>
           <Text style={styles.subtitle}>
-            We'll send you a verification code
+            We&apos;ll send you a verification code
           </Text>
 
           <View style={styles.inputContainer}>

@@ -95,7 +95,7 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
   if (!log) return null;
 
   // Handle medical term clicks
-  const handleMedicalTermPress = async (url: string) => {
+  const handleMedicalTermPress = (url: string) => {
     // Extract the term from the URL (medical://term)
     const term = decodeURIComponent(url.replace('medical://', ''));
     
@@ -103,26 +103,28 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
     const infectionTerms = ['bv', 'trich', 'trichomonas', 'bacterial vaginosis', 'trichomoniasis', 'yeast'];
     
     if (infectionTerms.includes(term.toLowerCase())) {
-      try {
-        const article = await getArticleBySlug('what_is_bv_yeast_infections_and_trichomoniasis');
-        if (article) {
-          setSelectedArticle(article);
-          setArticleModalVisible(true);
-        } else {
+      // Handle async operation without blocking
+      getArticleBySlug('what_is_bv_yeast_infections_and_trichomoniasis')
+        .then((article) => {
+          if (article) {
+            setSelectedArticle(article);
+            setArticleModalVisible(true);
+          } else {
+            Alert.alert(
+              'Article Not Found',
+              'The article about infections is not available at the moment.',
+              [{ text: 'OK' }]
+            );
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching article:', error);
           Alert.alert(
-            'Article Not Found',
-            'The article about infections is not available at the moment.',
+            'Error',
+            'Unable to load the article. Please try again later.',
             [{ text: 'OK' }]
           );
-        }
-      } catch (error) {
-        console.error('Error fetching article:', error);
-        Alert.alert(
-          'Error',
-          'Unable to load the article. Please try again later.',
-          [{ text: 'OK' }]
-        );
-      }
+        });
     } else {
       // For other medical terms, show the existing alert
       Alert.alert(
@@ -144,7 +146,11 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
 
   const toggle = (key: string) => {
     const copy = new Set(expanded);
-    copy.has(key) ? copy.delete(key) : copy.add(key);
+    if (copy.has(key)) {
+      copy.delete(key);
+    } else {
+      copy.add(key);
+    }
     setExpanded(copy);
   };
 

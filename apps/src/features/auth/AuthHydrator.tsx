@@ -19,7 +19,7 @@ export function AuthHydrator() {
           // Check current session first
           const { data: currentSession } = await supabase.auth.getSession();
           
-          if (currentSession.session) {
+          if (currentSession.session && currentSession.session.expires_at) {
             const expiresAt = currentSession.session.expires_at * 1000;
             const now = Date.now();
             const timeUntilExpiry = expiresAt - now;

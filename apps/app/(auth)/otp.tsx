@@ -173,7 +173,7 @@ export default function OTP() {
             onPress={handleResendCode}
           >
             <Text style={styles.resendButtonText}>
-              Didn't receive the code? Resend
+              Didn&apos;t receive the code? Resend
             </Text>
           </Pressable>
         </View>
