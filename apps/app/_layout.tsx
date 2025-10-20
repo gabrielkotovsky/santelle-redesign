@@ -9,10 +9,30 @@ import { SplashScreen as ExpoSplashScreen, Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://1592ae82ed7d327545c16cfbd8e6d30a@o4510220344885248.ingest.de.sentry.io/4510220353142864',
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Enable Logs
+  enableLogs: true,
+
+  // Configure Session Replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
 
 ExpoSplashScreen.preventAutoHideAsync().catch(() => {});
 
-export default function RootLayout() {
+export default Sentry.wrap(function RootLayout() {
   
   const [loaded] = useFonts({
     "Chunko-Bold": require("../assets/fonts/Chunko-Bold.otf"),
@@ -76,4 +96,4 @@ export default function RootLayout() {
     </Stack>
     </>
   );
-}
+});

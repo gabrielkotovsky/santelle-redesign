@@ -1,18 +1,18 @@
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, useColorScheme } from 'react-native';
-import { ScreenBackground } from '../../src/components/layout/ScreenBackground';
-import { ArticleModal } from '../../src/components/modals/article-modal';
-import { useState, useEffect, useCallback } from 'react';
 import { ArticleCard } from '@/src/components/home/article-card';
-import * as Haptics from 'expo-haptics';
-import { Colors } from '../../src/theme/colors';
 import { listArticles, type Article } from '@/src/features/articles/articles.api';
 import { BlurView } from 'expo-blur';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
-  withDelay
+import * as Haptics from 'expo-haptics';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, Text } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming
 } from 'react-native-reanimated';
+import { ScreenBackground } from '../../src/components/layout/ScreenBackground';
+import { ArticleModal } from '../../src/components/modals/article-modal';
+import { Colors } from '../../src/theme/colors';
 
 interface AnimatedArticleCardProps {
   title: string;
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     right: 20,
     borderRadius: 99,
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 5,
     alignSelf: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   },
   articlesContainer: {
     paddingHorizontal: 20,
-    paddingTop: 135, // Add top padding to account for fixed bubble
+    paddingTop: 125, // Add top padding to account for fixed bubble
     paddingBottom: 90,
   },
 });

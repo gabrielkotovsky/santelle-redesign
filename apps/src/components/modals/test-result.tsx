@@ -1,17 +1,17 @@
 // src/components/modals/test-result.tsx
-import React, { useState } from 'react';
-import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { Colors } from '@/src/theme/colors';
-import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
-import { getBiomarkerDescription, getBiomarkerStatus, getPHStatus } from './biomarker-utils';
-import { ScreenBackground } from '../layout/ScreenBackground';
-import Animated, { FadeInDown, FadeInUp, FadeOutUp, LinearTransition } from 'react-native-reanimated';
-import LottieView from 'lottie-react-native';
-import { ArticleModal } from './article-modal';
-import Markdown from 'react-native-markdown-display';
-import { XIcon } from '../icons/svg/XIcon';
 import { getArticleBySlug } from '@/src/features/articles/articles.api';
+import { Colors } from '@/src/theme/colors';
 import { BlurView } from 'expo-blur';
+import LottieView from 'lottie-react-native';
+import React, { useState } from 'react';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Markdown from 'react-native-markdown-display';
+import Animated, { FadeInUp, FadeOutUp, LinearTransition } from 'react-native-reanimated';
+import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
+import { XIcon } from '../icons/svg/XIcon';
+import { ScreenBackground } from '../layout/ScreenBackground';
+import { ArticleModal } from './article-modal';
+import { getBiomarkerDescription, getBiomarkerStatus, getPHStatus } from './biomarker-utils';
 
 type Props = {
   visible: boolean;
@@ -175,9 +175,11 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
              <Text style={styles.timeText}>{time}</Text>
            </View>
 
-           <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
-             <XIcon size={30} color={Colors.light.rush} />
-           </TouchableOpacity>
+           <View style={styles.headerRight}>
+             <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
+               <XIcon size={30} color={Colors.light.rush} />
+             </TouchableOpacity>
+           </View>
          </BlurView>
 
         <ScrollView contentContainerStyle={styles.scroll}>
@@ -458,13 +460,13 @@ const styles = StyleSheet.create({
   headerBubble: {
     position: 'absolute',
     top: 15,
-    left: 20,
-    right: 20,
+    left: 15,
+    right: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 5,
     borderRadius: 99,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -488,7 +490,7 @@ const styles = StyleSheet.create({
      color: Colors.light.rush,
      fontSize: 14,
    },
-  // center absolute overlay so it’s perfectly centered regardless of left/right widths
+  // center absolute overlay so it's perfectly centered regardless of left/right widths
   timeWrapper: {
     position: 'absolute',
     left: 0,
@@ -501,6 +503,11 @@ const styles = StyleSheet.create({
     color: Colors.light.rush,
     fontSize: 14,
   },
+  headerRight: {
+    flex: 1,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
   cancelButton: {
     width: 40,
     height: 40,
@@ -510,7 +517,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    marginLeft: 0,
+    marginRight: -15,
   },
   cancelButtonText: {
     color: '#721422',

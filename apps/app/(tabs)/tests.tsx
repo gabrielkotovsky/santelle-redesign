@@ -1,24 +1,24 @@
 // 164 lines
 
-import { ScrollView, StyleSheet, Text, View, FlatList, Dimensions } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Dimensions, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming
+} from 'react-native-reanimated';
 import { ScreenBackground } from '../../src/components/layout/ScreenBackground';
-import CurrentTest from '../../src/components/tests/current-test';
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Colors } from '../../src/theme/colors';
-import StartTest from '../../src/components/tests/start-test';
+import TestLogModal from '../../src/components/modals/test-result';
 import CompactTest from '../../src/components/tests/compact-test';
-import { useRouter, useFocusEffect } from 'expo-router';
+import CurrentTest from '../../src/components/tests/current-test';
+import StartTest from '../../src/components/tests/start-test';
+import type { TestLog } from '../../src/features/test-logs/testLogs.api';
 import { useTestSession } from '../../src/features/test-session/testSession.store';
 import { supabase } from '../../src/services/supabase';
-import type { TestLog } from '../../src/features/test-logs/testLogs.api';
-import TestLogModal from '../../src/components/modals/test-result';
-import { BlurView } from 'expo-blur';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
-  withDelay
-} from 'react-native-reanimated';
+import { Colors } from '../../src/theme/colors';
 
 interface AnimatedCompactTestProps {
   date: string;
@@ -219,9 +219,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   historyBubble: {
-    borderRadius: 25,
+    borderRadius: 99,
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 5,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
     overflow: 'hidden',
