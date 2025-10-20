@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { ScreenBackground } from '../../src/components/layout/ScreenBackground';
 
 export default function InsightsScreen() {

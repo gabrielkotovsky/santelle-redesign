@@ -1,15 +1,18 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/src/services/supabase';
-import { 
-  requestEmailOtp, 
-  verifyEmailOtp, 
-  signInWithApple, 
-  signOut as apiSignOut,
-  getSession as apiGetSession,
-  getUser as apiGetUser
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import {
+    getSession as apiGetSession,
+    getUser as apiGetUser,
+    signOut as apiSignOut,
+    requestEmailOtp,
+    signInWithApple,
+    verifyEmailOtp
 } from './auth.api';
+
+// Store auth subscription at module level so we can clean it up and recreate it
+let authSubscription: { unsubscribe: () => void } | null = null;
 
 // Types
 export type User = {
@@ -75,6 +78,7 @@ export type AuthState = {
   clearError: () => void;
   clearEmailOtpState: () => void;
   refreshSession: () => Promise<void>;
+  reinitializeListener: () => Promise<void>;
   
   // Internal actions
   setUser: (user: User | null) => void;
@@ -133,6 +137,12 @@ export const useAuthStore = create<AuthState>()(
             loading: false,
           });
 
+          // Clean up old subscription if it exists
+          if (authSubscription) {
+            authSubscription.unsubscribe();
+            authSubscription = null;
+          }
+
           // Set up auth state change listener
           const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, newSession) => {
@@ -170,8 +180,8 @@ export const useAuthStore = create<AuthState>()(
             }
           );
 
-          // Store subscription for cleanup (if needed)
-          // Note: Supabase handles cleanup automatically
+          // Store subscription so we can clean it up later
+          authSubscription = subscription;
           
         } catch (error: any) {
           // If it's a user doesn't exist error, clear everything
@@ -322,6 +332,57 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error: any) {
           set({ error: error.message || 'Failed to refresh session' });
+        }
+      },
+
+      // Reinitialize auth state listener (useful when app comes back from background)
+      reinitializeListener: async () => {
+        try {
+          // Clean up old listener
+          if (authSubscription) {
+            authSubscription.unsubscribe();
+            authSubscription = null;
+          }
+
+          // Create a fresh listener
+          const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            async (event, newSession) => {
+              let newUser = null;
+              
+              if (newSession?.user) {
+                try {
+                  newUser = await apiGetUser();
+                } catch (userError: any) {
+                  if (userError.message?.includes('User from sub claim in JWT does not exist')) {
+                    await apiSignOut();
+                    set({
+                      session: null,
+                      user: null,
+                      isAuthenticated: false,
+                      loading: false,
+                    });
+                    return;
+                  }
+                }
+              }
+              
+              set({
+                session: newSession,
+                user: newUser,
+                isAuthenticated: !!newSession && !!newUser,
+                loading: false,
+              });
+
+              if (event === 'SIGNED_IN') {
+                set({ emailOtpSent: false, emailOtpError: null });
+              }
+            }
+          );
+
+          authSubscription = subscription;
+        } catch (error: any) {
+          // Silently handle listener errors - don't disrupt the app
+          console.warn('Failed to reinitialize auth listener:', error);
         }
       },
 
