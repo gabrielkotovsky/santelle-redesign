@@ -1,14 +1,14 @@
 // app/_layout.tsx
-import 'react-native-url-polyfill/auto';
-import 'react-native-get-random-values';
-import { devSignIn } from "@/src/services/devAuth";
-import { supabase } from "@/src/services/supabase";
-import { Stack, SplashScreen as ExpoSplashScreen } from "expo-router";
-import { useFonts } from "expo-font";
-import { useEffect, useState } from "react";
-import SessionHydrator from "@/src/features/test-session/sessionHydrator";
-import { initializeAuth } from "@/src/features/auth/auth.store";
 import { SplashScreen } from "@/src/components/SplashScreen";
+import { AuthHydrator } from "@/src/features/auth/AuthHydrator";
+import { initializeAuth } from "@/src/features/auth/auth.store";
+import SessionHydrator from "@/src/features/test-session/sessionHydrator";
+import { supabase } from "@/src/services/supabase";
+import { useFonts } from "expo-font";
+import { SplashScreen as ExpoSplashScreen, Stack } from "expo-router";
+import { useEffect, useState } from "react";
+import 'react-native-get-random-values';
+import 'react-native-url-polyfill/auto';
 
 ExpoSplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -64,6 +64,7 @@ export default function RootLayout() {
 
   return (
     <>
+    <AuthHydrator />
     <SessionHydrator />
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
