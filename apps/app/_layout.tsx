@@ -4,6 +4,7 @@ import { AuthHydrator } from "@/src/features/auth/AuthHydrator";
 import { initializeAuth } from "@/src/features/auth/auth.store";
 import SessionHydrator from "@/src/features/test-session/sessionHydrator";
 import { supabase } from "@/src/services/supabase";
+import { safeHideSplashScreen } from "@/src/utils/splashScreen";
 import * as Sentry from '@sentry/react-native';
 import { useFonts } from "expo-font";
 import { SplashScreen as ExpoSplashScreen, Stack } from "expo-router";
@@ -64,7 +65,8 @@ export default Sentry.wrap(function RootLayout() {
         if (mounted) {
           setAppReady(true);
           // Hide the system splash screen immediately when app is ready
-          await ExpoSplashScreen.hideAsync();
+          // Use safe utility to handle pageSheet modal view controller issues
+          await safeHideSplashScreen();
         }
       }
     })();
