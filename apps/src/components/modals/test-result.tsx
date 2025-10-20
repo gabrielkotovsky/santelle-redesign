@@ -377,7 +377,7 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 20, paddingTop: 95 },
+  scroll: { padding: 20, paddingTop: 95, paddingBottom: 50 },
   biomarkerBlock: { marginBottom: 5 },
   biomarkerRow: {
     flexDirection: 'row',

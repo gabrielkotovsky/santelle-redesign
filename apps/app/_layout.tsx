@@ -4,12 +4,12 @@ import { AuthHydrator } from "@/src/features/auth/AuthHydrator";
 import { initializeAuth } from "@/src/features/auth/auth.store";
 import SessionHydrator from "@/src/features/test-session/sessionHydrator";
 import { supabase } from "@/src/services/supabase";
+import * as Sentry from '@sentry/react-native';
 import { useFonts } from "expo-font";
 import { SplashScreen as ExpoSplashScreen, Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
-import * as Sentry from '@sentry/react-native';
 
 Sentry.init({
   dsn: 'https://1592ae82ed7d327545c16cfbd8e6d30a@o4510220344885248.ingest.de.sentry.io/4510220353142864',
@@ -63,7 +63,8 @@ export default Sentry.wrap(function RootLayout() {
       } finally {
         if (mounted) {
           setAppReady(true);
-          ExpoSplashScreen.hideAsync().catch(() => {});
+          // Hide the system splash screen immediately when app is ready
+          await ExpoSplashScreen.hideAsync();
         }
       }
     })();
