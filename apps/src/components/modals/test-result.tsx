@@ -62,6 +62,7 @@ function highlightMedicalTerms(text: string): string {
   const medicalTerms = [
     'bacterial vaginosis',
     'aerobic vaginosis',
+    'aerobic vaginitis',
     'trichomonas',
     'trichomoniasis',
     'trich',
