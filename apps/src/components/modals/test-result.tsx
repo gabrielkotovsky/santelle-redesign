@@ -2,6 +2,7 @@
 import { getArticleBySlug } from '@/src/features/articles/articles.api';
 import { Colors } from '@/src/theme/colors';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import React, { useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -11,6 +12,7 @@ import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 import { XIcon } from '../icons/svg/XIcon';
 import { ScreenBackground } from '../layout/ScreenBackground';
 import { ArticleModal } from './article-modal';
+import AskSantelleModal from './ask-santelle-modal';
 import { getBiomarkerDescription, getBiomarkerStatus, getPHStatus } from './biomarker-utils';
 
 type Props = {
@@ -27,8 +29,6 @@ type Props = {
     created_at?: string;
     analysis?: string | null;
   } | null;
-  analyzing?: boolean;
-  analysisError?: string | null;
 };
 
 // Function to remove summary sentence with support for different markdown formats
@@ -89,10 +89,12 @@ function highlightMedicalTerms(text: string): string {
   return result;
 }
 
-export default function TestLogModal({ visible, onClose, log, analyzing = false, analysisError }: Props) {
+export default function TestLogModal({ visible, onClose, log }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [articleModalVisible, setArticleModalVisible] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<any>(null);
+  const [askSantelleModalVisible, setAskSantelleModalVisible] = useState(false);
+  
   if (!log) return null;
 
   // Handle medical term clicks
@@ -155,6 +157,7 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
     setExpanded(copy);
   };
 
+
   const created = log.created_at ? new Date(log.created_at) : null;
   const date = created?.toLocaleDateString();
   const time = created?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -167,6 +170,7 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
     ['β-G', log.beta_g],
     ['NAG', log.nag],
   ] as const;
+
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -312,38 +316,20 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
 
           <View style={styles.divider} />
 
-          {/* Analysis */}
-          <View style={styles.analysisBox}>
-            <Text style={styles.analysisTitle}>Santelle Analysis</Text>
-            {analyzing ? (
-              <View style={styles.loadingContainer}>
-               <LottieView
-                 source={require('@/assets/animations/Loading.json')}
-                 autoPlay
-                 loop
-                 style={styles.loadingAnimation}
-              />
-               <Text style={styles.loadingText}>Analyzing your results…</Text>
-              </View>
-              ) : analysisError ? (
-              <Text style={styles.errorText}>{analysisError}</Text>
-            ) : log.analysis ? (
-              <>
-                <Markdown 
-                  style={md}
-                  onLinkPress={handleMedicalTermPress}
-                >
-                  {highlightMedicalTerms(removeSummary(log.analysis))}
-                </Markdown>
-                <View style={styles.divider} />
-                <Text style={styles.disclaimerText}>
-                  ⚠️ This info is a general interpretation from the kit instructions and is not medical advice. For medical guidance, consult a clinician.
-                </Text>
-              </>
-              ) : (
-              <Text style={styles.analysisText}>No analysis is available yet.</Text>
-              )}
-          </View>
+          {/* Ask Santelle Button */}
+          <ShrinkableTouchable 
+            style={styles.askSantelleButton}
+            onPress={() => setAskSantelleModalVisible(true)}
+          >
+            <LinearGradient
+              colors={['#EF7D88','#FFEBCE','#FABDD7','#FD9EAA']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.askSantelleGradient}
+            >
+              <Text style={styles.askSantelleButtonText}>Ask Santelle</Text>
+            </LinearGradient>
+          </ShrinkableTouchable>
 
         </ScrollView>
         </View>
@@ -377,6 +363,13 @@ export default function TestLogModal({ visible, onClose, log, analyzing = false,
         author={selectedArticle?.author}
         publishDate={selectedArticle?.published_at}
         category={selectedArticle?.category}
+      />
+
+      <AskSantelleModal
+        visible={askSantelleModalVisible}
+        onClose={() => setAskSantelleModalVisible(false)}
+        log={log}
+        onMedicalTermPress={handleMedicalTermPress}
       />
     </Modal>
   )
@@ -550,6 +543,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Poppins-SemiBold',
     color: Colors.light.rush,
+  },
+
+  // Ask Santelle Button styles
+  askSantelleButton: {
+    borderRadius: 30,
+    marginTop: 10,
+    overflow: 'hidden',
+  },
+  askSantelleGradient: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    borderWidth: .5,
+    borderColor: '#000000',
+    borderRadius: 30,
+  },
+  askSantelleButtonText: {
+    fontSize: 18,
+    fontFamily: 'Poppins-SemiBold',
+    color: "#721422",
   },
 });
 
