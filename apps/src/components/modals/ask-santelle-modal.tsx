@@ -1,6 +1,7 @@
 // src/components/modals/ask-santelle-modal.tsx
 import { Colors } from '@/src/theme/colors';
 import { analyzeTestLog } from '@/src/services/analyze-results';
+import { getHealthyEnvironmentAnalysis } from '@/src/services/healthy-environment';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -26,6 +27,7 @@ type Props = {
     nag: string | null;
     created_at?: string;
     analysis?: string | null;
+    analysis_healthy?: string | null;
   } | null;
   onMedicalTermPress?: (url: string) => boolean;
 };
@@ -79,7 +81,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
       [promptType]: { loading: true, expanded: false }
     });
     
-    // Handle the first button with analyze-results function
+    // Handle specific prompts with their respective functions
     if (promptType === 'what-results-mean') {
       const startTime = Date.now();
       
@@ -130,12 +132,61 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
           }, remainingTime);
         }
       }
+    } else if (promptType === 'healthy-environment') {
+      const startTime = Date.now();
+      
+      // Check if healthy environment analysis already exists in the database
+      if (log.analysis_healthy) {
+        // Show loading for minimum 3 seconds, then display existing analysis
+        setTimeout(() => {
+          setPromptStates(prev => ({
+            ...prev,
+            [promptType]: { 
+              loading: false, 
+              response: log.analysis_healthy, 
+              expanded: true 
+            }
+          }));
+        }, 3000);
+      } else {
+        // No existing analysis, call the function to generate one
+        try {
+          const result = await getHealthyEnvironmentAnalysis(log.id);
+          const elapsedTime = Date.now() - startTime;
+          const remainingTime = Math.max(0, 3000 - elapsedTime);
+          
+          setTimeout(() => {
+            setPromptStates(prev => ({
+              ...prev,
+              [promptType]: { 
+                loading: false, 
+                response: result.log?.analysis_healthy || 'No healthy environment analysis available.', 
+                expanded: true 
+              }
+            }));
+          }, remainingTime);
+        } catch (error) {
+          console.error('Error getting healthy environment analysis:', error);
+          const elapsedTime = Date.now() - startTime;
+          const remainingTime = Math.max(0, 3000 - elapsedTime);
+          
+          setTimeout(() => {
+            setPromptStates(prev => ({
+              ...prev,
+              [promptType]: { 
+                loading: false, 
+                response: 'Sorry, there was an error getting your healthy environment analysis. Please try again later.', 
+                expanded: true 
+              }
+            }));
+          }, remainingTime);
+        }
+      }
     } else {
       // Simulate API call for other buttons - replace with actual Supabase edge function calls
       setTimeout(() => {
         const mockResponses = {
           'contextual-factors': 'Several factors can influence your test results, including recent antibiotic use, hormonal changes, sexual activity, and menstrual cycle timing. These contextual elements can temporarily affect your vaginal microbiome balance.',
-          'healthy-environment': 'A healthy vaginal environment typically shows a pH between 3.8-4.5, with abundant lactobacilli producing hydrogen peroxide. This creates a protective barrier against harmful bacteria and maintains optimal vaginal health.',
           'holistic-tips': 'To support your vaginal health, consider probiotics, avoiding douching, wearing breathable cotton underwear, staying hydrated, and managing stress. These holistic approaches can help maintain your natural balance.',
           'cycle-effects': 'Your menstrual cycle can significantly impact test results. Hormonal fluctuations during ovulation, menstruation, and different cycle phases can affect pH levels and bacterial composition, leading to variations in your test outcomes.',
           'compare-last-test': 'Comparing with your previous test results would show trends in your vaginal health over time, helping identify patterns and track improvements or changes in your microbiome balance.',
@@ -215,12 +266,14 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
           // Show actual response
           conversation.push(
             <View key={`assistant-${promptType}`} style={styles.assistantMessage}>
-              <Markdown 
-                style={md}
-                onLinkPress={onMedicalTermPress}
-              >
-                {state.response}
-              </Markdown>
+              <View style={styles.assistantContent}>
+                <Markdown 
+                  style={md}
+                  onLinkPress={onMedicalTermPress}
+                >
+                  {state.response}
+                </Markdown>
+              </View>
             </View>
           );
         }
@@ -267,7 +320,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
             style={styles.bottomBlurBackground}
             maskElement={
               <LinearGradient
-                colors={['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.8)','rgba(0, 0, 0, 1)','rgba(0, 0, 0,1)']}
+                colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.8)', 'rgba(255,255,255,1)', 'rgba(255,255,255,1)', 'rgba(255,255,255,1)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
                 style={styles.featherMask}
@@ -278,7 +331,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
               tint="light"
               intensity={50}
               style={[styles.bottomBlurBackground, {
-                backgroundColor: 'rgba(0, 0, 0, 0)',
+                backgroundColor: 'rgba(255, 255, 255, 0)',
               }]}
             />
           </MaskedView>
@@ -338,7 +391,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 50,
+    height: 40,
     zIndex: 1000,
   },
   featherMask: {
@@ -443,7 +496,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginVertical: 4,
+    marginVertical: 0,
     marginHorizontal: 20,
     maxWidth: '80%',
   },
@@ -455,9 +508,18 @@ const styles = StyleSheet.create({
   },
   assistantMessage: {
     alignSelf: 'flex-start',
-    marginVertical: 20,
+    marginBottom: 20,
+    marginTop: 10,
     marginHorizontal: 20,
-    maxWidth: '100%',
+    maxWidth: '80%',
+  },
+  assistantContent: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
   },
   loadingMessage: {
     alignSelf: 'flex-start',
@@ -477,39 +539,48 @@ const md = {
     fontFamily: 'Poppins-Regular',
     flexWrap: 'wrap',
     marginTop: 0,
+    marginBottom: 0,
+    width: '100%',
   },
   paragraph: {
     fontSize: 15,
-    lineHeight: 26,
+    lineHeight: 22,
     fontFamily: 'Poppins-Regular',
     color: '#000000',
     flexWrap: 'wrap',
     marginTop: 0,
+    marginBottom: 8,
+    width: '100%',
   },
   heading1: {
-    fontSize: 24,
-    lineHeight: 32,
+    fontSize: 16,
+    lineHeight: 20,
     fontFamily: 'Poppins-SemiBold',
     color: '#000000',
     flexWrap: 'wrap',
+    marginTop: 8,
+    marginBottom: 4,
+    width: '100%',
   },
   heading2: {
-    fontSize: 20,
-    lineHeight: 28,
+    fontSize: 15,
+    lineHeight: 18,
     fontFamily: 'Poppins-SemiBold',
     color: '#000000',
     flexWrap: 'wrap',
-    marginTop: 20,
-    marginBottom: 10,
+    marginTop: 8,
+    marginBottom: 4,
+    width: '100%',
   },
   heading3: {
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 18,
     fontFamily: 'Poppins-SemiBold',
     color: '#000000',
     flexWrap: 'wrap',
-    marginTop: 20,
-    marginBottom: 10,
+    marginTop: 6,
+    marginBottom: 3,
+    width: '100%',
   },
   strong: {
     fontFamily: 'Poppins-SemiBold',
@@ -533,22 +604,25 @@ const md = {
   list_item: {
     color: '#000000',
     fontSize: 15,
-    lineHeight: 26,
+    lineHeight: 20,
     fontFamily: 'Poppins-Regular',
     flexWrap: 'wrap',
     flex: 1,
     marginLeft: 0,
+    marginBottom: 3,
+    width: '100%',
   },
   bullet_list: {
-    marginLeft: -5,
-    marginBottom: 10,
+    marginLeft: 0,
+    marginBottom: 6,
     marginTop: 0,
+    width: '100%',
   },
   bullet_list_icon: {
-    fontSize: 30,
+    fontSize: 16,
     color: '#000000',
-    marginTop: 7.5,
-    marginRight: 4,
+    marginTop: 1,
+    marginRight: 6,
   },
   ordered_list: {
   },
