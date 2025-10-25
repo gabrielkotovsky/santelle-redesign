@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
 import LottieView from 'lottie-react-native';
 import React, { useState } from 'react';
-import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import Animated, { FadeInUp, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
@@ -45,6 +45,14 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
   if (!log) return null;
 
   const handlePromptPress = async (promptType: string) => {
+    // Define which prompts are functional
+    const functionalPrompts = ['what-results-mean', 'healthy-environment'];
+    
+    // If this is a non-functional prompt, don't process it
+    if (!functionalPrompts.includes(promptType)) {
+      return;
+    }
+    
     const currentState = promptStates[promptType];
     
     // If this button is already expanded, collapse it
@@ -202,18 +210,38 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
     }
   };
 
-  const renderPromptButton = (promptType: string, emoji: string, text: string) => {
+  const renderPromptButton = (promptType: string, emoji: string, text: string, isFunctional: boolean = true) => {
     const state = promptStates[promptType];
     const isLoading = state?.loading || false;
     const response = state?.response;
 
+    const handlePress = () => {
+      if (isFunctional) {
+        handlePromptPress(promptType);
+      } else {
+        Alert.alert(
+          'Coming Soon',
+          'This feature is currently under development and will be available in a future update.',
+          [{ text: 'OK', style: 'default' }]
+        );
+      }
+    };
+
     return (
       <ShrinkableTouchable 
         key={promptType}
-        style={styles.promptButton}
-        onPress={() => handlePromptPress(promptType)}
+        style={[
+          styles.promptButton,
+          !isFunctional && styles.disabledPromptButton
+        ]}
+        onPress={handlePress}
       >
-        <Text style={styles.promptText}>{emoji} {text}</Text>
+        <Text style={[
+          styles.promptText,
+          !isFunctional && styles.disabledPromptText
+        ]}>
+          {emoji} {text}
+        </Text>
         {isLoading && (
           <LottieView
             source={require('@/assets/animations/Loading.json')}
@@ -357,13 +385,13 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
                   {/* Prompt Buttons - only show if no loading states and not already used */}
                   {!Object.values(promptStates).some(state => state.loading) && (
                     <View style={styles.promptGrid}>
-                      {!promptStates['what-results-mean']?.response && renderPromptButton('what-results-mean', '🔍', 'What do my results mean?')}
-                      {!promptStates['contextual-factors']?.response && renderPromptButton('contextual-factors', '🧩', 'What factors can affect these results?')}
-                      {!promptStates['healthy-environment']?.response && renderPromptButton('healthy-environment', '🌿', 'How does a healthy environment look like?')}
-                      {!promptStates['holistic-tips']?.response && renderPromptButton('holistic-tips', '☁️', 'Holistic tips for comfort.')}
-                      {!promptStates['cycle-effects']?.response && renderPromptButton('cycle-effects', '🌸', 'How can my cycle affect these results?')}
-                      {!promptStates['compare-last-test']?.response && renderPromptButton('compare-last-test', '📈', 'Compare with my last test.')}
-                      {!promptStates['reassurance']?.response && renderPromptButton('reassurance', '🤍', 'I need reassurance')}
+                      {!promptStates['what-results-mean']?.response && renderPromptButton('what-results-mean', '🔍', 'What do my results mean?', true)}
+                      {!promptStates['contextual-factors']?.response && renderPromptButton('contextual-factors', '🧩', 'What factors can affect these results?', false)}
+                      {!promptStates['healthy-environment']?.response && renderPromptButton('healthy-environment', '🌿', 'How does a healthy environment look like?', true)}
+                      {!promptStates['holistic-tips']?.response && renderPromptButton('holistic-tips', '☁️', 'Holistic tips for comfort.', false)}
+                      {!promptStates['cycle-effects']?.response && renderPromptButton('cycle-effects', '🌸', 'How can my cycle affect these results?', false)}
+                      {!promptStates['compare-last-test']?.response && renderPromptButton('compare-last-test', '📈', 'Compare with my last test.', false)}
+                      {!promptStates['reassurance']?.response && renderPromptButton('reassurance', '🤍', 'I need reassurance', false)}
                     </View>
                   )}
                 </ScrollView>
@@ -462,6 +490,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     color: 'rgb(118, 74, 80)',
     lineHeight: 20,
+  },
+  disabledPromptButton: {
+    backgroundColor: 'rgba(200, 200, 200, 0.3)',
+    opacity: 0.6,
+  },
+  disabledPromptText: {
+    color: 'rgb(150, 150, 150)',
+    opacity: 0.7,
   },
   promptLoadingAnimation: {
     width: 20,
