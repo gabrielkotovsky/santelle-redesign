@@ -37,3 +37,13 @@ export const supabase = createClient(
       },
     },
   });
+
+// Keep Realtime's auth token in sync with Auth state changes
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+    supabase.realtime.setAuth(session?.access_token ?? '');
+  }
+  if (event === 'SIGNED_OUT') {
+    supabase.realtime.disconnect();
+  }
+});

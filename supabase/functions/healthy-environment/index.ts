@@ -1,73 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import OpenAI from "openai";
 import { createClient } from "supabase";
-
-type TestLog = {
-  id: string;
-  ph: number | null;
-  h2o2: string | null;
-  le: string | null;
-  sna: string | null;
-  beta_g: string | null;
-  nag: string | null;
-  analysis: string | null;
-};
-
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
-const SUPABASE_URL = Deno.env.get("EXPO_PUBLIC_SUPABASE_URL")!;
-const SERVICE_ROLE = Deno.env.get("EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY")!;
-
-function buildPrompt(pH: number | null, t: TestLog, displayName?: string | null) {
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+const SUPABASE_URL = Deno.env.get("EXPO_PUBLIC_SUPABASE_URL");
+const SERVICE_ROLE = Deno.env.get("EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY");
+function buildPrompt(pH, t, displayName) {
   const greeting = displayName ? `Hello ${displayName}! ` : "";
-  return `${greeting}You are a women's health and wellness companion.
-
-<rules>
-1) Role & scope
-- You are an educational companion, not a medical device.
-- Help users understand their results and general vaginal wellness concepts in simple, reassuring language.
-- You may explain what each parameter (pH, H₂O₂, LE, SNA, β-G, NAG) generally represents in vaginal balance and mention common wellness context (e.g., breathable fabrics, hygiene, hydration) as general information only.
-- You may describe healthy habits or self-care routines in general terms (hydration, cotton underwear, avoiding douching, etc.), but never make personalized or prescriptive statements.
-
-2) Tone
-- Warm, friendly, non-alarming (you may use emojis).
-- Factual, supportive, neutral. Avoid speculation or assumptions.
-
-3) Boundaries (diagnostic language policy)
-- You may summarize what the manufacturer’s interpretation typically means, but use neutral, educational phrasing (patterns), not diagnostic conclusions.
-- Never say or imply the user *has/shows/suffers from* a condition.
-- Prefer patterns like:
-  • "Women who see similar results often notice …"
-  • "This pattern is sometimes linked to …"
-  • "In general, results like this can appear when …"
-- Focus on changes/imbalances, not diseases.
-- Do NOT predict, prescribe, or recommend treatment, meds, or timelines.
-- If asked for personal medical interpretation, reply exactly:
-  "This isn’t medical advice — please speak to a healthcare professional."
-
-4) Output format
-- For each available marker in Test Results, find the matching manufacturer section and re-present it faithfully in friendly formatting (headings, bullets, emojis OK), but rephrase any diagnostic claims into pattern-based, educational language per policy.
-</rules>
-
-<phrase_policy>
-Disallowed terms (any form): "you have", "you suffer from", "diagnosis", "infection present", "indicates X condition", "confirms", "requires treatment".
-Allowed framing: "your results resemble patterns sometimes linked to …", "may reflect a less acidic environment", "often seen when protective bacteria are lower".
-</phrase_policy>
-
-<few_shot>
-Bad: "You have BV."
-Good: "Your results resemble patterns sometimes linked to bacterial imbalance."
-Bad: "This indicates trichomoniasis."
-Good: "This pattern can sometimes appear in cases of Trich."
-</few_shot>
-
-<user_inputs>
-- pH: ${pH ?? "N/A"}
-- H₂O₂: ${t.h2o2 ?? "N/A"}
-- LE: ${t.le ?? "N/A"}
-- SNA: ${t.sna ?? "N/A"}
-- β-G: ${t.beta_g ?? "N/A"}
-- NAG: ${t.nag ?? "N/A"}
-</user_inputs>
+  return `Explain only what a healthy vaginal environment looks like based on the manufacturer's guidelines.
 
 <manufacturer_text>
 =============================
@@ -141,127 +80,105 @@ Vaginal Health-Test Kit
   Retest at least 3 days after your period
   Avoid sex and lubricants for 2 days before retesting
 =============================
-</manufacturer_text>
-
-<footer_rules>
-When writing, prioritize clarity and flow.
-Each sentence should be complete, easy to read, and under 20 words.
-Avoid repeating similar ideas or using awkward phrasing.
-Remember: paraphrase manufacturer claims into educational, pattern-based language. 
-Never say "you have" or imply a diagnosis. 
-If asked for medical advice: "This isn’t medical advice — please speak to a healthcare professional."
-</footer_rules>`;
+</manufacturer_text>`;
 }
-
-Deno.serve(async (req) => {
+Deno.serve(async (req)=>{
   try {
     if (req.method !== "POST") {
-      return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      return new Response(JSON.stringify({
+        error: "Method not allowed"
+      }), {
         status: 405,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        }
       });
     }
-
     const { test_log_id, model = "gpt-4o-mini" } = await req.json();
-
     if (!test_log_id) {
-      return new Response(JSON.stringify({ error: "test_log_id is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
+      return new Response(JSON.stringify({
+        error: "test_log_id is required"
+      }), {
+        status: 100,
+        headers: {
+          "Content-Type": "application/json"
+        }
       });
     }
-
     // server-side supabase (service role) to bypass RLS for this write
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
-      global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+      global: {
+        headers: {
+          Authorization: req.headers.get("Authorization") ?? ""
+        }
+      }
     });
-
     // 1) Load the test log
-    const { data: log, error: selErr } = await admin
-      .from("test_logs")
-      .select("id, ph, h2o2, le, sna, beta_g, nag, analysis, user_id")
-      .eq("id", test_log_id)
-      .maybeSingle();
-
+    const { data: log, error: selErr } = await admin.from("test_logs").select("id, ph, h2o2, le, sna, beta_g, nag, analysis, user_id").eq("id", test_log_id).maybeSingle();
     if (selErr) throw selErr;
     if (!log) {
-      return new Response(JSON.stringify({ error: "Test log not found" }), {
+      return new Response(JSON.stringify({
+        error: "Test log not found"
+      }), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        }
       });
     }
-
     // 2) Get user's display name
     let displayName = null;
     if (log.user_id) {
-      const { data: onboardingData, error: onboardingErr } = await admin
-        .from("onboarding_responses")
-        .select("display_name")
-        .eq("user_id", log.user_id)
-        .single();
-      
+      const { data: onboardingData, error: onboardingErr } = await admin.from("onboarding_responses").select("display_name").eq("user_id", log.user_id).single();
       if (!onboardingErr && onboardingData?.display_name) {
         displayName = onboardingData.display_name;
       }
     }
-
     // 3) Build prompt and call OpenAI
-    const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
-    const prompt = buildPrompt(log.ph, log as TestLog, displayName);
-
+    const openai = new OpenAI({
+      apiKey: OPENAI_API_KEY
+    });
+    const prompt = buildPrompt(log.ph, log, displayName);
     const completion = await openai.chat.completions.create({
       model,
       messages: [
         {
           role: "system",
-          content: displayName 
-            ? `You are a women's health and wellness companion addressing ${displayName}.
-Explain results in a friendly, educational way using pattern-based phrasing such as:
-  - "Women who see similar results often notice..."
-  - "This pattern can sometimes appear when..."
-  - "In general, results like this may reflect..."
-Never diagnose, predict, or recommend treatment or medication.
-Keep your tone warm, neutral, and reassuring. You may use emojis sparingly.
-Address the user by name when appropriate to make the response more personal.`
-            : `You are a women's health and wellness companion.
-Explain results in a friendly, educational way using pattern-based phrasing such as:
-  - "Women who see similar results often notice..."
-  - "This pattern can sometimes appear when..."
-  - "In general, results like this may reflect..."
-Never diagnose, predict, or recommend treatment or medication.
-Keep your tone warm, neutral, and reassuring. You may use emojis sparingly.`,
+          content: `You are a women's health and wellness companion addressing ${displayName}.`
         },
-        { role: "user", content: prompt },
+        {
+          role: "user",
+          content: prompt
+        }
       ],
-      max_tokens: 5000,
+      max_tokens: 400
     });
-
-    const analysis =
-      completion.choices?.[0]?.message?.content?.trim() || "No analysis produced.";
-
+    const healthyEnvironmentResponse = completion.choices?.[0]?.message?.content?.trim() || "No healthy environment explanation produced.";
     // 4) Save back to DB
-    const { data: updated, error: upErr } = await admin
-      .from("test_logs")
-      .update({ analysis })
-      .eq("id", test_log_id)
-      .select("id, ph, h2o2, le, sna, beta_g, nag, analysis")
-      .single();
-
+    const { data: updated, error: upErr } = await admin.from("test_logs").update({
+      analysis_healthy: healthyEnvironmentResponse
+    }).eq("id", test_log_id).select("id, ph, h2o2, le, sna, beta_g, nag, analysis_healthy").single();
     if (upErr) throw upErr;
-
-    return new Response(JSON.stringify({ ok: true, log: updated }), {
-      headers: { "Content-Type": "application/json" },
+    return new Response(JSON.stringify({
+      ok: true,
+      log: updated
+    }), {
+      headers: {
+        "Content-Type": "application/json"
+      }
     });
   } catch (e) {
-    console.error("analyze-results error:", e);
-    return new Response(JSON.stringify({ error: String(e?.message ?? e) }), {
+    console.error("healthy-environment error:", e);
+    return new Response(JSON.stringify({
+      error: String(e?.message ?? e)
+    }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      }
     });
   }
-});
-
-/* To invoke locally:
+}); /* To invoke locally:
 
   1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
   2. Make an HTTP request:
@@ -271,4 +188,4 @@ Keep your tone warm, neutral, and reassuring. You may use emojis sparingly.`,
     --header 'Content-Type: application/json' \
     --data '{"name":"Functions"}'
 
-*/
+*/ 
