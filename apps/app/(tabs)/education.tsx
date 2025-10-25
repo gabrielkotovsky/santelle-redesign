@@ -134,12 +134,12 @@ export default function EducationScreen() {
 const styles = StyleSheet.create({
   learnBubble: {
     position: 'absolute',
-    top: 70,
+    top: 65,
     left: 20,
     right: 20,
     borderRadius: 99,
     paddingHorizontal: 20,
-    paddingVertical: 5,
+    paddingVertical: 10,
     alignSelf: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
