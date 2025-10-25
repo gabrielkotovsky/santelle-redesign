@@ -16,6 +16,12 @@ export default function LogTestLayout() {
         }}
       />
       <Stack.Screen 
+        name="context" 
+        options={{
+          title: 'Context',
+        }}
+      />
+      <Stack.Screen 
         name="test" 
         options={{
           title: 'Test',

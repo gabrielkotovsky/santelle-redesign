@@ -17,7 +17,7 @@ export default function Questionnaire() {
   const handleQuestionnaireSubmit = async () => {
     if (onPeriod === false && hadIntercourse === false) {
       await startSession();
-      router.replace('/log-test/test');
+      router.replace('/log-test/context');
     } else {
       setShowWarningModal(true);
     }
@@ -31,7 +31,7 @@ export default function Questionnaire() {
   const handleContinueAnyway = async () => {
     setShowWarningModal(false);
     await startSession();
-    router.replace('/log-test/test');
+    router.replace('/log-test/context');
   };
 
   const handleClose = () => {
