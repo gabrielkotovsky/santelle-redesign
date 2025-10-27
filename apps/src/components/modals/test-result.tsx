@@ -219,7 +219,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                   <View style={styles.rightSection}>
                     <Text style={styles.biomarkerValue}>{value}</Text>
                     <View style={styles.questionMarkContainer}>
-                      <Text style={styles.questionMark}>?</Text>
+                      <Text style={styles.questionMark}>▼</Text>
                     </View>
                   </View>
                 </ShrinkableTouchable>
