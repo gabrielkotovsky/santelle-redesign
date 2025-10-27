@@ -19,10 +19,14 @@
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification",
-          "remote-notification"
+          "background-processing",
+          "background-fetch"
         ],
         "NSUserNotificationUsageDescription": "We use notifications to remind you when your test results are ready.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "BGTaskSchedulerPermittedIdentifiers": [
+          "com.gabrielkotovsky.SantelleApp.session-refresh"
+        ]
       },
       "bundleIdentifier": "com.gabrielkotovsky.SantelleApp"
     },
