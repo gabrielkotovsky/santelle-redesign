@@ -10,7 +10,7 @@ export async function fetchPretestAnswers(
     .select(`
       app_pretest_questions!inner ( slug, prompt, type ),
       app_pretest_response_choices (
-        app_pretest_choices!inner ( value )
+        app_pretest_choices!inner ( label )
       )
     `)
     .eq("test_session_id", test_session_id);
@@ -22,7 +22,7 @@ export async function fetchPretestAnswers(
     question_prompt: r.app_pretest_questions.prompt,
     question_type: r.app_pretest_questions.type,
     selected_values: (r.app_pretest_response_choices ?? []).map(
-      (c: any) => c.app_pretest_choices.value
+      (c: any) => c.app_pretest_choices.label
     ),
     free_value: null, // No text input option available
   }));
