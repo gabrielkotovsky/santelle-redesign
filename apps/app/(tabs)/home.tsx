@@ -21,6 +21,7 @@ import TestLogModal from '../../src/components/modals/test-result';
 import { buildWelcomeCopy } from '../../src/features/test-logs/welcomeCopy';
 import { useAuth } from '../../src/features/auth/auth.store';
 import { getUserDisplayName } from '../../src/features/auth/auth.api';
+import { useSupabaseRefresh } from '../../src/hooks/useSupabaseRefresh';
 
 // utils local to this screen
 function daysSince(dateStr?: string | null) {
@@ -99,7 +100,6 @@ const AnimatedArticleCard = ({ title, description, image, onPress, index }: Anim
 };
 
 export default function HomeScreen() {
-  const [refreshing, setRefreshing] = useState(false);
   const scrollY = useSharedValue(0);
   const [articleModalVisible, setArticleModalVisible] = useState(false);
   const [testModalVisible, setTestModalVisible] = useState(false);
@@ -110,6 +110,20 @@ export default function HomeScreen() {
   const session = useTestSession(s => s.session);
   const hydrateFromServer = useTestSession(s => s.hydrateFromServer);
   const { user } = useAuth();
+
+  // Custom refresh function for home screen data
+  const refreshHomeData = useCallback(async () => {
+    await Promise.all([
+      hydrateFromServer(),
+      loadLatestTest(),
+      loadDisplayName()
+    ]);
+  }, [hydrateFromServer]);
+
+  // Use the Supabase refresh hook
+  const { refreshing, onRefresh } = useSupabaseRefresh({
+    onRefresh: refreshHomeData,
+  });
 
   useEffect(() => {
     const initData = async () => {
@@ -209,6 +223,7 @@ export default function HomeScreen() {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
+              onRefresh={onRefresh}
               tintColor="transparent"
               colors={["transparent"]}
               progressViewOffset={0}

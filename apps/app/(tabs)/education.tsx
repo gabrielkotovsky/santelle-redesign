@@ -3,7 +3,7 @@ import { listArticles, type Article } from '@/src/features/articles/articles.api
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text } from 'react-native';
+import { FlatList, StyleSheet, Text, RefreshControl, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -11,8 +11,10 @@ import Animated, {
   withTiming
 } from 'react-native-reanimated';
 import { ScreenBackground } from '../../src/components/layout/ScreenBackground';
+import { LottieRefreshIcon } from '../../src/components/animations/LottieRefreshIcon';
 import { ArticleModal } from '../../src/components/modals/article-modal';
 import { Colors } from '../../src/theme/colors';
+import { useSupabaseRefresh } from '../../src/hooks/useSupabaseRefresh';
 
 interface AnimatedArticleCardProps {
   title: string;
@@ -74,6 +76,16 @@ export default function EducationScreen() {
     }
   }, []);
 
+  // Custom refresh function for education screen data
+  const refreshEducationData = useCallback(async () => {
+    await fetchArticles();
+  }, [fetchArticles]);
+
+  // Use the Supabase refresh hook
+  const { refreshing, onRefresh } = useSupabaseRefresh({
+    onRefresh: refreshEducationData,
+  });
+
   useEffect(() => {
     fetchArticles();
   }, [fetchArticles]);
@@ -104,16 +116,33 @@ export default function EducationScreen() {
         <Text style={styles.learnTitle}>LEARN</Text>
       </BlurView>
       
-      {loading ? (
-        <ActivityIndicator size="large" color={Colors.light.rush} style={{ marginTop: 20 }} />
-      ) : (
-        <FlatList
-          data={articles}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.articlesContainer}
-        />
+      {/* Loading spinner positioned between LEARN bubble and articles */}
+      {(loading || refreshing) && (
+        <View style={styles.loadingContainer}>
+          <LottieRefreshIcon 
+            size={40} 
+            isRefreshing={loading || refreshing} 
+          />
+        </View>
       )}
+      
+      <FlatList
+        data={articles}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.articlesContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="transparent"
+            colors={["transparent"]}
+            progressViewOffset={0}
+            progressBackgroundColor="transparent"
+            style={{ backgroundColor: 'transparent' }}
+          />
+        }
+      />
 
       {selected && (
         <ArticleModal
@@ -151,6 +180,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     color: Colors.light.rush,
     textAlign: 'center',
+  },
+  loadingContainer: {
+    position: 'absolute',
+    top: 125, // Position between LEARN bubble (top: 65 + height ~60) and articles (paddingTop: 125)
+    left: 0,
+    right: 0,
+    zIndex: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 40,
   },
   articlesContainer: {
     paddingHorizontal: 20,

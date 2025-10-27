@@ -3,7 +3,7 @@
 import { BlurView } from 'expo-blur';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, FlatList, ScrollView, StyleSheet, Text, View, RefreshControl } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -11,6 +11,7 @@ import Animated, {
   withTiming
 } from 'react-native-reanimated';
 import { ScreenBackground } from '../../src/components/layout/ScreenBackground';
+import { LottieRefreshIcon } from '../../src/components/animations/LottieRefreshIcon';
 import TestLogModal from '../../src/components/modals/test-result';
 import CompactTest from '../../src/components/tests/compact-test';
 import CurrentTest from '../../src/components/tests/current-test';
@@ -19,6 +20,7 @@ import type { TestLog } from '../../src/features/test-logs/testLogs.api';
 import { useTestSession } from '../../src/features/test-session/testSession.store';
 import { supabase } from '../../src/services/supabase';
 import { Colors } from '../../src/theme/colors';
+import { useSupabaseRefresh } from '../../src/hooks/useSupabaseRefresh';
 
 interface AnimatedCompactTestProps {
   date: string;
@@ -98,20 +100,33 @@ export default function TestsScreen() {
   const [analyzing, setAnalyzing] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
+  // Custom refresh function for tests screen data
+  const refreshTestsData = useCallback(async () => {
+    await hydrateFromServer();
+    await fetchTestHistory();
+  }, [hydrateFromServer]);
+
+  // Use the Supabase refresh hook
+  const { refreshing, onRefresh } = useSupabaseRefresh({
+    onRefresh: refreshTestsData,
+  });
+
+  const fetchTestHistory = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('test_logs')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Error fetching test history:', error);
+      return;
+    }
+    setTestHistory(data || []);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
-      const fetchTestHistory = async () => {
-        const { data, error } = await supabase
-          .from('test_logs')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (error) {
-          return;
-        }
-        setTestHistory((data ?? []) as TestLog[]);
-      };
       fetchTestHistory();
-    }, [])
+    }, [fetchTestHistory])
   );
 
   useFocusEffect(
@@ -172,7 +187,28 @@ export default function TestsScreen() {
 
   return (
     <ScreenBackground>
-      <ScrollView>
+      {refreshing && (
+        <View style={styles.loadingContainer}>
+          <LottieRefreshIcon 
+            size={40} 
+            isRefreshing={refreshing} 
+          />
+        </View>
+      )}
+      
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="transparent"
+            colors={["transparent"]}
+            progressViewOffset={0}
+            progressBackgroundColor="transparent"
+            style={{ backgroundColor: 'transparent' }}
+          />
+        }
+      >
         {isActive ? (
           <CurrentTest
             currentStep={currentStep}
@@ -237,6 +273,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#721422',
     marginHorizontal: 60,
     marginVertical: 20,
+  },
+  loadingContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   gridContainer: {
     marginBottom: 100,
