@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   },
   optionButton: { 
     backgroundColor: 'rgba(255, 255, 255, 0.3)', 
-    borderRadius: 12, 
+    borderRadius: 99, 
     borderWidth: 1, 
     borderColor: 'rgba(255, 255, 255, 0.4)', 
     padding: 16 
@@ -416,8 +416,8 @@ const styles = StyleSheet.create({
   },
   continueButton: { 
     backgroundColor: '#721422', 
-    borderRadius: 10, 
-    minHeight: 50, 
+    borderRadius: 99, 
+    minHeight: 56, 
     alignItems: 'center', 
     justifyContent: 'center' 
   },

@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   },
   signOutButton: {
     backgroundColor: Colors.light.rush,
-    borderRadius: 12,
+    borderRadius: 99,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
