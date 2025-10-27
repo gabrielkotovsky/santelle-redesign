@@ -30,9 +30,6 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
-      // Refresh token more aggressively
-      refreshTokenRetryAttempts: 3,
-      refreshTokenRetryInterval: 2000,
       storage: {
         getItem: (key) => AsyncStorage.getItem(key),
         setItem: (key, value) => AsyncStorage.setItem(key, value),

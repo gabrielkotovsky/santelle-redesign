@@ -12,7 +12,7 @@ import { useAuthStore } from "./auth.store";
 export function AuthHydrator() {
   const refreshSession = useAuthStore(s => s.refreshSession);
   const reinitializeListener = useAuthStore(s => s.reinitializeListener);
-  const sessionCheckInterval = useRef<NodeJS.Timeout | null>(null);
+  const sessionCheckInterval = useRef<number | null>(null);
 
   // Proactive session monitoring
   const startSessionMonitoring = () => {

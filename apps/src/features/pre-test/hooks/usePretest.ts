@@ -49,10 +49,13 @@ export function usePretest(version = 1) {
   const toggleMulti = (qId: UUID, choiceId: UUID) =>
     setAnswers(prev => {
       const existing = prev.find(a => a.question_id === qId && a.type === 'multi');
-      if (!existing) return [...prev, { question_id: qId, type: 'multi', choice_ids: [choiceId] }];
-      const set = new Set(existing.choice_ids);
-      set.has(choiceId) ? set.delete(choiceId) : set.add(choiceId);
-      return prev.map(a => (a === existing ? { ...existing, choice_ids: [...set] } : a));
+      if (!existing) return [...prev, { question_id: qId, type: 'multi' as const, choice_ids: [choiceId] }];
+      if (existing.type === 'multi') {
+        const set = new Set(existing.choice_ids);
+        set.has(choiceId) ? set.delete(choiceId) : set.add(choiceId);
+        return prev.map(a => (a === existing ? { ...existing, choice_ids: Array.from(set) } : a));
+      }
+      return prev;
     });
 
   const canSubmit = useMemo(() => {

@@ -199,8 +199,6 @@ export default function ResultSelector({ title = "Select your results" }: Result
       <TestLogModal
         visible={showResultModal}
         log={completedLog ?? undefined}
-        analyzing={analyzing}
-        analysisError={analysisError}
         onClose={() => {
           setShowResultModal(false);
           // after user closes the modal, go back to the Tests tab

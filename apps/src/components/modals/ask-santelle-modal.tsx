@@ -102,7 +102,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
             ...prev,
             [promptType]: { 
               loading: false, 
-              response: log.analysis, 
+              response: log.analysis || undefined, 
               expanded: true 
             }
           }));
@@ -152,7 +152,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
             ...prev,
             [promptType]: { 
               loading: false, 
-              response: log.analysis_healthy, 
+              response: log.analysis_healthy || undefined, 
               expanded: true 
             }
           }));
@@ -261,19 +261,21 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
       }
     };
 
+    const buttonStyle = !isFunctional 
+      ? { ...styles.promptButton, ...styles.disabledPromptButton }
+      : styles.promptButton;
+
+    const textStyle = !isFunctional 
+      ? { ...styles.promptText, ...styles.disabledPromptText }
+      : styles.promptText;
+
     return (
       <ShrinkableTouchable 
         key={promptType}
-        style={[
-          styles.promptButton,
-          !isFunctional && styles.disabledPromptButton
-        ]}
+        style={buttonStyle}
         onPress={handlePress}
       >
-        <Text style={[
-          styles.promptText,
-          !isFunctional && styles.disabledPromptText
-        ]}>
+        <Text style={textStyle}>
           {emoji} {text}
         </Text>
         {isLoading && (
@@ -289,7 +291,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
   };
 
   const renderConversation = () => {
-    const conversation = [];
+    const conversation: React.ReactNode[] = [];
     
     // Add user messages and responses
     Object.entries(promptStates).forEach(([promptType, state]) => {
