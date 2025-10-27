@@ -17,7 +17,6 @@ type HealthyAlt = {
 };
 
 type StructuredOut = {
-  summary?: string;
   healthy_alternatives?: HealthyAlt[];
   reassurance?: string;
   data_quality?: { issues?: string[]; missing_fields?: string[] };
@@ -31,15 +30,10 @@ function formatChatMessage(
   const maxItems = opts?.maxItems ?? 5;
 
   const parts: string[] = [];
-  parts.push(name ? `Hi ${name} 👋` : `Hi there 👋`);
-
-  if (parsed.summary) {
-    parts.push("", `**${parsed.summary.trim()}**`);
-  }
 
   const items = (parsed.healthy_alternatives ?? []).slice(0, maxItems);
   if (items.length) {
-    parts.push("", "Here's what could be nudging your results—and what **\"healthy\"** usually looks like:");
+    parts.push("", "Here's what **\"healthy\"** usually looks like:");
     items.forEach((it, i) => {
       const tag = it.source === "biomarker" ? "marker" : "pretest";
       parts.push(
@@ -85,7 +79,6 @@ If nothing is non-healthy, produce an empty list and a reassuring summary.
 
 Output STRICT JSON (no Markdown) with this schema:
 {
-  "summary": "string",
   "healthy_alternatives": [
     {
       "source": "biomarker" | "pretest",
