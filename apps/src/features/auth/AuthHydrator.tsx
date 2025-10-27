@@ -1,6 +1,7 @@
 // src/features/auth/AuthHydrator.tsx
 import { supabase } from "@/src/services/supabase";
-import { useEffect } from "react";
+import { sessionRecoveryService } from "@/src/services/sessionRecovery";
+import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { useAuthStore } from "./auth.store";
 
@@ -11,6 +12,44 @@ import { useAuthStore } from "./auth.store";
 export function AuthHydrator() {
   const refreshSession = useAuthStore(s => s.refreshSession);
   const reinitializeListener = useAuthStore(s => s.reinitializeListener);
+  const sessionCheckInterval = useRef<NodeJS.Timeout | null>(null);
+
+  // Proactive session monitoring
+  const startSessionMonitoring = () => {
+    // Clear any existing interval
+    if (sessionCheckInterval.current) {
+      clearInterval(sessionCheckInterval.current);
+    }
+    
+    // Check session every 10 minutes when app is active
+    sessionCheckInterval.current = setInterval(async () => {
+      try {
+        const { data: currentSession } = await supabase.auth.getSession();
+        
+        if (currentSession.session && currentSession.session.expires_at) {
+          const expiresAt = currentSession.session.expires_at * 1000;
+          const now = Date.now();
+          const timeUntilExpiry = expiresAt - now;
+          
+          // Refresh if session expires within 15 minutes (more proactive)
+          if (timeUntilExpiry <= 15 * 60 * 1000) {
+            console.log('Proactively refreshing session - expires in', Math.round(timeUntilExpiry / 60000), 'minutes');
+            await supabase.auth.refreshSession();
+            await refreshSession();
+          }
+        }
+      } catch (error) {
+        console.warn('Session monitoring error:', error);
+      }
+    }, 10 * 60 * 1000); // Check every 10 minutes
+  };
+
+  const stopSessionMonitoring = () => {
+    if (sessionCheckInterval.current) {
+      clearInterval(sessionCheckInterval.current);
+      sessionCheckInterval.current = null;
+    }
+  };
 
   // Reconnect Realtime and re-subscribe channels
   const reconnectRealtime = async () => {
@@ -52,6 +91,7 @@ export function AuthHydrator() {
             
             // Refresh if session is expired OR expires within 5 minutes
             if (timeUntilExpiry <= 5 * 60 * 1000) {
+              console.log('Session expires soon, refreshing immediately');
               // Add timeout to prevent hanging
               const refreshPromise = supabase.auth.refreshSession();
               const timeoutPromise = new Promise((_, reject) => 
@@ -70,19 +110,36 @@ export function AuthHydrator() {
           
           // Reconnect Realtime and re-subscribe channels
           await reconnectRealtime();
+          
+          // Start proactive session monitoring when app becomes active
+          startSessionMonitoring();
+          
+          // Start session recovery service
+          await sessionRecoveryService.startMonitoring();
         } catch (error) {
+          console.warn('App state change error:', error);
           // Even if session refresh failed, try to continue with other steps
           try {
             await refreshSession();
             await reconnectRealtime();
+            startSessionMonitoring();
+            await sessionRecoveryService.startMonitoring();
           } catch (fallbackError) {
             // Silently handle fallback errors
           }
         }
+      } else if (nextAppState === "background") {
+        // Stop session monitoring when app goes to background to save battery
+        stopSessionMonitoring();
+        sessionRecoveryService.stopMonitoring();
       }
     });
 
-    return () => subscription.remove();
+    return () => {
+      subscription.remove();
+      stopSessionMonitoring();
+      sessionRecoveryService.stopMonitoring();
+    };
   }, [refreshSession, reinitializeListener]);
 
   return null;

@@ -2,6 +2,7 @@
 import { Colors } from '@/src/theme/colors';
 import { analyzeTestLog } from '@/src/services/analyze-results';
 import { getHealthyEnvironmentAnalysis } from '@/src/services/healthy-environment';
+import { getContextualFactorsAnalysis } from '@/src/services/contextual-factors';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -46,7 +47,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
 
   const handlePromptPress = async (promptType: string) => {
     // Define which prompts are functional
-    const functionalPrompts = ['what-results-mean', 'healthy-environment'];
+    const functionalPrompts = ['what-results-mean', 'healthy-environment', 'contextual-factors'];
     
     // If this is a non-functional prompt, don't process it
     if (!functionalPrompts.includes(promptType)) {
@@ -190,11 +191,44 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
           }, remainingTime);
         }
       }
+    } else if (promptType === 'contextual-factors') {
+      const startTime = Date.now();
+      
+      try {
+        const result = await getContextualFactorsAnalysis(log.id);
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, 3000 - elapsedTime);
+        
+        setTimeout(() => {
+          setPromptStates(prev => ({
+            ...prev,
+            [promptType]: { 
+              loading: false, 
+              response: result.analysis || 'No contextual factors analysis available.', 
+              expanded: true 
+            }
+          }));
+        }, remainingTime);
+      } catch (error) {
+        console.error('Error getting contextual factors analysis:', error);
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, 3000 - elapsedTime);
+        
+        setTimeout(() => {
+          setPromptStates(prev => ({
+            ...prev,
+            [promptType]: { 
+              loading: false, 
+              response: 'Sorry, there was an error analyzing contextual factors. Please try again later.', 
+              expanded: true 
+            }
+          }));
+        }, remainingTime);
+      }
     } else {
       // Simulate API call for other buttons - replace with actual Supabase edge function calls
       setTimeout(() => {
         const mockResponses = {
-          'contextual-factors': 'Several factors can influence your test results, including recent antibiotic use, hormonal changes, sexual activity, and menstrual cycle timing. These contextual elements can temporarily affect your vaginal microbiome balance.',
           'holistic-tips': 'To support your vaginal health, consider probiotics, avoiding douching, wearing breathable cotton underwear, staying hydrated, and managing stress. These holistic approaches can help maintain your natural balance.',
           'cycle-effects': 'Your menstrual cycle can significantly impact test results. Hormonal fluctuations during ovulation, menstruation, and different cycle phases can affect pH levels and bacterial composition, leading to variations in your test outcomes.',
           'compare-last-test': 'Comparing with your previous test results would show trends in your vaginal health over time, helping identify patterns and track improvements or changes in your microbiome balance.',
@@ -386,7 +420,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
                   {!Object.values(promptStates).some(state => state.loading) && (
                     <View style={styles.promptGrid}>
                       {!promptStates['what-results-mean']?.response && renderPromptButton('what-results-mean', '🔍', 'What do my results mean?', true)}
-                      {!promptStates['contextual-factors']?.response && renderPromptButton('contextual-factors', '🧩', 'What factors can affect these results?', false)}
+                      {!promptStates['contextual-factors']?.response && renderPromptButton('contextual-factors', '🧩', 'What factors can affect these results?', true)}
                       {!promptStates['healthy-environment']?.response && renderPromptButton('healthy-environment', '🌿', 'How does a healthy environment look like?', true)}
                       {!promptStates['holistic-tips']?.response && renderPromptButton('holistic-tips', '☁️', 'Holistic tips for comfort.', false)}
                       {!promptStates['cycle-effects']?.response && renderPromptButton('cycle-effects', '🌸', 'How can my cycle affect these results?', false)}

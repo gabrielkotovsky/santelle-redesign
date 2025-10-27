@@ -12,70 +12,16 @@ import { router } from 'expo-router';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
+import { usePretest, type PretestQuestion, type PretestChoice, type UUID } from '@/src/features/pre-test';
+import { useTestSession } from '@/src/features/test-session/testSession.store';
 
-// Types for our questionnaire data
-interface PreTestAnswers {
-  symptoms: string[];
-  symptomOnset: string | null;
-  dischargeColor: string | null;
-  dischargeOdor: string | null;
-  recentFactors: string[];
-  cyclePosition: string | null;
-  isPregnant: string | null;
-  hasFeverOrPain: string | null;
-}
-
-const SYMPTOMS_OPTIONS = [
-  { id: 'itching', label: '✋ Itching or irritation' },
-  { id: 'burning', label: '🚽🔥 Burning when peeing' },
-  { id: 'discharge', label: '💧 Unusual discharge' },
-  { id: 'odor', label: '👃 Unusual odor' },
-  { id: 'pain-sex', label: '❤️‍🔥 Pain during sex' },
-  { id: 'pelvic-pain', label: '💢 Pelvic or lower belly pain' },
-];
-
-const SYMPTOM_ONSET_OPTIONS = [
-  { id: 'today', label: '🌞 Today' },
-  { id: '1-3-days', label: '⏳ 1–3 days ago' },
-  { id: '4-7-days', label: '📆 4–7 days ago' },
-  { id: 'more-week', label: '🕰️ More than 1 week ago' },
-];
-
-const DISCHARGE_COLOR_OPTIONS = [
-  { id: 'clear', label: '💎 Clear' },
-  { id: 'white-thick', label: '🥛 White and thick' },
-  { id: 'gray', label: '🌫️ Gray' },
-  { id: 'yellow-green', label: '🧃 Yellow-green' },
-  { id: 'bloody', label: '🩸 Bloody' },
-];
-
-const DISCHARGE_ODOR_OPTIONS = [
-  { id: 'no-smell', label: '🌸 No unusual smell' },
-  { id: 'fishy', label: '🐠 Fishy smell (sharp, unpleasant, stronger after sex or during period)' },
-  { id: 'yeasty', label: '🥐 Yeasty smell (like bread or beer)' },
-  { id: 'strong-unpleasant', label: '💨😖 Strong unpleasant smell (rotten, sour)' },
-  { id: 'other', label: '🤔 Other / not sure' },
-];
-
-const RECENT_FACTORS_OPTIONS = [
-  { id: 'antibiotics', label: '💊 I recently took antibiotics' },
-  { id: 'sick', label: '🤒 I\'ve been sick (cold, flu, or other illness)' },
-  { id: 'wet-clothing', label: '👙 I wore a wet swimsuit or tight sportswear for hours' },
-  { id: 'unprotected-sex', label: '💋 I had unprotected sex or a new partner' },
-  { id: 'stress', label: '🧠💭 I\'ve been under high stress or sleeping poorly' },
-  { id: 'vaginal-wash', label: '🫧 I used a vaginal wash, wipes, or scented soap' },
-  { id: 'routine-change', label: '🌍✈️ I recently traveled or my routine changed' },
-];
-
-const CYCLE_POSITION_OPTIONS = [
-  { id: 'after-period', label: '🌹 Just after period' },
-  { id: 'mid-cycle', label: '🌼 Mid-cycle' },
-  { id: 'before-period', label: '🌧️ Just before period' },
-  { id: 'not-sure', label: '🤷‍♀️ Not sure / irregular / not applicable' },
-];
+// Helper function to get question by slug
+const getQuestionBySlug = (questions: PretestQuestion[], slug: string): PretestQuestion | undefined => {
+  return questions.find(q => q.slug === slug);
+};
 
 interface AnimatedOptionProps {
-  option: { id: string; label: string };
+  option: PretestChoice;
   isSelected: boolean;
   onPress: () => void;
   multiline?: boolean;
@@ -121,62 +67,101 @@ function AnimatedOption({ option, isSelected, onPress, multiline = false }: Anim
 
 export default function PreTestQuestions() {
   const [currentPage, setCurrentPage] = useState(0);
-  const [answers, setAnswers] = useState<PreTestAnswers>({
-    symptoms: [],
-    symptomOnset: null,
-    dischargeColor: null,
-    dischargeOdor: null,
-    recentFactors: [],
-    cyclePosition: null,
-    isPregnant: null,
-    hasFeverOrPain: null,
-  });
+  const [isSaving, setIsSaving] = useState(false);
+  const { questions, answers, loading, canSubmit, setSingle, toggleMulti, submit, saveAnswer } = usePretest(1);
+  const { session: testSession, startSession } = useTestSession();
 
-  const toggleMultiSelect = (key: 'symptoms' | 'recentFactors', id: string) => {
-    setAnswers(prev => ({
-      ...prev,
-      [key]: prev[key].includes(id) 
-        ? prev[key].filter(item => item !== id)
-        : [...prev[key], id]
-    }));
+  // Ensure we have a test session when component loads
+  useEffect(() => {
+    if (!testSession?.id) {
+      console.log('No test session found, creating one...');
+      startSession();
+    }
+  }, [testSession?.id, startSession]);
+
+  // Simple answer handling (no auto-save)
+  const handleSetSingle = (questionId: UUID, choiceId: UUID) => {
+    setSingle(questionId, choiceId);
   };
 
-  const setSingleSelect = (key: keyof PreTestAnswers, value: string) => {
-    setAnswers(prev => ({ ...prev, [key]: value }));
+  const handleToggleMulti = (questionId: UUID, choiceId: UUID) => {
+    toggleMulti(questionId, choiceId);
   };
 
-  const handleContinue = () => {
-    // Check if current page has required answers
-    if (currentPage === 0) {
-      if (answers.symptoms.length === 0) {
-        Alert.alert('Required', 'Please select at least one symptom');
-        return;
-      }
-      if (!answers.symptomOnset) {
-        Alert.alert('Required', 'Please indicate when symptoms started');
-        return;
-      }
-    } else if (currentPage === 2) {
-      if (!answers.cyclePosition) {
-        Alert.alert('Required', 'Please indicate where you are in your cycle');
-        return;
-      }
-      if (!answers.isPregnant) {
-        Alert.alert('Required', 'Please answer the pregnancy question');
-        return;
-      }
-    } else if (currentPage === 3) {
-      if (!answers.hasFeverOrPain) {
-        Alert.alert('Required', 'Please answer the severity question');
-        return;
-      }
+  // Helper functions to check if answers exist for questions
+  const hasAnswerForQuestion = (questionId: UUID): boolean => {
+    return answers.some(a => a.question_id === questionId);
+  };
+
+  const isChoiceSelected = (questionId: UUID, choiceId: UUID): boolean => {
+    const answer = answers.find(a => a.question_id === questionId);
+    if (!answer) return false;
+    
+    if (answer.type === 'single') {
+      return answer.choice_id === choiceId;
+    } else if (answer.type === 'multi') {
+      return answer.choice_ids.includes(choiceId);
+    }
+    return false;
+  };
+
+  // Helper function to get questions for current page
+  const getPageQuestions = (): PretestQuestion[] => {
+    // For now, we'll show one question per page
+    // You can modify this logic to group questions by page
+    if (questions.length === 0) return [];
+    
+    const startIndex = currentPage;
+    const endIndex = Math.min(startIndex + 1, questions.length);
+    return questions.slice(startIndex, endIndex);
+  };
+
+  const handleContinue = async () => {
+    if (isSaving) return; // Prevent double submission
+    
+    // Get questions for current page
+    const pageQuestions = getPageQuestions();
+    const requiredQuestions = pageQuestions.filter(q => q.required);
+    
+    // Check if all required questions are answered
+    const unansweredRequired = requiredQuestions.filter(q => !hasAnswerForQuestion(q.id));
+    
+    if (unansweredRequired.length > 0) {
+      const questionTitles = unansweredRequired.map(q => q.prompt).join(', ');
+      Alert.alert('Required', `Please answer: ${questionTitles}`);
+      return;
     }
 
-    if (currentPage < 3) {
-      setCurrentPage(prev => prev + 1);
-    } else {
-      // All done - proceed to test
-      router.replace('/log-test/test');
+    setIsSaving(true);
+    
+    try {
+      // Save answers for current page before proceeding
+      if (testSession?.id) {
+        const pageAnswers = answers.filter(answer => 
+          pageQuestions.some(q => q.id === answer.question_id)
+        );
+        
+        for (const answer of pageAnswers) {
+          await saveAnswer(testSession.id, answer);
+        }
+        console.log('Saved answers for page:', currentPage + 1);
+      }
+
+      if (currentPage < questions.length - 1) {
+        setCurrentPage(prev => prev + 1);
+      } else {
+        // All done - proceed to test
+        router.replace('/log-test/test');
+      }
+    } catch (error) {
+      console.error('Failed to save page answers:', error);
+      Alert.alert(
+        'Save Failed', 
+        'Failed to save your answers. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -189,194 +174,90 @@ export default function PreTestQuestions() {
   };
 
   const canContinue = () => {
-    switch (currentPage) {
-      case 0: return answers.symptoms.length > 0 && answers.symptomOnset !== null;
-      case 1: return true; // Recent factors is optional
-      case 2: return answers.cyclePosition !== null && answers.isPregnant !== null;
-      case 3: return answers.hasFeverOrPain !== null;
-      default: return false;
-    }
+    const pageQuestions = getPageQuestions();
+    const requiredQuestions = pageQuestions.filter(q => q.required);
+    return requiredQuestions.every(q => hasAnswerForQuestion(q.id));
   };
 
   const renderPage = () => {
-    switch (currentPage) {
-      case 0:
-        return renderSymptomsPage();
-      case 1:
-        return renderRecentFactorsPage();
-      case 2:
-        return renderCycleHormonalPage();
-      case 3:
-        return renderSeverityPage();
-      default:
-        return null;
+    if (loading) {
+      return (
+        <View style={styles.headerSection}>
+          <LogoCrossIcon size={60} color="#721422" />
+          <Text style={styles.title}>Loading questions...</Text>
+        </View>
+      );
     }
-  };
 
-  const renderSymptomsPage = () => (
-    <>
-      <View style={styles.headerSection}>
-        <LogoCrossIcon size={60} color="#721422" />
-        <Text style={styles.title}>What are your main symptoms right now?</Text>
-        <Text style={styles.subtitle}>Page 1 of 4 • Select all that apply</Text>
-      </View>
-
-      <View style={styles.optionsContainer}>
-        {SYMPTOMS_OPTIONS.map((option) => (
-          <AnimatedOption
-            key={option.id}
-            option={option}
-            isSelected={answers.symptoms.includes(option.id)}
-            onPress={() => toggleMultiSelect('symptoms', option.id)}
-          />
-        ))}
-      </View>
-
-      <View style={styles.sectionDivider} />
-
-      <Text style={styles.sectionTitle}>When did these symptoms start?</Text>
-      <View style={styles.optionsContainer}>
-        {SYMPTOM_ONSET_OPTIONS.map((option) => (
-          <AnimatedOption
-            key={option.id}
-            option={option}
-            isSelected={answers.symptomOnset === option.id}
-            onPress={() => setSingleSelect('symptomOnset', option.id)}
-          />
-        ))}
-      </View>
-
-      <View style={styles.sectionDivider} />
-
-      <Text style={styles.sectionTitle}>Have you noticed changes in your discharge?</Text>
-      <Text style={styles.sectionSubtitle}>Color (select one):</Text>
-      <View style={styles.optionsContainer}>
-        {DISCHARGE_COLOR_OPTIONS.map((option) => (
-          <AnimatedOption
-            key={option.id}
-            option={option}
-            isSelected={answers.dischargeColor === option.id}
-            onPress={() => setSingleSelect('dischargeColor', option.id)}
-          />
-        ))}
-      </View>
-
-      <Text style={[styles.sectionSubtitle, { marginTop: 20 }]}>Odor (select one):</Text>
-      <View style={styles.optionsContainer}>
-        {DISCHARGE_ODOR_OPTIONS.map((option) => (
-          <AnimatedOption
-            key={option.id}
-            option={option}
-            isSelected={answers.dischargeOdor === option.id}
-            onPress={() => setSingleSelect('dischargeOdor', option.id)}
-            multiline={true}
-          />
-        ))}
-      </View>
-    </>
-  );
-
-  const renderRecentFactorsPage = () => (
-    <>
-      <View style={styles.headerSection}>
-        <LogoCrossIcon size={60} color="#721422" />
-        <Text style={styles.title}>Recent Factors</Text>
-        <Text style={styles.subtitle}>Page 2 of 4 • Select all that apply</Text>
-      </View>
-
-      <Text style={styles.introCopy}>
-        Some things can temporarily affect your vaginal balance or increase the chance of an infection.{'\n\n'}Have any of these applied to you recently?
-      </Text>
-
-      <View style={styles.optionsContainer}>
-        {RECENT_FACTORS_OPTIONS.map((option) => (
-          <AnimatedOption
-            key={option.id}
-            option={option}
-            isSelected={answers.recentFactors.includes(option.id)}
-            onPress={() => toggleMultiSelect('recentFactors', option.id)}
-            multiline={true}
-          />
-        ))}
-      </View>
-    </>
-  );
-
-  const renderCycleHormonalPage = () => (
-    <>
-      <View style={styles.headerSection}>
-        <LogoCrossIcon size={60} color="#721422" />
-        <Text style={styles.title}>Cycle & Hormonal Context</Text>
-        <Text style={styles.subtitle}>Page 3 of 4</Text>
-      </View>
-
-      <Text style={styles.sectionTitle}>Where are you in your menstrual cycle?</Text>
-      <View style={styles.optionsContainer}>
-        {CYCLE_POSITION_OPTIONS.map((option) => (
-          <AnimatedOption
-            key={option.id}
-            option={option}
-            isSelected={answers.cyclePosition === option.id}
-            onPress={() => setSingleSelect('cyclePosition', option.id)}
-            multiline={true}
-          />
-        ))}
-      </View>
-
-      <View style={styles.sectionDivider} />
-
-      <Text style={styles.sectionTitle}>Are you currently pregnant?</Text>
-      <View style={styles.yesNoContainer}>
-        <AnimatedOption
-          option={{ id: 'yes', label: '🤰 Yes' }}
-          isSelected={answers.isPregnant === 'yes'}
-          onPress={() => setSingleSelect('isPregnant', 'yes')}
-        />
-        <AnimatedOption
-          option={{ id: 'no', label: '❌ No' }}
-          isSelected={answers.isPregnant === 'no'}
-          onPress={() => setSingleSelect('isPregnant', 'no')}
-        />
-        <AnimatedOption
-          option={{ id: 'not-sure', label: '❓ Not sure' }}
-          isSelected={answers.isPregnant === 'not-sure'}
-          onPress={() => setSingleSelect('isPregnant', 'not-sure')}
-        />
-      </View>
-    </>
-  );
-
-  const renderSeverityPage = () => (
-    <>
-      <View style={styles.headerSection}>
-        <LogoCrossIcon size={60} color="#721422" />
-        <Text style={styles.title}>Severity & Red Flags</Text>
-        <Text style={styles.subtitle}>Page 4 of 4</Text>
-      </View>
-
-      <Text style={styles.sectionTitle}>Do you currently have fever or severe pelvic pain?</Text>
-      <View style={styles.yesNoContainer}>
-        <AnimatedOption
-          option={{ id: 'yes', label: '⚠️ Yes' }}
-          isSelected={answers.hasFeverOrPain === 'yes'}
-          onPress={() => setSingleSelect('hasFeverOrPain', 'yes')}
-        />
-        <AnimatedOption
-          option={{ id: 'no', label: '✅ No' }}
-          isSelected={answers.hasFeverOrPain === 'no'}
-          onPress={() => setSingleSelect('hasFeverOrPain', 'no')}
-        />
-      </View>
-
-      {answers.hasFeverOrPain === 'yes' && (
-        <View style={styles.warningBox}>
-          <Text style={styles.warningText}>
-            ⚠️ Please seek medical care promptly. These symptoms can indicate a more serious infection.
+    const pageQuestions = getPageQuestions();
+    if (pageQuestions.length === 0) {
+      return (
+        <View style={styles.headerSection}>
+          <LogoCrossIcon size={60} color="#721422" />
+          <Text style={styles.title}>No questions available</Text>
+          <Text style={styles.subtitle}>
+            Please check your database connection and ensure pretest questions are populated.
+          </Text>
+          <Text style={styles.subtitle}>
+            Check the console for debugging information.
           </Text>
         </View>
-      )}
-    </>
-  );
+      );
+    }
+
+    return pageQuestions.map((question, index) => (
+      <View key={question.id}>
+        <View style={styles.headerSection}>
+          <LogoCrossIcon size={60} color="#721422" />
+          <Text style={styles.title}>{question.prompt}</Text>
+          <Text style={styles.subtitle}>
+            Page {currentPage + 1} of {questions.length}
+            {question.type === 'multi' ? ' • Select all that apply' : ''}
+          </Text>
+        </View>
+
+        <View style={styles.optionsContainer}>
+          {question.choices.map((choice) => (
+            <AnimatedOption
+              key={choice.id}
+              option={choice}
+              isSelected={isChoiceSelected(question.id, choice.id)}
+              onPress={() => {
+                if (question.type === 'single') {
+                  handleSetSingle(question.id, choice.id);
+                } else if (question.type === 'multi') {
+                  handleToggleMulti(question.id, choice.id);
+                }
+              }}
+              multiline={choice.label.length > 50}
+            />
+          ))}
+        </View>
+      </View>
+    ));
+  };
+
+
+  if (loading) {
+    return (
+      <ScreenBackground>
+        <View style={styles.container}>
+          <View style={styles.backButton}>
+            <Pressable
+              style={({ pressed }) => [styles.backButtonPressable, pressed && { opacity: 0.7 }]}
+              onPress={handleBack}
+            >
+              <ArrowLeftIcon size={24} color="#721422" />
+            </Pressable>
+          </View>
+          <View style={styles.headerSection}>
+            <LogoCrossIcon size={60} color="#721422" />
+            <Text style={styles.title}>Loading questions...</Text>
+          </View>
+        </View>
+      </ScreenBackground>
+    );
+  }
 
   return (
     <ScreenBackground>
@@ -402,17 +283,17 @@ export default function PreTestQuestions() {
           <Pressable
             style={({ pressed }) => [
               styles.continueButton,
-              !canContinue() && styles.continueButtonDisabled,
+              (!canContinue() || isSaving) && styles.continueButtonDisabled,
               pressed && { opacity: 0.8 }
             ]}
             onPress={handleContinue}
-            disabled={!canContinue()}
+            disabled={!canContinue() || isSaving}
           >
             <Text style={[
               styles.continueButtonText,
-              !canContinue() && styles.continueButtonTextDisabled
+              (!canContinue() || isSaving) && styles.continueButtonTextDisabled
             ]}>
-              {currentPage === 3 ? 'Start Test' : 'Continue'}
+              {isSaving ? 'Saving...' : (currentPage === questions.length - 1 ? 'Start Test' : 'Continue')}
             </Text>
           </Pressable>
         </View>

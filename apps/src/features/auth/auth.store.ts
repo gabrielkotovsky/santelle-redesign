@@ -323,7 +323,26 @@ export const useAuthStore = create<AuthState>()(
       refreshSession: async () => {
         try {
           const session = await apiGetSession();
-          const user = session?.user ? await apiGetUser() : null;
+          let user = null;
+          
+          if (session?.user) {
+            try {
+              user = await apiGetUser();
+            } catch (userError: any) {
+              // If user doesn't exist (deleted from database), clear the session
+              if (userError.message?.includes('User from sub claim in JWT does not exist')) {
+                await apiSignOut();
+                set({
+                  session: null,
+                  user: null,
+                  isAuthenticated: false,
+                  loading: false,
+                });
+                return;
+              }
+              throw userError;
+            }
+          }
           
           set({
             session,
@@ -331,6 +350,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: !!session && !!user,
           });
         } catch (error: any) {
+          console.warn('Session refresh error:', error);
           set({ error: error.message || 'Failed to refresh session' });
         }
       },

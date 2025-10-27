@@ -1,0 +1,77 @@
+import { useEffect, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fetchPretest } from '../api/fetchPretest';
+import { submitPretestAnswers, saveIndividualAnswer } from '../api/submitPretest';
+import type { PretestAnswer, PretestQuestion, UUID } from '../models';
+
+export function usePretest(version = 1) {
+  const [questions, setQuestions] = useState<PretestQuestion[]>([]);
+  const [answers, setAnswers] = useState<PretestAnswer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setLoading(true);
+      const key = `pretest:v${version}`;
+      
+      try {
+        // Try to load cached questions first
+        const cached = await AsyncStorage.getItem(key);
+        if (cached && mounted) {
+          setQuestions(JSON.parse(cached));
+        }
+
+        // Fetch fresh questions
+        const fresh = await fetchPretest(version);
+        if (mounted) {
+          setQuestions(fresh);
+          // Cache the fresh data
+          await AsyncStorage.setItem(key, JSON.stringify(fresh));
+        }
+      } catch (error) {
+        console.warn('Failed to load pretest questions:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    })();
+    return () => { mounted = false; };
+  }, [version]);
+
+  const setSingle = (qId: UUID, choiceId: UUID) =>
+    setAnswers(prev => {
+      const without = prev.filter(a => a.question_id !== qId);
+      return [...without, { question_id: qId, type: 'single', choice_id: choiceId }];
+    });
+
+  const toggleMulti = (qId: UUID, choiceId: UUID) =>
+    setAnswers(prev => {
+      const existing = prev.find(a => a.question_id === qId && a.type === 'multi');
+      if (!existing) return [...prev, { question_id: qId, type: 'multi', choice_ids: [choiceId] }];
+      const set = new Set(existing.choice_ids);
+      set.has(choiceId) ? set.delete(choiceId) : set.add(choiceId);
+      return prev.map(a => (a === existing ? { ...existing, choice_ids: [...set] } : a));
+    });
+
+  const canSubmit = useMemo(() => {
+    const req = questions.filter(q => q.required);
+    return req.every(q => answers.some(a => a.question_id === q.id));
+  }, [questions, answers]);
+
+  const submit = (test_session_id: UUID) =>
+    submitPretestAnswers({ test_session_id, answers });
+
+  const saveAnswer = async (test_session_id: UUID, answer: PretestAnswer) => {
+    try {
+      await saveIndividualAnswer({ test_session_id, answer, version });
+      console.log('Answer saved successfully:', answer);
+    } catch (error) {
+      console.error('Failed to save answer:', error);
+      throw error;
+    }
+  };
+
+  return { questions, answers, loading, canSubmit, setSingle, toggleMulti, submit, saveAnswer };
+}
