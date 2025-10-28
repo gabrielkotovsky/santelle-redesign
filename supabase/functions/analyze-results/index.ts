@@ -252,10 +252,10 @@ Deno.serve(async (req) => {
 
     const completion = await openai.chat.completions.create({
       model,
-      temperature: 0.2,
+      temperature: 1,
       response_format: { type: "json_object" },
       messages,
-      max_tokens: 1000,
+      max_completion_tokens: 10000,
     });
 
     const raw = completion.choices?.[0]?.message?.content?.trim() || "{}";
