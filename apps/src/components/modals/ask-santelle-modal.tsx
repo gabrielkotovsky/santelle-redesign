@@ -3,6 +3,7 @@ import { Colors } from '@/src/theme/colors';
 import { analyzeTestLog } from '@/src/services/analyze-results';
 import { getHealthyEnvironmentAnalysis } from '@/src/services/healthy-environment';
 import { getContextualFactorsAnalysis } from '@/src/services/contextual-factors';
+import { getCycleContextAnalysis } from '@/src/services/cycle-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -29,6 +30,7 @@ type Props = {
     created_at?: string;
     analysis?: string | null;
     analysis_healthy?: string | null;
+    analysis_cycle?: string | null;
   } | null;
   onMedicalTermPress?: (url: string) => boolean;
 };
@@ -47,7 +49,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
 
   const handlePromptPress = async (promptType: string) => {
     // Define which prompts are functional
-    const functionalPrompts = ['what-results-mean', 'healthy-environment', 'contextual-factors'];
+    const functionalPrompts = ['what-results-mean', 'healthy-environment', 'contextual-factors', 'cycle-effects'];
     
     // If this is a non-functional prompt, don't process it
     if (!functionalPrompts.includes(promptType)) {
@@ -225,12 +227,64 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
           }));
         }, remainingTime);
       }
+    } else if (promptType === 'cycle-effects') {
+      const startTime = Date.now();
+      
+      // Check if cycle analysis already exists in the database
+      if (log.analysis_cycle) {
+        // Show loading for minimum 3 seconds, then display existing analysis
+        setTimeout(() => {
+          setPromptStates(prev => ({
+            ...prev,
+            [promptType]: { 
+              loading: false, 
+              response: log.analysis_cycle || undefined, 
+              expanded: true 
+            }
+          }));
+        }, 3000);
+      } else {
+        // No existing analysis, call the function to generate one
+        try {
+          const result = await getCycleContextAnalysis(log.id);
+          const elapsedTime = Date.now() - startTime;
+          const remainingTime = Math.max(0, 3000 - elapsedTime);
+          
+          // Use the pre-formatted response from the cycle-context function
+          const formattedResponse = result.formatted_response;
+          
+          setTimeout(() => {
+            setPromptStates(prev => ({
+              ...prev,
+              [promptType]: { 
+                loading: false, 
+                response: formattedResponse, 
+                expanded: true 
+              }
+            }));
+          }, remainingTime);
+        } catch (error) {
+          console.error('Error getting cycle context analysis:', error);
+          const elapsedTime = Date.now() - startTime;
+          const remainingTime = Math.max(0, 3000 - elapsedTime);
+          
+          setTimeout(() => {
+            setPromptStates(prev => ({
+              ...prev,
+              [promptType]: { 
+                loading: false, 
+                response: 'Sorry, there was an error analyzing cycle effects on your results. Please try again later.', 
+                expanded: true 
+              }
+            }));
+          }, remainingTime);
+        }
+      }
     } else {
       // Simulate API call for other buttons - replace with actual Supabase edge function calls
       setTimeout(() => {
         const mockResponses = {
           'holistic-tips': 'To support your vaginal health, consider probiotics, avoiding douching, wearing breathable cotton underwear, staying hydrated, and managing stress. These holistic approaches can help maintain your natural balance.',
-          'cycle-effects': 'Your menstrual cycle can significantly impact test results. Hormonal fluctuations during ovulation, menstruation, and different cycle phases can affect pH levels and bacterial composition, leading to variations in your test outcomes.',
           'compare-last-test': 'Comparing with your previous test results would show trends in your vaginal health over time, helping identify patterns and track improvements or changes in your microbiome balance.',
           'reassurance': 'Your test results are a snapshot of your current vaginal health. Remember that vaginal health can fluctuate naturally, and these results help you understand your body better. If you have concerns, consider discussing them with a healthcare provider.'
         };
@@ -340,6 +394,22 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
               </View>
             </View>
           );
+          
+          // Add disclaimer to every response
+          const disclaimer = "⚠️ **Important Medical Disclaimer**: This information is for educational purposes only and is not intended as medical advice, diagnosis, or treatment. Always consult with a qualified healthcare provider for any medical concerns or before making decisions about your health.";
+          
+          conversation.push(
+            <View key={`disclaimer-${promptType}`} style={styles.assistantMessage}>
+              <View style={styles.assistantContent}>
+                <Markdown 
+                  style={md}
+                  onLinkPress={onMedicalTermPress}
+                >
+                  {disclaimer}
+                </Markdown>
+              </View>
+            </View>
+          );
         }
       }
     });
@@ -425,7 +495,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
                       {!promptStates['contextual-factors']?.response && renderPromptButton('contextual-factors', '🧩', 'What factors can affect these results?', true)}
                       {!promptStates['healthy-environment']?.response && renderPromptButton('healthy-environment', '🌿', 'How does a healthy environment look like?', true)}
                       {!promptStates['holistic-tips']?.response && renderPromptButton('holistic-tips', '☁️', 'Holistic tips for comfort.', false)}
-                      {!promptStates['cycle-effects']?.response && renderPromptButton('cycle-effects', '🌸', 'How can my cycle affect these results?', false)}
+                      {!promptStates['cycle-effects']?.response && renderPromptButton('cycle-effects', '🌸', 'How can my cycle affect these results?', true)}
                       {!promptStates['compare-last-test']?.response && renderPromptButton('compare-last-test', '📈', 'Compare with my last test.', false)}
                       {!promptStates['reassurance']?.response && renderPromptButton('reassurance', '🤍', 'I need reassurance', false)}
                     </View>
