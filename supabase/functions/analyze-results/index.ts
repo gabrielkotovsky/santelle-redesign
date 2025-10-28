@@ -15,7 +15,7 @@ type TestLog = {
 };
 
 type BiomarkerResult = {
-  name: "pH" | "H2O2" | "LE" | "SNA" | "beta_G" | "NAG";
+  name: "pH" | "H₂O₂" | "LE" | "SNA" | "β-G" | "NAG";
   user_value: string;
   significance: string;
   interpretation: "positive" | "negative" | "borderline" | "neutral" | "unknown";
@@ -164,7 +164,7 @@ Output STRICT JSON ONLY (no Markdown, no prose outside JSON) with this schema:
   "summary": "string",
   "biomarkers": [
     {
-      "name": "pH" | "H2O2" | "LE" | "SNA" | "beta_G" | "NAG",
+      "name": "pH" | "H₂O₂" | "LE" | "SNA" | "β-G" | "NAG",
       "user_value": "string",
       "significance": "string",
       "interpretation": "positive" | "negative" | "borderline" | "neutral" | "unknown"

@@ -66,7 +66,9 @@ Safety:
 
 What counts as NON-HEALTHY:
 - Biomarkers outside healthy ranges or positive markers suggesting imbalance.
-- Pretest answers indicating symptoms/behaviors associated with imbalance (e.g., itching/burning, recent douching, timing issues).
+- Pretest answers indicating symptoms associated with imbalance (e.g., burning, itching, unusual discharge, pain, odor).
+
+IMPORTANT: For pretest symptoms, only include them in healthy_alternatives if they represent actual symptoms the user is experiencing. If a user reports "No symptoms" or "None", do NOT include that as a non-healthy finding.
 
 For EACH non-healthy finding, return:
 - the original finding (source + key + user_value)
@@ -197,17 +199,28 @@ Deno.serve(async (req)=>{
           .in("id", choiceIds);
           
         if (!choicesErr && choices) {
+          console.log(`Found ${pretestRows.length} symptom questions for healthy-environment analysis`);
           
-          pretest_answers = pretestRows.map((r: any) => ({
-            question_slug: r.app_pretest_questions.slug,
-            question_prompt: r.app_pretest_questions.prompt,
-            question_type: r.app_pretest_questions.type,
-            selected_values: (r.app_pretest_response_choices ?? []).map((c: any) => {
+          pretest_answers = pretestRows.map((r: any) => {
+            const selectedValues = (r.app_pretest_response_choices ?? []).map((c: any) => {
               const choice = choices.find(ch => ch.id === c.choice_id);
               return choice ? choice.label : c.choice_id;
-            }),
-            free_value: null,
-          }));
+            });
+            
+            console.log(`Symptom question: ${r.app_pretest_questions.slug}`, {
+              prompt: r.app_pretest_questions.prompt,
+              selected_values: selectedValues,
+              symptom_or_context: r.app_pretest_questions.symptom_or_context
+            });
+            
+            return {
+              question_slug: r.app_pretest_questions.slug,
+              question_prompt: r.app_pretest_questions.prompt,
+              question_type: r.app_pretest_questions.type,
+              selected_values: selectedValues,
+              free_value: null,
+            };
+          });
         }
       }
     }
@@ -301,6 +314,12 @@ Vaginal Health-Test Kit
       nag: log.nag,
     };
 
+    console.log('Data being sent to AI:', {
+      biomarkers,
+      pretest_answers_count: pretest_answers.length,
+      pretest_answers: pretest_answers
+    });
+
     const userPrompt = buildUserPrompt({
       test_session_id: log.test_session_id || log.id,
       biomarkers,
@@ -321,7 +340,7 @@ Vaginal Health-Test Kit
         }
       ],
       response_format: { type: "json_object" },
-      max_tokens: 1000
+      max_tokens: 2000
     });
     const healthyEnvironmentResponse = completion.choices?.[0]?.message?.content?.trim() || "{}";
     
