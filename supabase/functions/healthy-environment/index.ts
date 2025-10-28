@@ -8,16 +8,15 @@ const SERVICE_ROLE = Deno.env.get("EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY");
 
 type HealthyAlt = {
   source: "biomarker" | "pretest";
-  key: string;
-  user_value: string;
+  name: string;
   reason_non_healthy: string;
   healthy_baseline: string;
-  practical_tips: string;
   citations?: { id: string; title: string }[];
 };
 
 type StructuredOut = {
-  healthy_alternatives?: HealthyAlt[];
+  biomarker_alternatives?: HealthyAlt[];
+  symptom_alternatives?: HealthyAlt[];
   reassurance?: string;
   data_quality?: { issues?: string[]; missing_fields?: string[] };
 };
@@ -26,73 +25,57 @@ function formatChatMessage(
   parsed: StructuredOut,
   opts?: { displayName?: string | null; maxItems?: number }
 ): string {
-  const name = opts?.displayName?.trim();
-  const maxItems = opts?.maxItems ?? 5;
+  const biomarkerItems = parsed.biomarker_alternatives ?? [];
+  const symptomItems = parsed.symptom_alternatives ?? [];
+  
+  if (biomarkerItems.length === 0 && symptomItems.length === 0) {
+    return "No negative results found.";
+  }
 
   const parts: string[] = [];
-
-  const items = (parsed.healthy_alternatives ?? []).slice(0, maxItems);
-  if (items.length) {
-    parts.push("", "Here's what **\"healthy\"** usually looks like:");
-    items.forEach((it, i) => {
-      const tag = it.source === "biomarker" ? "marker" : "pretest";
-      parts.push(
-        `\n**${i + 1}. ${it.key}** (${tag})`,
-        `• **Healthy baseline:** ${it.healthy_baseline}`
-      );
+  
+  // Format biomarkers
+  if (biomarkerItems.length > 0) {
+    parts.push("**Biomarker Results:**");
+    biomarkerItems.forEach((item, i) => {
+      parts.push(`\n**${i + 1}. ${item.name.toUpperCase()}**`);
+      parts.push(`• **Healthy:** ${item.healthy_baseline}`);
+    });
+  }
+  
+  // Format symptoms
+  if (symptomItems.length > 0) {
+    parts.push("\n**Symptom Results:**");
+    symptomItems.forEach((item, i) => {
+      parts.push(`\n**${i + 1}. ${item.name}**`);
+      parts.push(`• **Healthy:** ${item.healthy_baseline}`);
     });
   }
 
-  if (parsed.reassurance) {
-    parts.push("", `*${parsed.reassurance.trim()}*`);
-  }
-
-  if (parsed.data_quality?.issues?.length) {
-    parts.push("", `Heads up: ${parsed.data_quality.issues.join("; ")}`);
-  }
-
-  parts.push("", "*This is general information, not medical advice.*");
   return parts.join("\n");
 }
 
 const SYSTEM_PROMPT = `
-You are a women's health explainer. Given biomarker results and pretest answers,
-enumerate each NON-HEALTHY finding and describe what a HEALTHY alternative looks like,
-grounded in the provided manufacturer text and general non-biomarker symptom knowledge.
+For each negative result, provide detailed positive alternatives based on manufacturer guidance and general knowledge.
 
-Safety:
-- Do NOT diagnose or recommend prescription treatments/antibiotics.
-- Use plain, supportive language. Be factual and concise.
-
-What counts as NON-HEALTHY:
-- Biomarkers outside healthy ranges or positive markers suggesting imbalance.
-- Pretest answers indicating symptoms associated with imbalance (e.g., burning, itching, unusual discharge, pain, odor).
-
-IMPORTANT: For pretest symptoms, only include them in healthy_alternatives if they represent actual symptoms the user is experiencing. If a user reports "No symptoms" or "None", do NOT include that as a non-healthy finding.
-
-For EACH non-healthy finding, return:
-- the original finding (source + key + user_value)
-- why it's considered non-healthy (short evidence)
-- the healthy baseline description
-- practical, non-medical tips that move toward the healthy baseline
-- minimal citations derived only from the provided manufacturer text
-
-If nothing is non-healthy, produce an empty list and a reassuring summary.
-
-Output STRICT JSON (no Markdown) with this schema:
+Output JSON:
 {
-  "healthy_alternatives": [
+  "biomarker_alternatives": [
     {
-      "source": "biomarker" | "pretest",
-      "key": "string",                // e.g., "pH", "symptom_burning", "product_wash"
-      "user_value": "string",         // e.g., "pH 4.8", "reported itching"
-      "reason_non_healthy": "string", // short, evidence-based
-      "healthy_baseline": "string",   // what 'healthy' looks like
-      "practical_tips": "string",     // non-medical, lifestyle/technique context
-      "citations": [ { "id": "string", "title": "string" } ]
+      "source": "biomarker",
+      "name": "string",
+      "reason_non_healthy": "string",
+      "healthy_baseline": "string"
     }
   ],
-  "reassurance": "string"
+  "symptom_alternatives": [
+    {
+      "source": "pretest",
+      "name": "string",
+      "reason_non_healthy": "string",
+      "healthy_baseline": "string"
+    }
+  ]
 }
 `.trim();
 
@@ -103,18 +86,18 @@ function buildUserPrompt(payload: {
   manufacturer: { id: string; title: string; body: string };
 }) {
   return `
-Use the JSON in DATA. Consider manufacturer guidance as PROVIDED_KNOWLEDGE for healthy baselines and ranges.
-Return only valid JSON matching the schema from the system message.
+For each negative result, provide detailed positive alternatives based on manufacturer guidance and general knowledge.
 
-DATA:
-${JSON.stringify({
-  test_session_id: payload.test_session_id,
-  biomarkers: payload.biomarkers,
-  pretest_answers: payload.pretest_answers,
-}, null, 2)}
+Separate biomarkers and symptoms into different arrays. For symptoms, treat each individual symptom as a separate item.
 
-PROVIDED_KNOWLEDGE:
+BIOMARKERS: ${JSON.stringify(payload.biomarkers, null, 2)}
+
+PRETEST SYMPTOMS: ${JSON.stringify(payload.pretest_answers, null, 2)}
+
+MANUFACTURER GUIDANCE:
 ${JSON.stringify([payload.manufacturer], null, 2)}
+
+Put biomarker results in "biomarker_alternatives" array and each individual symptom in "symptom_alternatives" array.
 `.trim();
 }
 Deno.serve(async (req)=>{
@@ -327,6 +310,9 @@ Vaginal Health-Test Kit
       manufacturer,
     });
 
+    // Log the full prompt being sent to AI
+    console.log('Full prompt being sent to AI:', userPrompt);
+
     const completion = await openai.chat.completions.create({
       model,
       messages: [
@@ -340,16 +326,18 @@ Vaginal Health-Test Kit
         }
       ],
       response_format: { type: "json_object" },
-      max_tokens: 2000
+      max_tokens: 8000
     });
     const healthyEnvironmentResponse = completion.choices?.[0]?.message?.content?.trim() || "{}";
+    
+    console.log('Raw AI response:', healthyEnvironmentResponse);
     
     // Parse JSON and format as readable text
     try {
       const parsed: StructuredOut = JSON.parse(healthyEnvironmentResponse);
-      const formattedResponse = formatChatMessage(parsed, { displayName, maxItems: 5 });
+      const formattedResponse = formatChatMessage(parsed, { displayName, maxItems: 10 });
       
-      // 5) Save back to DB
+      // Save formatted text to DB
       const { data: updated, error: upErr } = await admin.from("test_logs").update({
         analysis_healthy: formattedResponse
       }).eq("id", test_log_id).select("id, ph, h2o2, le, sna, beta_g, nag, analysis_healthy").single();
@@ -366,19 +354,19 @@ Vaginal Health-Test Kit
     } catch (parseError) {
       console.error('Failed to parse JSON response:', parseError);
       // Fallback to raw JSON if parsing fails
-    const { data: updated, error: upErr } = await admin.from("test_logs").update({
-      analysis_healthy: healthyEnvironmentResponse
-    }).eq("id", test_log_id).select("id, ph, h2o2, le, sna, beta_g, nag, analysis_healthy").single();
-    if (upErr) throw upErr;
+      const { data: updated, error: upErr } = await admin.from("test_logs").update({
+        analysis_healthy: healthyEnvironmentResponse
+      }).eq("id", test_log_id).select("id, ph, h2o2, le, sna, beta_g, nag, analysis_healthy").single();
+      if (upErr) throw upErr;
       
-    return new Response(JSON.stringify({
-      ok: true,
-      log: updated
-    }), {
-      headers: {
-        "Content-Type": "application/json"
-      }
-    });
+      return new Response(JSON.stringify({
+        ok: true,
+        log: updated
+      }), {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
     }
   } catch (e) {
     console.error("healthy-environment error:", e);
