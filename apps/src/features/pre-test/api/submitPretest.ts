@@ -7,7 +7,6 @@ export async function saveIndividualAnswer(opts: {
   answer: PretestAnswer;
   version?: number;
 }): Promise<UUID> {
-  console.log('Saving individual answer:', opts);
   
   const version = opts.version || 1;
   
@@ -86,7 +85,6 @@ export async function saveIndividualAnswer(opts: {
     }
   }
 
-  console.log('Successfully saved individual answer');
   return responseId;
 }
 
@@ -94,7 +92,6 @@ export async function submitPretestAnswers(opts: {
   test_session_id: UUID;
   answers: PretestAnswer[];
 }) {
-  console.log('Submitting pretest answers:', { sessionId: opts.test_session_id, answers: opts.answers });
   
   const responses: Array<{
     test_session_id: UUID;
@@ -130,7 +127,6 @@ export async function submitPretestAnswers(opts: {
     throw responseError;
   }
 
-  console.log('Inserted responses:', insertedResponses);
 
   // Now create response choices
   for (const answer of opts.answers) {
@@ -167,6 +163,5 @@ export async function submitPretestAnswers(opts: {
     }
   }
 
-  console.log('Successfully submitted pretest answers');
   return insertedResponses.map(r => r.id);
 }

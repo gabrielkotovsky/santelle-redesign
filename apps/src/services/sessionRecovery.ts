@@ -27,7 +27,6 @@ export class SessionRecoveryService {
     if (this.isMonitoring) return;
     
     this.isMonitoring = true;
-    console.log('Starting session recovery monitoring');
     
     // Initial check
     await this.checkAndRecoverSession();
@@ -44,7 +43,6 @@ export class SessionRecoveryService {
       this.checkInterval = null;
     }
     this.isMonitoring = false;
-    console.log('Stopped session recovery monitoring');
   }
 
   private async checkAndRecoverSession(): Promise<void> {
@@ -52,7 +50,6 @@ export class SessionRecoveryService {
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData.session) {
-        console.log('No session found, skipping recovery');
         return;
       }
 
@@ -63,7 +60,6 @@ export class SessionRecoveryService {
 
       // If session expires within 20 minutes, try to refresh
       if (timeUntilExpiry <= 20 * 60 * 1000) {
-        console.log(`Session expires in ${Math.round(timeUntilExpiry / 60000)} minutes, attempting refresh`);
         
         try {
           const { data: refreshData, error } = await supabase.auth.refreshSession();
@@ -72,7 +68,6 @@ export class SessionRecoveryService {
             console.warn('Session refresh failed:', error.message);
             await this.handleRefreshFailure();
           } else if (refreshData.session) {
-            console.log('Session refreshed successfully');
             await this.updateRecoveryData(true);
           }
         } catch (refreshError) {
@@ -80,7 +75,6 @@ export class SessionRecoveryService {
           await this.handleRefreshFailure();
         }
       } else {
-        console.log(`Session valid for ${Math.round(timeUntilExpiry / 60000)} more minutes`);
         await this.updateRecoveryData(true);
       }
     } catch (error) {
@@ -97,7 +91,6 @@ export class SessionRecoveryService {
     
     // If we've failed too many times, clear the session
     if (newRetryCount >= 3) {
-      console.log('Too many refresh failures, clearing session');
       await supabase.auth.signOut();
     }
   }

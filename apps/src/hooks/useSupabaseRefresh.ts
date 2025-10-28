@@ -37,7 +37,6 @@ export function useSupabaseRefresh(options: UseSupabaseRefreshOptions = {}): Use
       const hasValidSession = isAuthenticated && session?.access_token;
       
       if (!hasValidSession) {
-        console.log('No valid session found, attempting to refresh...');
         // Try to refresh the session
         await refreshSession();
       }

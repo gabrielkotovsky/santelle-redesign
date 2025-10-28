@@ -8,12 +8,13 @@ export async function fetchPretestAnswers(
   const { data: rows, error } = await supabase
     .from("app_pretest_responses")
     .select(`
-      app_pretest_questions!inner ( slug, prompt, type ),
+      app_pretest_questions!inner ( slug, prompt, type, symptom_or_context ),
       app_pretest_response_choices (
         app_pretest_choices!inner ( label )
       )
     `)
-    .eq("test_session_id", test_session_id);
+    .eq("test_session_id", test_session_id)
+    .eq("app_pretest_questions.symptom_or_context", "context");
 
   if (error) throw error;
 

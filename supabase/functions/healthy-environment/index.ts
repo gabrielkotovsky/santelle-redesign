@@ -175,15 +175,15 @@ Deno.serve(async (req)=>{
       const { data: pretestRows, error: pretestErr } = await admin
         .from("app_pretest_responses")
         .select(`
-          app_pretest_questions!inner ( slug, prompt, type ),
+          app_pretest_questions!inner ( slug, prompt, type, symptom_or_context ),
           app_pretest_response_choices (
             choice_id
           )
         `)
-        .eq("test_session_id", log.test_session_id);
+        .eq("test_session_id", log.test_session_id)
+        .eq("app_pretest_questions.symptom_or_context", "symptoms");
 
       if (!pretestErr && pretestRows) {
-        console.log('Pretest rows:', JSON.stringify(pretestRows, null, 2));
         
         // Get all choice IDs
         const choiceIds = pretestRows.flatMap((r: any) => 
@@ -197,7 +197,6 @@ Deno.serve(async (req)=>{
           .in("id", choiceIds);
           
         if (!choicesErr && choices) {
-          console.log('Choices:', JSON.stringify(choices, null, 2));
           
           pretest_answers = pretestRows.map((r: any) => ({
             question_slug: r.app_pretest_questions.slug,
@@ -209,7 +208,6 @@ Deno.serve(async (req)=>{
             }),
             free_value: null,
           }));
-          console.log('Processed pretest answers:', JSON.stringify(pretest_answers, null, 2));
         }
       }
     }

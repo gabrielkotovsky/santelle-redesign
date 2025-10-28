@@ -69,7 +69,6 @@ export function usePretest(version = 1) {
   const saveAnswer = async (test_session_id: UUID, answer: PretestAnswer) => {
     try {
       await saveIndividualAnswer({ test_session_id, answer, version });
-      console.log('Answer saved successfully:', answer);
     } catch (error) {
       console.error('Failed to save answer:', error);
       throw error;

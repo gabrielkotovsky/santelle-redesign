@@ -33,7 +33,6 @@ export function AuthHydrator() {
           
           // Refresh if session expires within 15 minutes (more proactive)
           if (timeUntilExpiry <= 15 * 60 * 1000) {
-            console.log('Proactively refreshing session - expires in', Math.round(timeUntilExpiry / 60000), 'minutes');
             await supabase.auth.refreshSession();
             await refreshSession();
           }
@@ -91,7 +90,6 @@ export function AuthHydrator() {
             
             // Refresh if session is expired OR expires within 5 minutes
             if (timeUntilExpiry <= 5 * 60 * 1000) {
-              console.log('Session expires soon, refreshing immediately');
               // Add timeout to prevent hanging
               const refreshPromise = supabase.auth.refreshSession();
               const timeoutPromise = new Promise((_, reject) => 

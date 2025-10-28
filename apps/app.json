@@ -19,8 +19,8 @@
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification",
-          "background-processing",
-          "background-fetch"
+          "processing",
+          "fetch"
         ],
         "NSUserNotificationUsageDescription": "We use notifications to remind you when your test results are ready.",
         "ITSAppUsesNonExemptEncryption": false,

@@ -33,28 +33,20 @@ serve(async (req) => {
       return new Response("Forbidden", { status: 403 });
 
     // 1. Biomarkers
-    console.log('Fetching biomarkers for test_session_id:', test_session_id);
     const biomarkers = await fetchBiomarkers(supabase, test_session_id);
-    console.log('Biomarkers fetched:', biomarkers);
 
     // 2. Pretest
-    console.log('Fetching pretest answers for test_session_id:', test_session_id);
     const pretest_answers = await fetchPretestAnswers(supabase, test_session_id);
-    console.log('Pretest answers fetched:', pretest_answers);
 
     // 3. Prompt -> ChatGPT
-    console.log('Sending prompt to ChatGPT...');
     const result = await sendPromptToChatGPT({
       test_session_id,
       biomarkers,
       pretest_answers,
     });
-    console.log('ChatGPT result:', result);
 
     // 4. Update only analysis_factors
-    console.log('Updating analysis_factors in database...');
     await updateAnalysisFactors(supabase, test_session_id, result);
-    console.log('Database updated successfully');
 
     return new Response(
       JSON.stringify({ status: "ok", sent: { biomarkers, pretest_answers }, result }),

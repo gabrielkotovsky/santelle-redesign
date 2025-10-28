@@ -30,11 +30,7 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
-      storage: {
-        getItem: (key) => AsyncStorage.getItem(key),
-        setItem: (key, value) => AsyncStorage.setItem(key, value),
-        removeItem: (key) => AsyncStorage.removeItem(key),
-      },
+      storage: AsyncStorage,
     },
     // Add global configuration for better session handling
     global: {
@@ -45,11 +41,8 @@ export const supabase = createClient(
   });
 
 // Keep Realtime's auth token in sync with Auth state changes
-supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
-    supabase.realtime.setAuth(session?.access_token ?? '');
-  }
-  if (event === 'SIGNED_OUT') {
-    supabase.realtime.disconnect();
-  }
+supabase.auth.onAuthStateChange(async (_event, session) => {
+  // Important: keep RT using the latest access token
+  const token = session?.access_token ?? null;
+  supabase.realtime.setAuth(token ?? undefined);
 });

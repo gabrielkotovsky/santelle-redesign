@@ -74,7 +74,6 @@ export default function PreTestQuestions() {
   // Ensure we have a test session when component loads
   useEffect(() => {
     if (!testSession?.id) {
-      console.log('No test session found, creating one...');
       startSession();
     }
   }, [testSession?.id, startSession]);
@@ -144,7 +143,6 @@ export default function PreTestQuestions() {
         for (const answer of pageAnswers) {
           await saveAnswer(testSession.id, answer);
         }
-        console.log('Saved answers for page:', currentPage + 1);
       }
 
       if (currentPage < questions.length - 1) {
