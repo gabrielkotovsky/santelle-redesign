@@ -1,8 +1,9 @@
 // src/features/auth/AuthHydrator.tsx
 import { supabase } from "@/src/services/supabase";
 import { sessionRecoveryService } from "@/src/services/sessionRecovery";
+import NetInfo from '@react-native-community/netinfo';
 import { useEffect, useRef } from "react";
-import { AppState } from "react-native";
+import { AppState, AppStateStatus } from "react-native";
 import { useAuthStore } from "./auth.store";
 
 /**
@@ -12,17 +13,19 @@ import { useAuthStore } from "./auth.store";
 export function AuthHydrator() {
   const refreshSession = useAuthStore(s => s.refreshSession);
   const reinitializeListener = useAuthStore(s => s.reinitializeListener);
-  const sessionCheckInterval = useRef<number | null>(null);
+  const sessionCheckInterval = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttempts = useRef<number>(0);
+  const maxReconnectAttempts = 5;
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
-  // Proactive session monitoring
+  // Proactive session monitoring with React Native Timer
   const startSessionMonitoring = () => {
     // Clear any existing interval
     if (sessionCheckInterval.current) {
-      clearInterval(sessionCheckInterval.current);
+      clearTimeout(sessionCheckInterval.current);
     }
     
-    // Check session every 10 minutes when app is active
-    sessionCheckInterval.current = setInterval(async () => {
+    const checkSession = async () => {
       try {
         const { data: currentSession } = await supabase.auth.getSession();
         
@@ -33,108 +36,210 @@ export function AuthHydrator() {
           
           // Refresh if session expires within 15 minutes (more proactive)
           if (timeUntilExpiry <= 15 * 60 * 1000) {
-            await supabase.auth.refreshSession();
-            await refreshSession();
+            const { error } = await supabase.auth.refreshSession();
+            if (!error) {
+              await refreshSession();
+              console.log('Session refreshed proactively');
+            }
           }
         }
       } catch (error) {
         console.warn('Session monitoring error:', error);
+      } finally {
+        // Schedule next check if still in foreground
+        if (appStateRef.current === 'active') {
+          sessionCheckInterval.current = setTimeout(checkSession, 5 * 60 * 1000); // Check every 5 minutes
+        }
       }
-    }, 10 * 60 * 1000); // Check every 10 minutes
+    };
+    
+    // Start first check
+    checkSession();
   };
 
   const stopSessionMonitoring = () => {
     if (sessionCheckInterval.current) {
-      clearInterval(sessionCheckInterval.current);
+      clearTimeout(sessionCheckInterval.current);
       sessionCheckInterval.current = null;
     }
   };
 
-  // Reconnect Realtime and re-subscribe channels
-  const reconnectRealtime = async () => {
+  // Enhanced Realtime reconnection with exponential backoff
+  const reconnectRealtime = async (attempt: number = 0): Promise<boolean> => {
     try {
+      // Check network connectivity first
+      const netInfo = await NetInfo.fetch();
+      if (!netInfo.isConnected) {
+        console.log('No network connection, skipping Realtime reconnect');
+        return false;
+      }
+
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       
-      if (token) {
-        // Set the new auth token for Realtime
-        supabase.realtime.setAuth(token);
-        
-        // Reconnect the socket
-        supabase.realtime.connect();
-        
-        // Re-subscribe any existing channels
-        const channels = supabase.getChannels();
-        for (const channel of channels) {
-          if (channel.state !== 'joined') {
-            channel.subscribe();
-          }
+      if (!token) {
+        console.log('No valid session token for Realtime');
+        return false;
+      }
+
+      // Explicitly disconnect first to clean up stale connections
+      supabase.realtime.disconnect();
+      
+      // Wait a bit before reconnecting (exponential backoff)
+      const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      // Set the new auth token for Realtime
+      supabase.realtime.setAuth(token);
+      
+      // Reconnect the socket
+      supabase.realtime.connect();
+      
+      // Re-subscribe any existing channels
+      const channels = supabase.getChannels();
+      console.log(`Reconnecting ${channels.length} Realtime channels`);
+      
+      for (const channel of channels) {
+        if (channel.state !== 'joined') {
+          await channel.subscribe();
         }
       }
+      
+      console.log('Realtime reconnected successfully');
+      reconnectAttempts.current = 0; // Reset attempts on success
+      return true;
     } catch (error) {
-      console.warn('Failed to reconnect Realtime:', error);
+      console.warn(`Failed to reconnect Realtime (attempt ${attempt + 1}):`, error);
+      
+      // Retry with exponential backoff
+      if (attempt < maxReconnectAttempts) {
+        console.log(`Retrying Realtime connection in ${Math.min(1000 * Math.pow(2, attempt + 1), 10000)}ms...`);
+        return reconnectRealtime(attempt + 1);
+      }
+      
+      return false;
+    }
+  };
+
+  // Comprehensive session refresh with better error handling
+  const handleSessionRefresh = async () => {
+    try {
+      const { data: currentSession, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.warn('Error getting session:', sessionError);
+        return false;
+      }
+      
+      if (currentSession.session && currentSession.session.expires_at) {
+        const expiresAt = currentSession.session.expires_at * 1000;
+        const now = Date.now();
+        const timeUntilExpiry = expiresAt - now;
+        
+        // Refresh if session is expired OR expires within 5 minutes
+        if (timeUntilExpiry <= 5 * 60 * 1000) {
+          console.log('Session expiring soon, refreshing...');
+          
+          // Increased timeout to 30 seconds for slower connections
+          const refreshPromise = supabase.auth.refreshSession();
+          const timeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Session refresh timeout')), 30000)
+          );
+          
+          const { data, error } = await Promise.race([
+            refreshPromise,
+            timeoutPromise
+          ]) as any;
+          
+          if (error) {
+            console.warn('Session refresh error:', error);
+            return false;
+          }
+          
+          console.log('Session refreshed successfully');
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.warn('Session refresh failed:', error);
+      return false;
     }
   };
 
   useEffect(() => {
+    // Network state listener
+    const unsubscribeNetInfo = NetInfo.addEventListener(async (state) => {
+      if (state.isConnected && appStateRef.current === 'active') {
+        console.log('Network reconnected, refreshing session and Realtime...');
+        await handleSessionRefresh();
+        await refreshSession();
+        await reconnectRealtime();
+      }
+    });
+
+    // App state listener
     const subscription = AppState.addEventListener("change", async (nextAppState) => {
-      if (nextAppState === "active") {
+      const previousState = appStateRef.current;
+      appStateRef.current = nextAppState;
+
+      if (nextAppState === "active" && previousState !== "active") {
+        console.log('App became active, refreshing connections...');
+        
         try {
-          // Check current session first
-          const { data: currentSession } = await supabase.auth.getSession();
+          // 1. Check and refresh session if needed
+          await handleSessionRefresh();
           
-          if (currentSession.session && currentSession.session.expires_at) {
-            const expiresAt = currentSession.session.expires_at * 1000;
-            const now = Date.now();
-            const timeUntilExpiry = expiresAt - now;
-            
-            // Refresh if session is expired OR expires within 5 minutes
-            if (timeUntilExpiry <= 5 * 60 * 1000) {
-              // Add timeout to prevent hanging
-              const refreshPromise = supabase.auth.refreshSession();
-              const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Session refresh timeout')), 10000)
-              );
-              
-              await Promise.race([refreshPromise, timeoutPromise]);
-            }
-          }
-          
-          // Update our local store with the session
+          // 2. Update our local store with the session
           await refreshSession();
           
-          // Recreate the auth state listener in case it was killed by the OS
+          // 3. Recreate the auth state listener in case it was killed by the OS
           await reinitializeListener();
           
-          // Reconnect Realtime and re-subscribe channels
+          // 4. Reconnect Realtime with retry logic
           await reconnectRealtime();
           
-          // Start proactive session monitoring when app becomes active
+          // 5. Start proactive session monitoring when app becomes active
           startSessionMonitoring();
           
-          // Start session recovery service
+          // 6. Start session recovery service
           await sessionRecoveryService.startMonitoring();
+          
         } catch (error) {
-          console.warn('App state change error:', error);
-          // Even if session refresh failed, try to continue with other steps
+          console.warn('Error during app activation:', error);
+          
+          // Fallback: try essential steps without throwing
           try {
             await refreshSession();
             await reconnectRealtime();
             startSessionMonitoring();
             await sessionRecoveryService.startMonitoring();
           } catch (fallbackError) {
-            // Silently handle fallback errors
+            console.error('Fallback recovery failed:', fallbackError);
           }
         }
-      } else if (nextAppState === "background") {
+      } else if (nextAppState === "background" || nextAppState === "inactive") {
+        console.log('App going to background, cleaning up...');
+        
         // Stop session monitoring when app goes to background to save battery
         stopSessionMonitoring();
         sessionRecoveryService.stopMonitoring();
+        
+        // Optionally disconnect Realtime to save resources
+        // Uncomment if you want to fully disconnect when backgrounded
+        // supabase.realtime.disconnect();
       }
     });
 
+    // Start monitoring immediately if app is active
+    if (AppState.currentState === 'active') {
+      startSessionMonitoring();
+      sessionRecoveryService.startMonitoring();
+    }
+
     return () => {
       subscription.remove();
+      unsubscribeNetInfo();
       stopSessionMonitoring();
       sessionRecoveryService.stopMonitoring();
     };

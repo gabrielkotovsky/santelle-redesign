@@ -5,6 +5,7 @@ import { getHealthyEnvironmentAnalysis } from '@/src/services/healthy-environmen
 import { getContextualFactorsAnalysis } from '@/src/services/contextual-factors';
 import { getCycleContextAnalysis } from '@/src/services/cycle-context';
 import { getGPT5Analysis } from '@/src/services/gpt5-analyze-results';
+import { getGPT5Context } from '@/src/services/gpt5-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -69,6 +70,39 @@ function formatGPT5Analysis(analysis: any): string {
   return lines.join('\n');
 }
 
+// Format GPT-5 context analysis into readable markdown
+function formatGPT5Context(analysis: any): string {
+  if (!analysis || typeof analysis !== 'object') {
+    return 'No context analysis available.';
+  }
+
+  const lines: string[] = [];
+
+  // Add contextual insights
+  if (analysis.insights && Array.isArray(analysis.insights)) {
+    analysis.insights.forEach((insight: any, index: number) => {
+      const category = insight.category || 'General';
+      const relevance = insight.relevance || '';
+      const interpretation = insight.interpretation || '';
+      
+      // Use heading2 (##) for each category
+      lines.push(`\n## ${category}`);
+      
+      if (relevance) {
+        lines.push(`\n**Relevance:** ${relevance}`);
+      }
+      
+      if (interpretation) {
+        lines.push(`\n**Interpretation:** ${interpretation}`);
+      }
+      
+      lines.push('\n');
+    });
+  }
+
+  return lines.join('\n');
+}
+
 export default function AskSantelleModal({ visible, onClose, log, onMedicalTermPress }: Props) {
   const [promptStates, setPromptStates] = useState<Record<string, { loading: boolean; response?: string; expanded: boolean }>>({});
   
@@ -83,7 +117,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
 
   const handlePromptPress = async (promptType: string) => {
     // Define which prompts are functional
-    const functionalPrompts = ['what-results-mean', 'healthy-environment', 'contextual-factors', 'cycle-effects', 'gpt5-analysis'];
+    const functionalPrompts = ['what-results-mean', 'healthy-environment', 'contextual-factors', 'cycle-effects', 'gpt5-analysis', 'gpt5-context'];
     
     // If this is a non-functional prompt, don't process it
     if (!functionalPrompts.includes(promptType)) {
@@ -369,6 +403,61 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
           }));
         }, remainingTime);
       }
+    } else if (promptType === 'gpt5-context') {
+      console.log('[Modal] GPT5 context button pressed');
+      const startTime = Date.now();
+      
+      // Use test_session_id if available, otherwise fall back to log.id
+      const sessionId = log.test_session_id || log.id;
+      console.log('[Modal] log.id:', log.id);
+      console.log('[Modal] log.test_session_id:', log.test_session_id);
+      console.log('[Modal] Using sessionId:', sessionId);
+      
+      // Call the edge function (it will handle caching internally)
+      try {
+        console.log('[Modal] 🔄 Calling getGPT5Context...');
+        const result = await getGPT5Context(sessionId);
+        console.log('[Modal] ✅ getGPT5Context returned successfully');
+        console.log('[Modal] Context insights count:', result.analysis.insights?.length);
+        
+        const elapsedTime = Date.now() - startTime;
+        console.log('[Modal] Edge function took', elapsedTime, 'ms');
+        const remainingTime = Math.max(0, 1500 - elapsedTime); // Minimum 1.5s for UX
+        
+        // Format the context analysis result
+        console.log('[Modal] Formatting context analysis result...');
+        const formatted = formatGPT5Context(result.analysis);
+        console.log('[Modal] Formatted result length:', formatted.length, 'characters');
+        
+        setTimeout(() => {
+          console.log('[Modal] 📝 Setting state with formatted response');
+          setPromptStates(prev => ({
+            ...prev,
+            [promptType]: { 
+              loading: false, 
+              response: formatted, 
+              expanded: true 
+            }
+          }));
+        }, remainingTime);
+      } catch (error) {
+        console.error('[Modal] ❌ Error getting GPT-5 context:', error);
+        console.error('[Modal] Error stack:', error instanceof Error ? error.stack : 'No stack');
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, 1500 - elapsedTime);
+        
+        setTimeout(() => {
+          console.log('[Modal] Setting error state');
+          setPromptStates(prev => ({
+            ...prev,
+            [promptType]: { 
+              loading: false, 
+              response: `Sorry, there was an error generating the GPT-5 context analysis: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again later.`, 
+              expanded: true 
+            }
+          }));
+        }, remainingTime);
+      }
     } else {
       // Simulate API call for other buttons - replace with actual Supabase edge function calls
       setTimeout(() => {
@@ -447,7 +536,8 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
           'cycle-effects': 'How can my cycle affect these results?',
           'compare-last-test': 'Compare with my last test.',
           'reassurance': 'I need reassurance',
-          'gpt5-analysis': 'gpt5_analyze_results'
+          'gpt5-analysis': 'gpt5_analyze_results',
+          'gpt5-context': 'gpt5_context'
         };
         
         // User message (right side)
@@ -583,6 +673,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
                     <View style={styles.promptGrid}>
                       {!promptStates['what-results-mean']?.response && renderPromptButton('what-results-mean', '🔍', 'What do my results mean?', true)}
                       {!promptStates['gpt5-analysis']?.response && renderPromptButton('gpt5-analysis', '🤖', 'gpt5_analyze_results', true)}
+                      {!promptStates['gpt5-context']?.response && renderPromptButton('gpt5-context', '🧠', 'gpt5_context', true)}
                       {!promptStates['contextual-factors']?.response && renderPromptButton('contextual-factors', '🧩', 'What factors can affect these results?', true)}
                       {!promptStates['healthy-environment']?.response && renderPromptButton('healthy-environment', '🌿', 'How does a healthy environment look like?', true)}
                       {!promptStates['holistic-tips']?.response && renderPromptButton('holistic-tips', '☁️', 'Holistic tips for comfort.', false)}

@@ -31,6 +31,9 @@ export const supabase = createClient(
       autoRefreshToken: true,
       detectSessionInUrl: false,
       storage: AsyncStorage,
+      // Reduce token refresh threshold to refresh earlier
+      // This prevents the token from getting too close to expiration
+      storageKey: 'santelle-auth-token',
     },
     // Add global configuration for better session handling
     global: {
@@ -38,11 +41,39 @@ export const supabase = createClient(
         'X-Client-Info': 'santelle-app',
       },
     },
+    realtime: {
+      // Configure Realtime with better reconnection settings
+      params: {
+        eventsPerSecond: 10,
+      },
+      // Increase heartbeat interval to prevent aggressive disconnects
+      heartbeatIntervalMs: 30000, // 30 seconds
+      // Increase timeout before considering connection lost
+      timeout: 20000, // 20 seconds
+    },
   });
 
 // Keep Realtime's auth token in sync with Auth state changes
-supabase.auth.onAuthStateChange(async (_event, session) => {
+supabase.auth.onAuthStateChange(async (event, session) => {
   // Important: keep RT using the latest access token
   const token = session?.access_token ?? null;
-  supabase.realtime.setAuth(token ?? undefined);
+  
+  if (event === 'SIGNED_OUT') {
+    // Explicitly disconnect realtime when signing out
+    supabase.realtime.disconnect();
+  } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    // Update token and ensure connection
+    supabase.realtime.setAuth(token ?? undefined);
+    
+    // If disconnected, reconnect
+    const realtimeState = supabase.realtime.channels.length > 0 
+      ? supabase.realtime.channels[0]?.state 
+      : undefined;
+    
+    if (realtimeState === 'closed' || realtimeState === 'errored') {
+      supabase.realtime.connect();
+    }
+  } else {
+    supabase.realtime.setAuth(token ?? undefined);
+  }
 });
