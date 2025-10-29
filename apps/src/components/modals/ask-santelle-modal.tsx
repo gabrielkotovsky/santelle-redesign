@@ -4,6 +4,7 @@ import { analyzeTestLog } from '@/src/services/analyze-results';
 import { getHealthyEnvironmentAnalysis } from '@/src/services/healthy-environment';
 import { getContextualFactorsAnalysis } from '@/src/services/contextual-factors';
 import { getCycleContextAnalysis } from '@/src/services/cycle-context';
+import { getGPT5Analysis } from '@/src/services/gpt5-analyze-results';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -21,6 +22,7 @@ type Props = {
   onClose: () => void;
   log?: {
     id: string;
+    test_session_id?: string;
     ph: number | null;
     h2o2: string | null;
     le: string | null;
@@ -31,9 +33,41 @@ type Props = {
     analysis?: string | null;
     analysis_healthy?: string | null;
     analysis_cycle?: string | null;
+    gpt_5_analysis?: any | null;
   } | null;
   onMedicalTermPress?: (url: string) => boolean;
 };
+
+// Format GPT-5 analysis into readable markdown
+function formatGPT5Analysis(analysis: any): string {
+  if (!analysis || typeof analysis !== 'object') {
+    return 'No analysis available.';
+  }
+
+  const lines: string[] = [];
+
+  // Add biomarker-by-biomarker breakdown
+  if (analysis.biomarkers && Array.isArray(analysis.biomarkers)) {
+    analysis.biomarkers.forEach((biomarker: any) => {
+      const name = biomarker.biomarker?.toUpperCase() || 'Unknown';
+      const value = biomarker.value !== null ? biomarker.value : 'Not detected';
+      const classification = biomarker.classification || 'unknown';
+      
+      // Use heading2 (##) which is styled with larger font and custom color
+      lines.push(`\n## ${name}: ${value} (${classification})`);
+      
+      if (biomarker.significance) {
+        lines.push(`\n**What it measures:** ${biomarker.significance}`);
+      }
+      
+      if (biomarker.interpretation) {
+        lines.push(`\n**Your result:** ${biomarker.interpretation}`);
+      }
+    });
+  }
+
+  return lines.join('\n');
+}
 
 export default function AskSantelleModal({ visible, onClose, log, onMedicalTermPress }: Props) {
   const [promptStates, setPromptStates] = useState<Record<string, { loading: boolean; response?: string; expanded: boolean }>>({});
@@ -49,7 +83,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
 
   const handlePromptPress = async (promptType: string) => {
     // Define which prompts are functional
-    const functionalPrompts = ['what-results-mean', 'healthy-environment', 'contextual-factors', 'cycle-effects'];
+    const functionalPrompts = ['what-results-mean', 'healthy-environment', 'contextual-factors', 'cycle-effects', 'gpt5-analysis'];
     
     // If this is a non-functional prompt, don't process it
     if (!functionalPrompts.includes(promptType)) {
@@ -280,6 +314,61 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
           }, remainingTime);
         }
       }
+    } else if (promptType === 'gpt5-analysis') {
+      console.log('[Modal] GPT5 analysis button pressed');
+      const startTime = Date.now();
+      
+      // Use test_session_id if available, otherwise fall back to log.id
+      const sessionId = log.test_session_id || log.id;
+      console.log('[Modal] log.id:', log.id);
+      console.log('[Modal] log.test_session_id:', log.test_session_id);
+      console.log('[Modal] Using sessionId:', sessionId);
+      
+      // Call the edge function (it will handle caching internally)
+      try {
+        console.log('[Modal] 🔄 Calling getGPT5Analysis...');
+        const result = await getGPT5Analysis(sessionId);
+        console.log('[Modal] ✅ getGPT5Analysis returned successfully');
+        console.log('[Modal] Analysis biomarker count:', result.analysis.biomarkers?.length);
+        
+        const elapsedTime = Date.now() - startTime;
+        console.log('[Modal] Edge function took', elapsedTime, 'ms');
+        const remainingTime = Math.max(0, 1500 - elapsedTime); // Minimum 1.5s for UX
+        
+        // Format the analysis result
+        console.log('[Modal] Formatting analysis result...');
+        const formatted = formatGPT5Analysis(result.analysis);
+        console.log('[Modal] Formatted result length:', formatted.length, 'characters');
+        
+        setTimeout(() => {
+          console.log('[Modal] 📝 Setting state with formatted response');
+          setPromptStates(prev => ({
+            ...prev,
+            [promptType]: { 
+              loading: false, 
+              response: formatted, 
+              expanded: true 
+            }
+          }));
+        }, remainingTime);
+      } catch (error) {
+        console.error('[Modal] ❌ Error getting GPT-5 analysis:', error);
+        console.error('[Modal] Error stack:', error instanceof Error ? error.stack : 'No stack');
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, 1500 - elapsedTime);
+        
+        setTimeout(() => {
+          console.log('[Modal] Setting error state');
+          setPromptStates(prev => ({
+            ...prev,
+            [promptType]: { 
+              loading: false, 
+              response: `Sorry, there was an error generating the GPT-5 analysis: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again later.`, 
+              expanded: true 
+            }
+          }));
+        }, remainingTime);
+      }
     } else {
       // Simulate API call for other buttons - replace with actual Supabase edge function calls
       setTimeout(() => {
@@ -357,7 +446,8 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
           'holistic-tips': 'Holistic tips for comfort.',
           'cycle-effects': 'How can my cycle affect these results?',
           'compare-last-test': 'Compare with my last test.',
-          'reassurance': 'I need reassurance'
+          'reassurance': 'I need reassurance',
+          'gpt5-analysis': 'gpt5_analyze_results'
         };
         
         // User message (right side)
@@ -492,6 +582,7 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
                   {!Object.values(promptStates).some(state => state.loading) && (
                     <View style={styles.promptGrid}>
                       {!promptStates['what-results-mean']?.response && renderPromptButton('what-results-mean', '🔍', 'What do my results mean?', true)}
+                      {!promptStates['gpt5-analysis']?.response && renderPromptButton('gpt5-analysis', '🤖', 'gpt5_analyze_results', true)}
                       {!promptStates['contextual-factors']?.response && renderPromptButton('contextual-factors', '🧩', 'What factors can affect these results?', true)}
                       {!promptStates['healthy-environment']?.response && renderPromptButton('healthy-environment', '🌿', 'How does a healthy environment look like?', true)}
                       {!promptStates['holistic-tips']?.response && renderPromptButton('holistic-tips', '☁️', 'Holistic tips for comfort.', false)}
@@ -567,6 +658,7 @@ const styles = StyleSheet.create({
   },
   promptGrid: {
     gap: 0,
+    marginTop: 20,
   },
   promptButton: {
     borderRadius: 24,
@@ -638,7 +730,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginVertical: 0,
+    marginVertical: 10,
     marginHorizontal: 20,
     maxWidth: '80%',
   },
@@ -650,10 +742,9 @@ const styles = StyleSheet.create({
   },
   assistantMessage: {
     alignSelf: 'flex-start',
-    marginBottom: 20,
-    marginTop: 10,
+    marginTop: 0,
+    marginBottom: 5,
     marginHorizontal: 20,
-    maxWidth: '80%',
   },
   assistantContent: {
     backgroundColor: '#F8F9FA',
@@ -705,10 +796,10 @@ const md = {
     width: '100%',
   },
   heading2: {
-    fontSize: 15,
-    lineHeight: 18,
+    fontSize: 18,
+    lineHeight: 24,
     fontFamily: 'Poppins-SemiBold',
-    color: '#000000',
+    color: '#721422',
     flexWrap: 'wrap',
     marginTop: 8,
     marginBottom: 4,

@@ -154,7 +154,7 @@ export default function HomeScreen() {
       const latestTest = await fetchLatestTestLog();
       setLatestTestLog(latestTest);
     } catch (error) {
-      // Handle error silently
+      console.error('[Home] Error loading latest test:', error);
     }
   };
 

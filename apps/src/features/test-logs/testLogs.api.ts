@@ -11,9 +11,11 @@ export type TestLog = {
   beta_g: string | null;
   nag: string | null;
   analysis: string | null;
+  analysis_healthy: string | null;
+  analysis_cycle: string | null;
+  gpt_5_analysis: any | null;
   status: string | null;
   created_at: string;
-  updated_at: string;
 };
 
 export async function ensureLog(sessionId: string): Promise<TestLog> {
@@ -37,7 +39,7 @@ export async function ensureLog(sessionId: string): Promise<TestLog> {
 export async function getLogBySession(sessionId: string) {
   const { data, error } = await supabase
     .from("test_logs")
-    .select("id, ph, h2o2, le, sna, beta_g, nag, status, analysis")
+    .select("id, test_session_id, ph, h2o2, le, sna, beta_g, nag, status, analysis, analysis_healthy, analysis_cycle, gpt_5_analysis")
     .eq("test_session_id", sessionId)
     .maybeSingle();
 
@@ -45,7 +47,7 @@ export async function getLogBySession(sessionId: string) {
 
   return data as Pick<
     TestLog,
-    "id" | "ph" | "h2o2" | "le" | "sna" | "beta_g" | "nag" | "status" | "analysis"
+    "id" | "test_session_id" | "ph" | "h2o2" | "le" | "sna" | "beta_g" | "nag" | "status" | "analysis" | "analysis_healthy" | "analysis_cycle" | "gpt_5_analysis"
   > | null;
 }
 
@@ -101,13 +103,13 @@ export async function upsertFinalResultsFromUI(
 export async function fetchLatestTestLog(): Promise<TestLog | null> {
   const { data, error } = await supabase
     .from("test_logs")
-    .select("*")
+    .select("id, test_session_id, ph, h2o2, le, sna, beta_g, nag, status, analysis, analysis_healthy, analysis_cycle, gpt_5_analysis, created_at, user_id")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
   if (error) throw error;
-  return data ?? null;
+  return data as TestLog | null;
 }
 
 export async function analyzeLog(logId: string) {
@@ -121,9 +123,9 @@ export async function analyzeLog(logId: string) {
 export async function fetchLogById(id: string): Promise<TestLog | null> {
   const { data, error } = await supabase
     .from('test_logs')
-    .select('*')
+    .select('id, test_session_id, ph, h2o2, le, sna, beta_g, nag, status, analysis, analysis_healthy, analysis_cycle, gpt_5_analysis, created_at, user_id')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
-  return (data as TestLog) ?? null;
+  return data as TestLog | null;
 }
