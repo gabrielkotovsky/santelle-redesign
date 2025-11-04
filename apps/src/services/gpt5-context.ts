@@ -34,14 +34,10 @@ type ContextAnalyzeResponse = {
 };
 
 export async function getGPT5Context(test_session_id: string) {
-  console.log('[GPT5 Context Service] Starting context analysis for test_session_id:', test_session_id);
-  
   const { data: { session } } = await supabase.auth.getSession();
   const jwt = session?.access_token;
-  console.log('[GPT5 Context Service] Got session JWT:', jwt ? 'present' : 'missing');
 
   const url = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/gpt5_context`;
-  console.log('[GPT5 Context Service] Calling URL:', url);
   
   const requestBody = {
     test_session_id,
@@ -52,7 +48,6 @@ export async function getGPT5Context(test_session_id: string) {
       target_column: "gpt_5_context"
     }
   };
-  console.log('[GPT5 Context Service] Request body:', JSON.stringify(requestBody, null, 2));
 
   try {
     const res = await fetch(url, {
@@ -64,21 +59,14 @@ export async function getGPT5Context(test_session_id: string) {
       body: JSON.stringify(requestBody),
     });
 
-    console.log('[GPT5 Context Service] Response status:', res.status);
-    console.log('[GPT5 Context Service] Response ok:', res.ok);
-
     const json = await res.json();
-    console.log('[GPT5 Context Service] Response JSON:', JSON.stringify(json, null, 2));
 
     if (!res.ok) {
-      console.error('[GPT5 Context Service] Error response:', json);
       throw new Error(json.error || "Failed to get GPT-5 context analysis");
     }
     
-    console.log('[GPT5 Context Service] Context analysis completed successfully');
     return json as ContextAnalyzeResponse;
   } catch (error) {
-    console.error('[GPT5 Context Service] Exception caught:', error);
     throw error;
   }
 }

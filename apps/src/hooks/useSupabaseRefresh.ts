@@ -30,7 +30,6 @@ export function useSupabaseRefresh(options: UseSupabaseRefreshOptions = {}): Use
       // Check network connectivity first
       const netInfo = await NetInfo.fetch();
       if (!netInfo.isConnected) {
-        console.log('No network connection');
         return;
       }
 
@@ -55,11 +54,9 @@ export function useSupabaseRefresh(options: UseSupabaseRefreshOptions = {}): Use
             await channel.subscribe();
           }
         }
-        
-        console.log('Realtime reconnected via pull-to-refresh');
       }
     } catch (error) {
-      console.warn('Failed to reconnect Realtime:', error);
+      // Silently handle Realtime reconnection error
     }
   };
 
@@ -77,7 +74,6 @@ export function useSupabaseRefresh(options: UseSupabaseRefreshOptions = {}): Use
       // Check network connectivity
       const netInfo = await NetInfo.fetch();
       if (!netInfo.isConnected) {
-        console.warn('No network connection available');
         return;
       }
 
@@ -85,7 +81,6 @@ export function useSupabaseRefresh(options: UseSupabaseRefreshOptions = {}): Use
       const hasValidSession = isAuthenticated && session?.access_token;
       
       if (!hasValidSession) {
-        console.log('No valid session, attempting refresh...');
         
         // Try to refresh the session with timeout
         const refreshPromise = supabase.auth.refreshSession();
@@ -101,7 +96,6 @@ export function useSupabaseRefresh(options: UseSupabaseRefreshOptions = {}): Use
         const timeUntilExpiry = expiresAt - Date.now();
         
         if (timeUntilExpiry <= 10 * 60 * 1000) { // 10 minutes
-          console.log('Session expiring soon, refreshing...');
           await supabase.auth.refreshSession();
           await refreshSession();
         }
@@ -121,17 +115,13 @@ export function useSupabaseRefresh(options: UseSupabaseRefreshOptions = {}): Use
         await customOnRefresh();
       }
 
-      console.log('Pull-to-refresh completed successfully');
-
     } catch (error) {
-      console.error('Refresh error:', error);
-      
       // Fallback: try basic recovery
       try {
         await refreshSession();
         await reconnectRealtime();
       } catch (fallbackError) {
-        console.error('Fallback recovery failed:', fallbackError);
+        // Silently handle fallback error
       }
     } finally {
       setRefreshing(false);

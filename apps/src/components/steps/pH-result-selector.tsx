@@ -31,7 +31,7 @@ export default function PHResultSelector({ title = "Log pH Results" }: PHResultS
             setSelectedPH(log.ph);
           }
         } catch (e) {
-          console.warn("[PHSelector] load existing ph failed:", e);
+          // Silently handle load error
         } finally {
           if (!cancelled) setLoadingInitial(false);
         }

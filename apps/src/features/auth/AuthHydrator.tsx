@@ -39,12 +39,11 @@ export function AuthHydrator() {
             const { error } = await supabase.auth.refreshSession();
             if (!error) {
               await refreshSession();
-              console.log('Session refreshed proactively');
             }
           }
         }
       } catch (error) {
-        console.warn('Session monitoring error:', error);
+        // Silently handle session monitoring error
       } finally {
         // Schedule next check if still in foreground
         if (appStateRef.current === 'active') {
@@ -70,7 +69,6 @@ export function AuthHydrator() {
       // Check network connectivity first
       const netInfo = await NetInfo.fetch();
       if (!netInfo.isConnected) {
-        console.log('No network connection, skipping Realtime reconnect');
         return false;
       }
 
@@ -78,7 +76,6 @@ export function AuthHydrator() {
       const token = data.session?.access_token;
       
       if (!token) {
-        console.log('No valid session token for Realtime');
         return false;
       }
 
@@ -97,7 +94,6 @@ export function AuthHydrator() {
       
       // Re-subscribe any existing channels
       const channels = supabase.getChannels();
-      console.log(`Reconnecting ${channels.length} Realtime channels`);
       
       for (const channel of channels) {
         if (channel.state !== 'joined') {
@@ -105,15 +101,11 @@ export function AuthHydrator() {
         }
       }
       
-      console.log('Realtime reconnected successfully');
       reconnectAttempts.current = 0; // Reset attempts on success
       return true;
     } catch (error) {
-      console.warn(`Failed to reconnect Realtime (attempt ${attempt + 1}):`, error);
-      
       // Retry with exponential backoff
       if (attempt < maxReconnectAttempts) {
-        console.log(`Retrying Realtime connection in ${Math.min(1000 * Math.pow(2, attempt + 1), 10000)}ms...`);
         return reconnectRealtime(attempt + 1);
       }
       
@@ -127,7 +119,6 @@ export function AuthHydrator() {
       const { data: currentSession, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.warn('Error getting session:', sessionError);
         return false;
       }
       
@@ -138,8 +129,6 @@ export function AuthHydrator() {
         
         // Refresh if session is expired OR expires within 5 minutes
         if (timeUntilExpiry <= 5 * 60 * 1000) {
-          console.log('Session expiring soon, refreshing...');
-          
           // Increased timeout to 30 seconds for slower connections
           const refreshPromise = supabase.auth.refreshSession();
           const timeoutPromise = new Promise<never>((_, reject) => 
@@ -152,17 +141,13 @@ export function AuthHydrator() {
           ]) as any;
           
           if (error) {
-            console.warn('Session refresh error:', error);
             return false;
           }
-          
-          console.log('Session refreshed successfully');
         }
       }
       
       return true;
     } catch (error) {
-      console.warn('Session refresh failed:', error);
       return false;
     }
   };
@@ -171,7 +156,6 @@ export function AuthHydrator() {
     // Network state listener
     const unsubscribeNetInfo = NetInfo.addEventListener(async (state) => {
       if (state.isConnected && appStateRef.current === 'active') {
-        console.log('Network reconnected, refreshing session and Realtime...');
         await handleSessionRefresh();
         await refreshSession();
         await reconnectRealtime();
@@ -184,8 +168,6 @@ export function AuthHydrator() {
       appStateRef.current = nextAppState;
 
       if (nextAppState === "active" && previousState !== "active") {
-        console.log('App became active, refreshing connections...');
-        
         try {
           // 1. Check and refresh session if needed
           await handleSessionRefresh();
@@ -206,8 +188,6 @@ export function AuthHydrator() {
           await sessionRecoveryService.startMonitoring();
           
         } catch (error) {
-          console.warn('Error during app activation:', error);
-          
           // Fallback: try essential steps without throwing
           try {
             await refreshSession();
@@ -215,11 +195,10 @@ export function AuthHydrator() {
             startSessionMonitoring();
             await sessionRecoveryService.startMonitoring();
           } catch (fallbackError) {
-            console.error('Fallback recovery failed:', fallbackError);
+            // Silently handle fallback error
           }
         }
       } else if (nextAppState === "background" || nextAppState === "inactive") {
-        console.log('App going to background, cleaning up...');
         
         // Stop session monitoring when app goes to background to save battery
         stopSessionMonitoring();

@@ -185,7 +185,7 @@ export default function TestScreen() {
         const id = await scheduleResultsReady(new Date(t + 600 * 1000).toISOString());
         setResultsNotifId(id);
       } catch (e) {
-        console.warn('Notification scheduling skipped:', e);
+        // Silently handle notification scheduling error
       }
 
       if (session) {
@@ -297,7 +297,7 @@ export default function TestScreen() {
           setPhSelected(false);
         }
       } catch (e) {
-        console.warn("[TestScreen] Failed to check pH selection:", e);
+        // Silently handle pH check error
       }
     };
     

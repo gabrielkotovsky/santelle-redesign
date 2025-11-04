@@ -121,7 +121,6 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
           }
         })
         .catch((error) => {
-          console.error('Error fetching article:', error);
           Alert.alert(
             'Error',
             'Unable to load the article. Please try again later.',

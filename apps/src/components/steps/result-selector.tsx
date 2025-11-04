@@ -108,7 +108,6 @@ export default function ResultSelector({ title = "Select your results" }: Result
           }, 1500);
         })
         .catch((e) => {
-          console.warn('Analysis failed:', e);
           setAnalyzing(false);
           setAnalysisError('Failed to analyze your results. Please try again.');
         });

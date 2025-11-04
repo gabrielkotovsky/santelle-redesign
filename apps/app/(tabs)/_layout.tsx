@@ -23,7 +23,6 @@ export default function TabsLayout() {
           router.replace('/(auth)/subscription');
         }
       } catch (error) {
-        console.error('Error checking subscription in tabs layout:', error);
         // On error, redirect to subscription screen for safety
         if (mounted) {
           router.replace('/(auth)/subscription');

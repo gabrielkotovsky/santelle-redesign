@@ -58,7 +58,6 @@ export async function getCycleContextAnalysis(testLogId?: string): Promise<Cycle
 
     return data;
   } catch (error) {
-    console.error('Error getting cycle context analysis:', error);
     throw error;
   }
 }

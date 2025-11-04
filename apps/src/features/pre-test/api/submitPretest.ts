@@ -31,7 +31,7 @@ export async function saveIndividualAnswer(opts: {
       .eq('response_id', responseId);
     
     if (deleteError) {
-      console.warn('Error deleting existing choices:', deleteError);
+      // Silently handle delete error
     }
   } else {
     // Create new response
@@ -46,7 +46,6 @@ export async function saveIndividualAnswer(opts: {
       .single();
 
     if (responseError) {
-      console.error('Error creating response:', responseError);
       throw responseError;
     }
     
@@ -80,7 +79,6 @@ export async function saveIndividualAnswer(opts: {
       .insert(responseChoices);
 
     if (choicesError) {
-      console.error('Error inserting response choices:', choicesError);
       throw choicesError;
     }
   }
@@ -123,7 +121,6 @@ export async function submitPretestAnswers(opts: {
     .select('id, question_id');
 
   if (responseError) {
-    console.error('Error inserting responses:', responseError);
     throw responseError;
   }
 
@@ -132,7 +129,6 @@ export async function submitPretestAnswers(opts: {
   for (const answer of opts.answers) {
     const response = insertedResponses.find(r => r.question_id === answer.question_id);
     if (!response) {
-      console.warn('No response found for question:', answer.question_id);
       continue;
     }
 
@@ -158,7 +154,6 @@ export async function submitPretestAnswers(opts: {
       .insert(responseChoices);
 
     if (choicesError) {
-      console.error('Error inserting response choices:', choicesError);
       throw choicesError;
     }
   }

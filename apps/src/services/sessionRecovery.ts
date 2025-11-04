@@ -25,12 +25,10 @@ export class SessionRecoveryService {
 
   async startMonitoring(): Promise<void> {
     if (this.isMonitoring) {
-      console.log('Session monitoring already active');
       return;
     }
     
     this.isMonitoring = true;
-    console.log('Starting session recovery monitoring');
     
     // Initial check
     await this.checkAndRecoverSession();
@@ -49,7 +47,6 @@ export class SessionRecoveryService {
   }
 
   stopMonitoring(): void {
-    console.log('Stopping session recovery monitoring');
     if (this.checkTimeout) {
       clearTimeout(this.checkTimeout);
       this.checkTimeout = null;
@@ -64,13 +61,11 @@ export class SessionRecoveryService {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.warn('Error getting session during recovery check:', sessionError);
         await this.handleRefreshFailure();
         return;
       }
       
       if (!sessionData.session) {
-        console.log('No active session to recover');
         return;
       }
 
@@ -81,16 +76,12 @@ export class SessionRecoveryService {
 
       // If session is expired or expires within 20 minutes, try to refresh
       if (timeUntilExpiry <= 20 * 60 * 1000) {
-        console.log(`Session expiring in ${Math.round(timeUntilExpiry / 60000)} minutes, refreshing...`);
-        
         try {
           const { data: refreshData, error } = await supabase.auth.refreshSession();
           
           if (error) {
-            console.warn('Session refresh failed:', error.message);
             await this.handleRefreshFailure();
           } else if (refreshData.session) {
-            console.log('Session refreshed successfully by recovery service');
             await this.updateRecoveryData(true);
             
             // Update Realtime auth token after successful refresh
@@ -99,7 +90,6 @@ export class SessionRecoveryService {
             }
           }
         } catch (refreshError) {
-          console.warn('Session refresh error:', refreshError);
           await this.handleRefreshFailure();
         }
       } else {
@@ -107,7 +97,6 @@ export class SessionRecoveryService {
         await this.updateRecoveryData(true);
       }
     } catch (error) {
-      console.warn('Session check error:', error);
       await this.handleRefreshFailure();
     }
   }
@@ -121,14 +110,11 @@ export class SessionRecoveryService {
     // If we've failed too many times (increased to 5 attempts), clear the session
     // This prevents premature sign-outs due to temporary network issues
     if (newRetryCount >= 5) {
-      console.warn('Session recovery failed after 5 attempts, signing out...');
       try {
         await supabase.auth.signOut();
       } catch (signOutError) {
-        console.error('Error signing out:', signOutError);
+        // Silently handle sign out error
       }
-    } else {
-      console.log(`Session refresh failed (attempt ${newRetryCount}/5)`);
     }
   }
 
@@ -142,7 +128,7 @@ export class SessionRecoveryService {
     try {
       await AsyncStorage.setItem(SESSION_RECOVERY_KEY, JSON.stringify(recoveryData));
     } catch (error) {
-      console.warn('Failed to save recovery data:', error);
+      // Silently handle storage error
     }
   }
 
@@ -151,7 +137,6 @@ export class SessionRecoveryService {
       const data = await AsyncStorage.getItem(SESSION_RECOVERY_KEY);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.warn('Failed to get recovery data:', error);
       return null;
     }
   }
@@ -164,13 +149,12 @@ export class SessionRecoveryService {
     try {
       await AsyncStorage.removeItem(SESSION_RECOVERY_KEY);
     } catch (error) {
-      console.warn('Failed to clear recovery data:', error);
+      // Silently handle storage error
     }
   }
 
   // Force an immediate session check (useful for manual recovery)
   async forceCheck(): Promise<void> {
-    console.log('Forcing immediate session check...');
     await this.checkAndRecoverSession();
   }
 }
