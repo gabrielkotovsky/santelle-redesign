@@ -106,7 +106,13 @@ export async function getUserNavigationRoute(): Promise<string> {
         const user = await getUser();
         if (!user) return '/(auth)/landing';
         
-        // Check onboarding status first
+        // Check subscription status first - users must have active subscription or trial
+        const hasAccess = await hasActiveSubscriptionOrTrial();
+        if (!hasAccess) {
+            return '/(auth)/subscription';
+        }
+        
+        // Check onboarding status
         const needsOnboardingFlow = await needsOnboarding();
         if (needsOnboardingFlow) {
             return '/(onboarding)/name';
@@ -262,4 +268,87 @@ export async function hasCompletedQuestionnaire(userId: string): Promise<boolean
     if (!entry) return false;
     
     return entry.questionnaire_complete === true;
+}
+
+// Subscription database functions
+export async function getProfile(userId: string) {
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+        
+        if (error) {
+            // PGRST116 is "no rows returned" - this is expected if profile doesn't exist
+            if (error.code === 'PGRST116') {
+                return null;
+            }
+            // For other errors, throw
+            throw error;
+        }
+        
+        return data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function hasActiveSubscriptionOrTrial(): Promise<boolean> {
+    const user = await getUser();
+    if (!user) return false;
+    
+    try {
+        const profile = await getProfile(user.id);
+        
+        // If no profile exists, user doesn't have subscription
+        if (!profile) {
+            return false;
+        }
+        
+        const now = new Date();
+        const subscriptionStatus = profile.subscription_status?.toLowerCase();
+        
+        // Check if user has active subscription
+        if (subscriptionStatus === 'active') {
+            // Verify subscription hasn't expired
+            if (profile.current_period_end) {
+                const periodEnd = new Date(profile.current_period_end);
+                if (periodEnd > now) {
+                    return true;
+                }
+            } else {
+                // If active but no period_end, assume valid (might be legacy or setup issue)
+                return true;
+            }
+        }
+        
+        // Check if user is trialing
+        if (subscriptionStatus === 'trialing') {
+            // If trial_end_date exists, verify it hasn't passed
+            if (profile.trial_end_date) {
+                const trialEnd = new Date(profile.trial_end_date);
+                // Check if date is valid
+                if (!isNaN(trialEnd.getTime()) && trialEnd > now) {
+                    return true;
+                }
+            } else {
+                // If trialing but no trial_end_date, assume valid (similar to active without period_end)
+                return true;
+            }
+        }
+        
+        // Check if subscription is canceled but still in grace period
+        if (subscriptionStatus === 'canceled' && profile.current_period_end) {
+            const periodEnd = new Date(profile.current_period_end);
+            if (periodEnd > now && profile.cancel_at_period_end === true) {
+                return true;
+            }
+        }
+        
+        return false;
+    } catch (error) {
+        // If there's an error checking subscription, deny access for safety
+        return false;
+    }
 }
