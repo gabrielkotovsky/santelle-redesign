@@ -152,7 +152,6 @@ export default function PreTestQuestions() {
         router.replace('/log-test/test');
       }
     } catch (error) {
-      console.error('Failed to save page answers:', error);
       Alert.alert(
         'Save Failed', 
         'Failed to save your answers. Please try again.',

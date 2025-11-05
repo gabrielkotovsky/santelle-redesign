@@ -12,7 +12,6 @@ export const CustomIcon: React.FC<CustomIconProps> = ({
   const IconComponent = IconRegistry[name as RegisteredIconName];
   
   if (!IconComponent) {
-    console.warn(`Icon "${name}" not found in registry`);
     return null;
   }
 

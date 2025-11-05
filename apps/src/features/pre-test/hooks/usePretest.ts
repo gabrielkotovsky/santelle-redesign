@@ -30,7 +30,7 @@ export function usePretest(version = 1) {
           await AsyncStorage.setItem(key, JSON.stringify(fresh));
         }
       } catch (error) {
-        console.warn('Failed to load pretest questions:', error);
+        // Silently handle error
       } finally {
         if (mounted) {
           setLoading(false);
@@ -70,7 +70,6 @@ export function usePretest(version = 1) {
     try {
       await saveIndividualAnswer({ test_session_id, answer, version });
     } catch (error) {
-      console.error('Failed to save answer:', error);
       throw error;
     }
   };

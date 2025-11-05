@@ -350,7 +350,6 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: !!session && !!user,
           });
         } catch (error: any) {
-          console.warn('Session refresh error:', error);
           set({ error: error.message || 'Failed to refresh session' });
         }
       },
@@ -402,7 +401,6 @@ export const useAuthStore = create<AuthState>()(
           authSubscription = subscription;
         } catch (error: any) {
           // Silently handle listener errors - don't disrupt the app
-          console.warn('Failed to reinitialize auth listener:', error);
         }
       },
 

@@ -28,7 +28,6 @@ export async function getContextualFactorsAnalysis(testLogId: string) {
       success: true
     };
   } catch (error) {
-    console.error('Error getting contextual factors analysis:', error);
     throw error;
   }
 }

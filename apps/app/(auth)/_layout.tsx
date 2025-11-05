@@ -6,6 +6,7 @@ export default function AuthLayout() {
       <Stack.Screen name="landing" options={{ headerShown: false }} />
       <Stack.Screen name="email" options={{ headerShown: false }} />
       <Stack.Screen name="otp" options={{ headerShown: false }} />
+      <Stack.Screen name="subscription" options={{ headerShown: false }} />
     </Stack>
   );
 }

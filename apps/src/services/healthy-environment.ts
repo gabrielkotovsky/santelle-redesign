@@ -7,13 +7,11 @@ export async function getHealthyEnvironmentAnalysis(testLogId: string) {
     });
 
     if (error) {
-      console.error('Error calling healthy-environment function:', error);
       throw error;
     }
 
     return data;
   } catch (error) {
-    console.error('Error in getHealthyEnvironmentAnalysis:', error);
     throw error;
   }
 }

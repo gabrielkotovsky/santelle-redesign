@@ -12,7 +12,7 @@ export async function safeHideSplashScreen(): Promise<void> {
     // Suppress "No native splash screen registered" error that occurs
     // when pageSheet modals create new UIViewController instances on iOS
     if (error?.message?.includes('No native splash screen registered')) {
-      console.warn('Splash screen hide failed (modal view controller):', error.message);
+      // Silently handle this expected error
     } else {
       // Re-throw other errors as they might be more serious
       throw error;

@@ -195,7 +195,6 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
             }));
           }, remainingTime);
         } catch (error) {
-          console.error('Error analyzing results:', error);
           const elapsedTime = Date.now() - startTime;
           const remainingTime = Math.max(0, 3000 - elapsedTime);
           
@@ -245,7 +244,6 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
             }));
           }, remainingTime);
         } catch (error) {
-          console.error('Error getting healthy environment analysis:', error);
           const elapsedTime = Date.now() - startTime;
           const remainingTime = Math.max(0, 3000 - elapsedTime);
           
@@ -280,7 +278,6 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
           }));
         }, remainingTime);
       } catch (error) {
-        console.error('Error getting contextual factors analysis:', error);
         const elapsedTime = Date.now() - startTime;
         const remainingTime = Math.max(0, 3000 - elapsedTime);
         
@@ -332,7 +329,6 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
             }));
           }, remainingTime);
         } catch (error) {
-          console.error('Error getting cycle context analysis:', error);
           const elapsedTime = Date.now() - startTime;
           const remainingTime = Math.max(0, 3000 - elapsedTime);
           
@@ -349,33 +345,22 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
         }
       }
     } else if (promptType === 'gpt5-analysis') {
-      console.log('[Modal] GPT5 analysis button pressed');
       const startTime = Date.now();
       
       // Use test_session_id if available, otherwise fall back to log.id
       const sessionId = log.test_session_id || log.id;
-      console.log('[Modal] log.id:', log.id);
-      console.log('[Modal] log.test_session_id:', log.test_session_id);
-      console.log('[Modal] Using sessionId:', sessionId);
       
       // Call the edge function (it will handle caching internally)
       try {
-        console.log('[Modal] 🔄 Calling getGPT5Analysis...');
         const result = await getGPT5Analysis(sessionId);
-        console.log('[Modal] ✅ getGPT5Analysis returned successfully');
-        console.log('[Modal] Analysis biomarker count:', result.analysis.biomarkers?.length);
         
         const elapsedTime = Date.now() - startTime;
-        console.log('[Modal] Edge function took', elapsedTime, 'ms');
         const remainingTime = Math.max(0, 1500 - elapsedTime); // Minimum 1.5s for UX
         
         // Format the analysis result
-        console.log('[Modal] Formatting analysis result...');
         const formatted = formatGPT5Analysis(result.analysis);
-        console.log('[Modal] Formatted result length:', formatted.length, 'characters');
         
         setTimeout(() => {
-          console.log('[Modal] 📝 Setting state with formatted response');
           setPromptStates(prev => ({
             ...prev,
             [promptType]: { 
@@ -386,13 +371,10 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
           }));
         }, remainingTime);
       } catch (error) {
-        console.error('[Modal] ❌ Error getting GPT-5 analysis:', error);
-        console.error('[Modal] Error stack:', error instanceof Error ? error.stack : 'No stack');
         const elapsedTime = Date.now() - startTime;
         const remainingTime = Math.max(0, 1500 - elapsedTime);
         
         setTimeout(() => {
-          console.log('[Modal] Setting error state');
           setPromptStates(prev => ({
             ...prev,
             [promptType]: { 
@@ -404,33 +386,22 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
         }, remainingTime);
       }
     } else if (promptType === 'gpt5-context') {
-      console.log('[Modal] GPT5 context button pressed');
       const startTime = Date.now();
       
       // Use test_session_id if available, otherwise fall back to log.id
       const sessionId = log.test_session_id || log.id;
-      console.log('[Modal] log.id:', log.id);
-      console.log('[Modal] log.test_session_id:', log.test_session_id);
-      console.log('[Modal] Using sessionId:', sessionId);
       
       // Call the edge function (it will handle caching internally)
       try {
-        console.log('[Modal] 🔄 Calling getGPT5Context...');
         const result = await getGPT5Context(sessionId);
-        console.log('[Modal] ✅ getGPT5Context returned successfully');
-        console.log('[Modal] Context insights count:', result.analysis.insights?.length);
         
         const elapsedTime = Date.now() - startTime;
-        console.log('[Modal] Edge function took', elapsedTime, 'ms');
         const remainingTime = Math.max(0, 1500 - elapsedTime); // Minimum 1.5s for UX
         
         // Format the context analysis result
-        console.log('[Modal] Formatting context analysis result...');
         const formatted = formatGPT5Context(result.analysis);
-        console.log('[Modal] Formatted result length:', formatted.length, 'characters');
         
         setTimeout(() => {
-          console.log('[Modal] 📝 Setting state with formatted response');
           setPromptStates(prev => ({
             ...prev,
             [promptType]: { 
@@ -441,13 +412,10 @@ export default function AskSantelleModal({ visible, onClose, log, onMedicalTermP
           }));
         }, remainingTime);
       } catch (error) {
-        console.error('[Modal] ❌ Error getting GPT-5 context:', error);
-        console.error('[Modal] Error stack:', error instanceof Error ? error.stack : 'No stack');
         const elapsedTime = Date.now() - startTime;
         const remainingTime = Math.max(0, 1500 - elapsedTime);
         
         setTimeout(() => {
-          console.log('[Modal] Setting error state');
           setPromptStates(prev => ({
             ...prev,
             [promptType]: { 

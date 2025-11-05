@@ -58,6 +58,13 @@ supabase.auth.onAuthStateChange(async (event, session) => {
   // Important: keep RT using the latest access token
   const token = session?.access_token ?? null;
   
+  if (event === 'TOKEN_REFRESHED') {
+    console.log('🔄 Token refreshed', {
+      timestamp: new Date().toISOString(),
+      expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+    });
+  }
+  
   if (event === 'SIGNED_OUT') {
     // Explicitly disconnect realtime when signing out
     supabase.realtime.disconnect();
