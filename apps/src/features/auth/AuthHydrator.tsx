@@ -36,6 +36,9 @@ export function AuthHydrator() {
           
           // Refresh if session expires within 15 minutes (more proactive)
           if (timeUntilExpiry <= 15 * 60 * 1000) {
+            console.log('🔄 Refreshing token (monitoring check)', {
+              timeUntilExpiry: `${Math.round(timeUntilExpiry / 1000 / 60)} minutes`,
+            });
             const { error } = await supabase.auth.refreshSession();
             if (!error) {
               await refreshSession();
@@ -129,6 +132,9 @@ export function AuthHydrator() {
         
         // Refresh if session is expired OR expires within 5 minutes
         if (timeUntilExpiry <= 5 * 60 * 1000) {
+          console.log('🔄 Refreshing token (app state change)', {
+            timeUntilExpiry: `${Math.round(timeUntilExpiry / 1000 / 60)} minutes`,
+          });
           // Increased timeout to 30 seconds for slower connections
           const refreshPromise = supabase.auth.refreshSession();
           const timeoutPromise = new Promise<never>((_, reject) => 

@@ -77,6 +77,9 @@ export class SessionRecoveryService {
       // If session is expired or expires within 20 minutes, try to refresh
       if (timeUntilExpiry <= 20 * 60 * 1000) {
         try {
+          console.log('🔄 Refreshing token (session recovery)', {
+            timeUntilExpiry: `${Math.round(timeUntilExpiry / 1000 / 60)} minutes`,
+          });
           const { data: refreshData, error } = await supabase.auth.refreshSession();
           
           if (error) {

@@ -83,6 +83,7 @@ export function useSupabaseRefresh(options: UseSupabaseRefreshOptions = {}): Use
       if (!hasValidSession) {
         
         // Try to refresh the session with timeout
+        console.log('🔄 Refreshing token (no valid session)');
         const refreshPromise = supabase.auth.refreshSession();
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Session refresh timeout')), 15000)
@@ -96,6 +97,9 @@ export function useSupabaseRefresh(options: UseSupabaseRefreshOptions = {}): Use
         const timeUntilExpiry = expiresAt - Date.now();
         
         if (timeUntilExpiry <= 10 * 60 * 1000) { // 10 minutes
+          console.log('🔄 Refreshing token (expires soon)', {
+            timeUntilExpiry: `${Math.round(timeUntilExpiry / 1000 / 60)} minutes`,
+          });
           await supabase.auth.refreshSession();
           await refreshSession();
         }
