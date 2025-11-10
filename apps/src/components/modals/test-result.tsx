@@ -13,6 +13,7 @@ import { XIcon } from '../icons/svg/XIcon';
 import { ScreenBackground } from '../layout/ScreenBackground';
 import { ArticleModal } from './article-modal';
 import AskSantelleModal from './ask-santelle-modal';
+import ChatbotModal from './chatbot-modal';
 import { getBiomarkerDescription, getBiomarkerStatus, getPHStatus } from './biomarker-utils';
 
 type Props = {
@@ -94,6 +95,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
   const [articleModalVisible, setArticleModalVisible] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<any>(null);
   const [askSantelleModalVisible, setAskSantelleModalVisible] = useState(false);
+  const [chatbotModalVisible, setChatbotModalVisible] = useState(false);
   
   if (!log) return null;
 
@@ -330,6 +332,14 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
             </LinearGradient>
           </ShrinkableTouchable>
 
+          {/* Chatbot Button */}
+          <ShrinkableTouchable 
+            style={styles.chatbotButton}
+            onPress={() => setChatbotModalVisible(true)}
+          >
+            <Text style={styles.chatbotButtonText}>Chat</Text>
+          </ShrinkableTouchable>
+
         </ScrollView>
         </View>
       </ScreenBackground>
@@ -369,6 +379,12 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
         onClose={() => setAskSantelleModalVisible(false)}
         log={log}
         onMedicalTermPress={handleMedicalTermPress}
+      />
+
+      <ChatbotModal
+        visible={chatbotModalVisible}
+        onClose={() => setChatbotModalVisible(false)}
+        log={log}
       />
     </Modal>
   )
@@ -559,6 +575,22 @@ const styles = StyleSheet.create({
     borderRadius: 30,
   },
   askSantelleButtonText: {
+    fontSize: 18,
+    fontFamily: 'Poppins-SemiBold',
+    color: "#721422",
+  },
+  // Chatbot Button styles
+  chatbotButton: {
+    borderRadius: 30,
+    marginTop: 10,
+    backgroundColor: 'rgba(114, 20, 34, 0.1)',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(114, 20, 34, 0.2)',
+  },
+  chatbotButtonText: {
     fontSize: 18,
     fontFamily: 'Poppins-SemiBold',
     color: "#721422",

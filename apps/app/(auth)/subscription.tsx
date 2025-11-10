@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, Linking } from 'react-native';
 import { router } from 'expo-router';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
@@ -39,12 +39,14 @@ export default function Subscription() {
         <View style={styles.buttonSection}>
           <TouchableOpacity
             style={styles.subscribeButton}
-            onPress={() => {
-              // TODO: Implement Stripe checkout flow
-              Alert.alert(
-                'Coming Soon',
-                'Subscription checkout will be available soon. Please contact support for assistance.'
-              );
+            onPress={async () => {
+              const url = 'https://santellehealth.com';
+              const supported = await Linking.canOpenURL(url);
+              if (supported) {
+                await Linking.openURL(url);
+              } else {
+                Alert.alert('Error', 'Unable to open the subscription page.');
+              }
             }}
           >
             <Text style={styles.subscribeButtonText}>Subscribe Now</Text>
