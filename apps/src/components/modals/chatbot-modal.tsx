@@ -1,5 +1,4 @@
 // src/components/modals/chatbot-modal.tsx
-import { Colors } from '@/src/theme/colors';
 import { BlurView } from 'expo-blur';
 import MaskedView from '@react-native-masked-view/masked-view';
 import React, { useRef, useState } from 'react';
@@ -23,11 +22,46 @@ type Props = {
   } | null;
 };
 
+const PRESET_PROMPTS = [
+  {
+    text: 'What do my results mean?',
+    colors: ['#A1E3D8', '#D8C8F1', '#F9F9FF'],
+    borderColor: 'rgba(161, 227, 216, 0.75)',
+  },
+  {
+    text: 'What factors can influence my results?',
+    colors: ['#FBE5A2', '#F8B6A2', '#D8B9E5'],
+    borderColor: 'rgba(216, 185, 229, 0.7)',
+  },
+  {
+    text: 'Holistic tips for comfort',
+    colors: ['#A6C48A', '#F3C6B8', '#FFF9EE'],
+    borderColor: 'rgba(166, 196, 138, 0.7)',
+  },
+  {
+    text: 'Trend analysis',
+    colors: ['#9FD7F9', '#F9D4B4', '#E4E3F5'],
+    borderColor: 'rgba(159, 215, 249, 0.7)',
+  },
+  {
+    text: 'I need reassurance',
+    colors: ['#C9D8FC', '#F6C9C0', '#FFF5F2'],
+    borderColor: 'rgba(201, 216, 252, 0.7)',
+  },
+];
+
 export default function ChatbotModal({ visible, onClose, log }: Props) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Array<{ id: string; text: string; role: 'user' | 'assistant' }>>([]);
   const scrollViewRef = useRef<ScrollView | null>(null);
   const [confirmingClose, setConfirmingClose] = useState(false);
+
+  const handlePromptPress = (prompt: string) => {
+    setMessage(prompt);
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    });
+  };
 
   const handleSend = () => {
     // No functionality yet - just clear the input
@@ -153,9 +187,30 @@ export default function ChatbotModal({ visible, onClose, log }: Props) {
           contentContainerStyle={styles.messagesContainer}
           keyboardShouldPersistTaps="handled"
         >
+          <View style={styles.promptButtonsSection}>
+            <View style={styles.promptButtonsContainer}>
+              {PRESET_PROMPTS.map(({ text, colors, borderColor }) => (
+                <TouchableOpacity
+                  key={text}
+                  onPress={() => handlePromptPress(text)}
+                  style={styles.promptButtonTouchable}
+                  activeOpacity={0.85}
+                >
+                  <LinearGradient
+                    colors={colors}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.promptButton, { borderColor }]}
+                  >
+                    <Text style={styles.promptButtonText}>{text}</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
           {messages.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>Start a conversation...</Text>
+              <Text style={styles.emptyStateText}></Text>
             </View>
           ) : (
             messages.map(item => (
@@ -213,7 +268,7 @@ export default function ChatbotModal({ visible, onClose, log }: Props) {
 const styles = StyleSheet.create({
   container: { 
     flex: 1,
-    backgroundColor: 'rgb(234, 234, 234)',
+    backgroundColor: 'rgb(240, 240, 240)',
   },
   statusBarBlurBackground: {
     position: 'absolute',
@@ -273,6 +328,40 @@ const styles = StyleSheet.create({
     paddingTop: 100,
     paddingBottom: 120,
     flexGrow: 1,
+  },
+  promptButtonsSection: {
+    marginBottom: 24,
+  },
+  promptSectionTitle: {
+    fontSize: 16,
+    fontFamily: 'Chunko-Bold',
+    color: '#721422',
+    marginBottom: 12,
+  },
+  promptButtonsContainer: {
+    flexDirection: 'column',
+  },
+  promptButtonTouchable: {
+    width: '100%',
+    marginBottom: 12,
+  },
+  promptButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    shadowColor: '#721422',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(114, 20, 34, 0.15)',
+  },
+  promptButtonText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+    color: '#721422',
+    lineHeight: 18,
   },
   emptyState: {
     flex: 1,
