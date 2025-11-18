@@ -46,6 +46,12 @@ export function usePretest(version = 1) {
       return [...without, { question_id: qId, type: 'single', choice_id: choiceId }];
     });
 
+  const setMulti = (qId: UUID, choiceIds: UUID[]) =>
+    setAnswers(prev => {
+      const without = prev.filter(a => a.question_id !== qId);
+      return [...without, { question_id: qId, type: 'multi' as const, choice_ids: choiceIds }];
+    });
+
   const toggleMulti = (qId: UUID, choiceId: UUID) =>
     setAnswers(prev => {
       const existing = prev.find(a => a.question_id === qId && a.type === 'multi');
@@ -74,5 +80,5 @@ export function usePretest(version = 1) {
     }
   };
 
-  return { questions, answers, loading, canSubmit, setSingle, toggleMulti, submit, saveAnswer };
+  return { questions, answers, loading, canSubmit, setSingle, setMulti, toggleMulti, submit, saveAnswer };
 }

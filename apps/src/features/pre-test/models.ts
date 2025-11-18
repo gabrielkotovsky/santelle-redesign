@@ -23,6 +23,7 @@ export type PretestQuestion = {
   active: boolean;
   created_at: string;
   q_id: string | null;
+  symptom_or_context?: 'symptoms' | 'context';
   choices: PretestChoice[];
 };
 

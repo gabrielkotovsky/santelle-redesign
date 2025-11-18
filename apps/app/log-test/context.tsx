@@ -8,12 +8,13 @@ import {
   Text, 
   View 
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
-import { usePretest, type PretestQuestion, type PretestChoice, type UUID } from '@/src/features/pre-test';
+import { usePretest, type PretestQuestion, type PretestChoice, type UUID, type PretestAnswer } from '@/src/features/pre-test';
 import { useTestSession } from '@/src/features/test-session/testSession.store';
+import { supabase } from '@/src/services/supabase';
 
 // Helper function to get question by slug
 const getQuestionBySlug = (questions: PretestQuestion[], slug: string): PretestQuestion | undefined => {
@@ -66,17 +67,93 @@ function AnimatedOption({ option, isSelected, onPress, multiline = false }: Anim
 }
 
 export default function PreTestQuestions() {
+  const params = useLocalSearchParams<{ test_session_id?: string; edit?: string }>();
+  const isEditMode = params.edit === 'true';
+  const editSessionId = params.test_session_id;
+  
   const [currentPage, setCurrentPage] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const { questions, answers, loading, canSubmit, setSingle, toggleMulti, submit, saveAnswer } = usePretest(1);
+  const [loadingExistingAnswers, setLoadingExistingAnswers] = useState(isEditMode);
+  const { questions, answers, loading, canSubmit, setSingle, setMulti, toggleMulti, submit, saveAnswer } = usePretest(1);
   const { session: testSession, startSession } = useTestSession();
 
-  // Ensure we have a test session when component loads
+  // Load existing answers if in edit mode
   useEffect(() => {
-    if (!testSession?.id) {
+    async function loadExistingAnswers() {
+      if (!isEditMode || !editSessionId || questions.length === 0) {
+        setLoadingExistingAnswers(false);
+        return;
+      }
+
+      try {
+        // Fetch existing responses for this test session (both symptoms and context)
+        const { data: responses, error } = await supabase
+          .from('app_pretest_responses')
+          .select(`
+            question_id,
+            app_pretest_questions!inner ( symptom_or_context ),
+            app_pretest_response_choices (
+              choice_id
+            )
+          `)
+          .eq('test_session_id', editSessionId)
+          .in('app_pretest_questions.symptom_or_context', ['symptoms', 'context']);
+
+        if (error) throw error;
+
+        if (responses && responses.length > 0) {
+          // Convert responses to PretestAnswer format
+          const loadedAnswers: PretestAnswer[] = [];
+          
+          responses.forEach((response: any) => {
+            const questionId = response.question_id;
+            const choiceIds = response.app_pretest_response_choices.map((c: any) => c.choice_id);
+            
+            // Find the question to determine if it's single or multi
+            const question = questions.find(q => q.id === questionId);
+            if (question && choiceIds.length > 0) {
+              if (question.type === 'single') {
+                loadedAnswers.push({
+                  question_id: questionId,
+                  type: 'single',
+                  choice_id: choiceIds[0]
+                });
+              } else if (question.type === 'multi') {
+                loadedAnswers.push({
+                  question_id: questionId,
+                  type: 'multi',
+                  choice_ids: choiceIds
+                });
+              }
+            }
+          });
+
+          // Set the loaded answers
+          loadedAnswers.forEach(answer => {
+            if (answer.type === 'single') {
+              setSingle(answer.question_id, answer.choice_id);
+            } else if (answer.type === 'multi') {
+              setMulti(answer.question_id, answer.choice_ids);
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error loading existing answers:', error);
+        Alert.alert('Error', 'Failed to load existing answers');
+      } finally {
+        setLoadingExistingAnswers(false);
+      }
+    }
+
+    loadExistingAnswers();
+  }, [isEditMode, editSessionId, questions]);
+
+  // Ensure we have a test session when component loads (only if not in edit mode)
+  useEffect(() => {
+    if (!isEditMode && !testSession?.id) {
       startSession();
     }
-  }, [testSession?.id, startSession]);
+  }, [isEditMode, testSession?.id, startSession]);
 
   // Simple answer handling (no auto-save)
   const handleSetSingle = (questionId: UUID, choiceId: UUID) => {
@@ -134,22 +211,31 @@ export default function PreTestQuestions() {
     setIsSaving(true);
     
     try {
+      // Determine which session ID to use
+      const sessionId = isEditMode ? editSessionId : testSession?.id;
+      
       // Save answers for current page before proceeding
-      if (testSession?.id) {
+      if (sessionId) {
         const pageAnswers = answers.filter(answer => 
           pageQuestions.some(q => q.id === answer.question_id)
         );
         
         for (const answer of pageAnswers) {
-          await saveAnswer(testSession.id, answer);
+          await saveAnswer(sessionId, answer);
         }
       }
 
       if (currentPage < questions.length - 1) {
         setCurrentPage(prev => prev + 1);
       } else {
-        // All done - proceed to test
-        router.replace('/log-test/test');
+        // All done
+        if (isEditMode) {
+          // In edit mode, go back to the previous screen
+          router.back();
+        } else {
+          // In new test mode, proceed to test
+          router.replace('/log-test/test');
+        }
       }
     } catch (error) {
       Alert.alert(
@@ -235,7 +321,7 @@ export default function PreTestQuestions() {
   };
 
 
-  if (loading) {
+  if (loading || loadingExistingAnswers) {
     return (
       <ScreenBackground>
         <View style={styles.container}>
@@ -249,7 +335,9 @@ export default function PreTestQuestions() {
           </View>
           <View style={styles.headerSection}>
             <LogoCrossIcon size={60} color="#721422" />
-            <Text style={styles.title}>Loading questions...</Text>
+            <Text style={styles.title}>
+              {loadingExistingAnswers ? 'Loading your answers...' : 'Loading questions...'}
+            </Text>
           </View>
         </View>
       </ScreenBackground>
@@ -290,7 +378,13 @@ export default function PreTestQuestions() {
               styles.continueButtonText,
               (!canContinue() || isSaving) && styles.continueButtonTextDisabled
             ]}>
-              {isSaving ? 'Saving...' : (currentPage === questions.length - 1 ? 'Start Test' : 'Continue')}
+              {isSaving 
+                ? 'Saving...' 
+                : (currentPage === questions.length - 1 
+                    ? (isEditMode ? 'Save Changes' : 'Start Test') 
+                    : 'Continue'
+                  )
+              }
             </Text>
           </Pressable>
         </View>

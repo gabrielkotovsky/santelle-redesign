@@ -8,6 +8,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { router } from 'expo-router';
 import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 import { XIcon } from '../icons/svg/XIcon';
 import { ScreenBackground } from '../layout/ScreenBackground';
@@ -464,6 +465,8 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
             <Text style={styles.learnMoreButtonText}>Learn more about your biomarkers</Text>
           </ShrinkableTouchable>
 
+          <View style={styles.divider} />
+
           {/* Journal Entry */}
           {(log.test_session_id || log.id) && (
             <View style={styles.journalCard}>
@@ -538,6 +541,22 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                           </View>
                         </View>
                       )}
+
+                      <ShrinkableTouchable
+                        style={styles.journalEditButton}
+                        onPress={() => {
+                          const sessionId = log.test_session_id || log.id;
+                          if (sessionId) {
+                            onClose();
+                            router.push({
+                              pathname: '/log-test/context',
+                              params: { test_session_id: sessionId, edit: 'true' }
+                            });
+                          }
+                        }}
+                      >
+                        <Text style={styles.journalEditButtonText}>Edit Answers</Text>
+                      </ShrinkableTouchable>
                     </>
                   )}
                 </Animated.View>
@@ -790,7 +809,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(114, 20, 34, 0.15)',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 0,
   },
   learnMoreButtonText: {
     fontSize: 14,
@@ -800,7 +819,7 @@ const styles = StyleSheet.create({
 
   // Journal Entry styles
   journalCard: {
-    marginTop: 16,
+    marginTop: 0,
     borderRadius: 24,
     padding: 18,
     paddingVertical: 12,
@@ -882,7 +901,7 @@ const styles = StyleSheet.create({
   },
   journalSectionSecondary: {
     backgroundColor: '#F6EDE1',
-    marginTop: 16,
+    marginTop: 0,
   },
   journalSectionTitle: {
     fontSize: 16,
@@ -916,6 +935,21 @@ const styles = StyleSheet.create({
   },
   journalLabelText: {
     fontSize: 13,
+    fontFamily: 'Poppins-SemiBold',
+    color: Colors.light.rush,
+  },
+  journalEditButton: {
+    marginTop: 0,
+    backgroundColor: 'rgba(114, 20, 34, 0.08)',
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(114, 20, 34, 0.2)',
+  },
+  journalEditButtonText: {
+    fontSize: 14,
     fontFamily: 'Poppins-SemiBold',
     color: Colors.light.rush,
   },
