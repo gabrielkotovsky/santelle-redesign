@@ -4,10 +4,10 @@ import { Colors } from '@/src/theme/colors';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
-import Animated, { FadeInUp, FadeOutUp, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 import { XIcon } from '../icons/svg/XIcon';
 import { ScreenBackground } from '../layout/ScreenBackground';
@@ -15,12 +15,33 @@ import { ArticleModal } from './article-modal';
 import AskSantelleModal from './ask-santelle-modal';
 import ChatbotModal from './chatbot-modal';
 import { getBiomarkerDescription, getBiomarkerStatus, getPHStatus } from './biomarker-utils';
+import { supabase } from '@/src/services/supabase';
+
+const SYMPTOM_GROUPING_RULES = [
+  { title: 'Pain & irritation', match: /(itch|burn|pain|irrit)/i },
+  { title: 'Timeline', match: /(day|week|month|ago|today|yesterday)/i },
+  { title: 'Discharge', match: /discharge|fluid/i },
+  { title: 'Smell', match: /smell|odor/i },
+  { title: 'Other', match: /.*/ },
+] as const;
+
+function groupSymptomLabels(labels: string[]) {
+  const groups: Record<string, string[]> = {};
+  labels.forEach((label) => {
+    const rule =
+      SYMPTOM_GROUPING_RULES.find((r) => r.match.test(label)) ??
+      SYMPTOM_GROUPING_RULES[SYMPTOM_GROUPING_RULES.length - 1];
+    (groups[rule.title] ??= []).push(label);
+  });
+  return groups;
+}
 
 type Props = {
   visible: boolean;
   onClose: () => void;
   log?: {
     id: string;
+    test_session_id?: string;
     ph: number | null;
     h2o2: string | null;
     le: string | null;
@@ -30,6 +51,12 @@ type Props = {
     created_at?: string;
     analysis?: string | null;
   } | null;
+};
+
+type PretestEntry = {
+  question_prompt: string;
+  selected_labels: string[];
+  type: 'symptoms' | 'context';
 };
 
 // Function to remove summary sentence with support for different markdown formats
@@ -96,7 +123,128 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
   const [selectedArticle, setSelectedArticle] = useState<any>(null);
   const [askSantelleModalVisible, setAskSantelleModalVisible] = useState(false);
   const [chatbotModalVisible, setChatbotModalVisible] = useState(false);
-  
+  const [journalExpanded, setJournalExpanded] = useState(false);
+  const [journalEntries, setJournalEntries] = useState<PretestEntry[]>([]);
+  const [journalLoading, setJournalLoading] = useState(false);
+  const totalInsights = journalEntries.reduce(
+    (sum, entry) => sum + (entry.selected_labels?.length || 0),
+    0
+  );
+  const symptomLabels = useMemo(
+    () =>
+      journalEntries
+        .filter((e) => e.type === 'symptoms')
+        .flatMap((entry) => entry.selected_labels ?? []),
+    [journalEntries]
+  );
+  const groupedSymptoms = useMemo(
+    () => groupSymptomLabels(symptomLabels),
+    [symptomLabels]
+  );
+  const contextLabels = useMemo(
+    () =>
+      journalEntries
+        .filter((e) => e.type === 'context')
+        .flatMap((entry) => entry.selected_labels ?? []),
+    [journalEntries]
+  );
+
+  // Load pretest data when modal opens (similar to how biomarkers are loaded)
+  useEffect(() => {
+    if (!visible || !log) {
+      setJournalExpanded(false);
+      setJournalEntries([]);
+      setJournalLoading(false);
+      return;
+    }
+
+    const sessionId = log.test_session_id || log.id;
+    if (!sessionId) return;
+
+    let mounted = true;
+    setJournalLoading(true);
+
+    (async () => {
+      try {
+        // Fetch test_session_id if needed
+        let testSessionId = log.test_session_id;
+        if (!testSessionId && log.id) {
+          const { data } = await supabase
+            .from('test_logs')
+            .select('test_session_id')
+            .eq('id', log.id)
+            .maybeSingle();
+          testSessionId = data?.test_session_id;
+        }
+
+        if (!testSessionId || !mounted) return;
+
+        // Fetch symptoms and context
+        const [symptomsResult, contextResult] = await Promise.all([
+          supabase
+            .from("app_pretest_responses")
+            .select(`
+              app_pretest_questions!inner ( prompt, symptom_or_context ),
+              app_pretest_response_choices (
+                app_pretest_choices!inner ( label )
+              )
+            `)
+            .eq("test_session_id", testSessionId)
+            .eq("app_pretest_questions.symptom_or_context", "symptoms"),
+          supabase
+            .from("app_pretest_responses")
+            .select(`
+              app_pretest_questions!inner ( prompt, symptom_or_context ),
+              app_pretest_response_choices (
+                app_pretest_choices!inner ( label )
+              )
+            `)
+            .eq("test_session_id", testSessionId)
+            .eq("app_pretest_questions.symptom_or_context", "context")
+        ]);
+
+        if (!mounted) return;
+
+        if (symptomsResult.error) throw symptomsResult.error;
+        if (contextResult.error) throw contextResult.error;
+
+        const symptoms: PretestEntry[] = (symptomsResult.data ?? []).map((r: any) => ({
+          question_prompt: r.app_pretest_questions.prompt,
+          selected_labels: (r.app_pretest_response_choices ?? []).map(
+            (c: any) => c.app_pretest_choices.label
+          ),
+          type: 'symptoms' as const,
+        }));
+
+        const context: PretestEntry[] = (contextResult.data ?? []).map((r: any) => ({
+          question_prompt: r.app_pretest_questions.prompt,
+          selected_labels: (r.app_pretest_response_choices ?? []).map(
+            (c: any) => c.app_pretest_choices.label
+          ),
+          type: 'context' as const,
+        }));
+
+        if (mounted) {
+          setJournalEntries([...symptoms, ...context]);
+        }
+      } catch (error) {
+        console.error('Error fetching pretest data:', error);
+        if (mounted) {
+          Alert.alert('Error', 'Failed to load journal entry. Please try again.');
+        }
+      } finally {
+        if (mounted) {
+          setJournalLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [visible, log?.id, log?.test_session_id]);
+
+  // Early return AFTER all hooks
   if (!log) return null;
 
   // Handle medical term clicks
@@ -204,10 +352,10 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
             const bgColor = (status?.color ?? '#000') + '30';
             const biomarkerRowStyle = [
               styles.biomarkerRow,
+              isExpanded ? styles.biomarkerRowExpanded : styles.biomarkerRowCollapsed,
               { backgroundColor: bgColor }
             ];
             return (
-              <Animated.View layout={LinearTransition.duration(200)} key={name} style={styles.biomarkerBlock}>
               <View key={name} style={styles.biomarkerBlock}>
                 <ShrinkableTouchable
                   style={biomarkerRowStyle as any}
@@ -219,18 +367,20 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                   </View>
                   <View style={styles.rightSection}>
                     <Text style={styles.biomarkerValue}>{value}</Text>
-                    <View style={styles.questionMarkContainer}>
-                      <Text style={styles.questionMark}>▼</Text>
-                    </View>
+                    <Text style={styles.biomarkerExpandIcon}>
+                      {isExpanded ? '▲' : '▼'}
+                    </Text>
                   </View>
                 </ShrinkableTouchable>
 
                 {isExpanded && (
                   <Animated.View
                   entering={FadeInUp}
-                  exiting={FadeOutUp.duration(180)}
-                  layout={LinearTransition.duration(200)}
-                  style={[styles.detailBox, { backgroundColor: (status?.color ?? '#000') + '20' }]}
+                  style={[
+                    styles.detailBox,
+                    styles.detailBoxExpanded,
+                    { backgroundColor: (status?.color ?? '#000') + '20' }
+                  ]}
                 >
                     {(() => {
                       const description = getBiomarkerDescription(
@@ -303,7 +453,6 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                   </Animated.View>
                 )}
               </View>
-              </Animated.View>
             );
           })}
 
@@ -314,6 +463,87 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
           >
             <Text style={styles.learnMoreButtonText}>Learn more about your biomarkers</Text>
           </ShrinkableTouchable>
+
+          {/* Journal Entry */}
+          {(log.test_session_id || log.id) && (
+            <View style={styles.journalCard}>
+              <ShrinkableTouchable 
+                style={styles.journalHeader}
+                onPress={() => setJournalExpanded(!journalExpanded)}
+              >
+                <Text style={styles.journalButtonText}>
+                  🔖 Journal Entry
+                </Text>
+                <View
+                  style={[
+                    styles.journalRightSection,
+                    journalExpanded && styles.journalRightSectionActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.journalInsightsText,
+                      journalExpanded && styles.journalInsightsTextActive,
+                    ]}
+                  >
+                    {journalLoading ? '...' : totalInsights}{' '}
+                    {totalInsights === 1 ? 'note' : 'notes'}
+                  </Text>
+                  <Text style={styles.journalExpandIcon}>
+                    {journalExpanded ? '▲' : '▼'}
+                  </Text>
+                </View>
+              </ShrinkableTouchable>
+
+              {journalExpanded && (
+                <Animated.View
+                  entering={FadeInUp}
+                  style={styles.journalContent}
+                >
+                  {journalLoading ? (
+                    <View style={styles.journalLoadingContainer}>
+                      <Text style={styles.journalLoadingText}>Loading journal entry...</Text>
+                    </View>
+                  ) : journalEntries.length === 0 ? (
+                    <Text style={styles.journalEmptyText}>No journal entry data available for this test.</Text>
+                  ) : (
+                    <>
+                      {symptomLabels.length > 0 && (
+                        <View style={[styles.journalSection, styles.journalSectionPrimary]}>
+                          <Text style={styles.journalSectionTitle}>Symptoms</Text>
+                          {Object.entries(groupedSymptoms).map(([groupTitle, labels]) => (
+                            <View key={groupTitle} style={styles.journalSubsection}>
+                              <Text style={styles.journalSubsectionTitle}>{groupTitle}</Text>
+                              <View style={styles.journalLabels}>
+                                {labels.map((label, labelIdx) => (
+                                  <View key={`symptom-${groupTitle}-${labelIdx}`} style={styles.journalLabel}>
+                                    <Text style={styles.journalLabelText}>{label}</Text>
+                                  </View>
+                                ))}
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+
+                      {contextLabels.length > 0 && (
+                        <View style={[styles.journalSection, styles.journalSectionSecondary]}>
+                          <Text style={styles.journalSectionTitle}>Context</Text>
+                          <View style={styles.journalLabels}>
+                            {contextLabels.map((label, labelIdx) => (
+                              <View key={`context-${labelIdx}`} style={styles.journalLabel}>
+                                <Text style={styles.journalLabelText}>{label}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      )}
+                    </>
+                  )}
+                </Animated.View>
+              )}
+            </View>
+          )}
 
           <View style={styles.divider} />
 
@@ -398,8 +628,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 20,
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    borderWidth: 1,
+  },
+  biomarkerRowCollapsed: {
+    borderColor: 'rgba(114, 20, 34, 0.08)',
+  },
+  biomarkerRowExpanded: {
+    borderColor: 'rgba(114, 20, 34, 0.2)',
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   leftSection: { 
     flexDirection: 'row', 
@@ -414,25 +654,23 @@ const styles = StyleSheet.create({
   biomarkerLabel: { fontFamily: 'Poppins-SemiBold', fontSize: 16, color: Colors.light.rush },
   biomarkerValue: { fontFamily: 'Poppins-Bold', fontSize: 16, color: Colors.light.rush },
   circle: { width: 12, height: 12, borderRadius: 6 },
-  questionMarkContainer: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(114, 20, 34, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(114, 20, 34, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 4,
-  },
-  questionMark: {
-    fontFamily: 'Poppins-SemiBold',
+  biomarkerExpandIcon: {
     fontSize: 12,
     color: Colors.light.rush,
     opacity: 0.8,
+    marginLeft: 6,
   },
 
-  detailBox: { padding: 12, borderRadius: 8, marginTop: 6, marginRight: 15 },
+  detailBox: { padding: 12, marginRight: 0 },
+  detailBoxExpanded: {
+    borderRadius: 24,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    marginTop: 0,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: 'rgba(114, 20, 34, 0.2)',
+  },
   detailText: { fontSize: 14, fontFamily: 'Poppins-Regular', color: Colors.light.rush, lineHeight: 20 },
   boldText: { fontFamily: 'Poppins-SemiBold', fontWeight: 'bold' },
   bulletContainer: { 
@@ -545,17 +783,139 @@ const styles = StyleSheet.create({
   loadingText: { fontSize: 14, fontFamily: 'Poppins-Regular', color: Colors.light.rush, opacity: 0.8 },
   errorText: { fontSize: 14, fontFamily: 'Poppins-SemiBold', color: '#D92D20' },
   learnMoreButton: {
-    backgroundColor: 'rgba(114, 20, 34, 0.1)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(114, 20, 34, 0.08)',
+    borderRadius: 20,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: 'rgba(114, 20, 34, 0.2)',
+    borderColor: 'rgba(114, 20, 34, 0.15)',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
   },
   learnMoreButtonText: {
     fontSize: 14,
+    fontFamily: 'Poppins-SemiBold',
+    color: Colors.light.rush,
+  },
+
+  // Journal Entry styles
+  journalCard: {
+    marginTop: 16,
+    borderRadius: 24,
+    padding: 18,
+    paddingVertical: 12,
+    backgroundColor: '#F5E5DA',
+    borderWidth: 1,
+    borderColor: 'rgba(114, 20, 34, 0.15)',
+    gap: 8,
+  },
+  journalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 2,
+  },
+  journalButtonText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-SemiBold',
+    color: Colors.light.rush,
+  },
+  journalRightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 18,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(114, 20, 34, 0.12)',
+  },
+  journalRightSectionActive: {
+    backgroundColor: 'rgba(114, 20, 34, 0.12)',
+  },
+  journalInsightsText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-SemiBold',
+    color: 'rgba(114, 20, 34, 0.9)',
+  },
+  journalInsightsTextActive: {
+    color: '#721422',
+  },
+  journalExpandIcon: {
+    fontSize: 12,
+    color: Colors.light.rush,
+    opacity: 0.8,
+  },
+  journalContent: {
+    marginTop: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderColor: '#721422',
+    gap: 20,
+  },
+  journalLoadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  journalLoadingText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+    color: Colors.light.rush,
+    opacity: 0.7,
+  },
+  journalEmptyText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+    color: Colors.light.rush,
+    opacity: 0.7,
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+  journalSection: {
+    gap: 8,
+    padding: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(114, 20, 34, 0.12)',
+  },
+  journalSectionPrimary: {
+    backgroundColor: '#F3E8D7',
+  },
+  journalSectionSecondary: {
+    backgroundColor: '#F6EDE1',
+    marginTop: 16,
+  },
+  journalSectionTitle: {
+    fontSize: 16,
+    fontFamily: 'Poppins-SemiBold',
+    color: Colors.light.rush,
+  },
+  journalSubsection: {
+    marginTop: 6,
+    gap: 8,
+  },
+  journalSubsectionTitle: {
+    fontSize: 13,
+    fontFamily: 'Poppins-SemiBold',
+    color: 'rgba(114, 20, 34, 0.85)',
+  },
+  journalLabels: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    columnGap: 12,
+    rowGap: 12,
+  },
+  journalLabel: {
+    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+    borderRadius: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(114, 20, 34, 0.15)',
+    alignSelf: 'flex-start',
+    maxWidth: '70%',
+  },
+  journalLabelText: {
+    fontSize: 13,
     fontFamily: 'Poppins-SemiBold',
     color: Colors.light.rush,
   },
