@@ -268,7 +268,7 @@ export default function ChatbotModal({ visible, onClose, log }: Props) {
 const styles = StyleSheet.create({
   container: { 
     flex: 1,
-    backgroundColor: 'rgb(240, 240, 240)',
+    backgroundColor: 'rgb(255, 255, 255)',
   },
   statusBarBlurBackground: {
     position: 'absolute',
@@ -412,10 +412,10 @@ const styles = StyleSheet.create({
     zIndex: 1002,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgb(240, 240, 240)',
     borderRadius: 27,
-    borderWidth: .5,
-    borderColor: 'rgba(255, 255, 255, 1)',
+    borderWidth: 1,
+    borderColor: 'rgb(230, 230, 230)',
     paddingLeft: 16,
     paddingRight: 6,
     paddingVertical: 6,
