@@ -507,39 +507,43 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                     <View style={styles.journalLoadingContainer}>
                       <Text style={styles.journalLoadingText}>Loading journal entry...</Text>
                     </View>
-                  ) : journalEntries.length === 0 ? (
-                    <Text style={styles.journalEmptyText}>No journal entry data available for this test.</Text>
                   ) : (
                     <>
-                      {symptomLabels.length > 0 && (
-                        <View style={[styles.journalSection, styles.journalSectionPrimary]}>
-                          <Text style={styles.journalSectionTitle}>Symptoms</Text>
-                          {Object.entries(groupedSymptoms).map(([groupTitle, labels]) => (
-                            <View key={groupTitle} style={styles.journalSubsection}>
-                              <Text style={styles.journalSubsectionTitle}>{groupTitle}</Text>
+                      {journalEntries.length === 0 ? (
+                        <Text style={styles.journalEmptyText}>No journal entry data available for this test.</Text>
+                      ) : (
+                        <>
+                          {symptomLabels.length > 0 && (
+                            <View style={[styles.journalSection, styles.journalSectionPrimary]}>
+                              <Text style={styles.journalSectionTitle}>Symptoms</Text>
+                              {Object.entries(groupedSymptoms).map(([groupTitle, labels]) => (
+                                <View key={groupTitle} style={styles.journalSubsection}>
+                                  <Text style={styles.journalSubsectionTitle}>{groupTitle}</Text>
+                                  <View style={styles.journalLabels}>
+                                    {labels.map((label, labelIdx) => (
+                                      <View key={`symptom-${groupTitle}-${labelIdx}`} style={styles.journalLabel}>
+                                        <Text style={styles.journalLabelText}>{label}</Text>
+                                      </View>
+                                    ))}
+                                  </View>
+                                </View>
+                              ))}
+                            </View>
+                          )}
+
+                          {contextLabels.length > 0 && (
+                            <View style={[styles.journalSection, styles.journalSectionSecondary]}>
+                              <Text style={styles.journalSectionTitle}>Context</Text>
                               <View style={styles.journalLabels}>
-                                {labels.map((label, labelIdx) => (
-                                  <View key={`symptom-${groupTitle}-${labelIdx}`} style={styles.journalLabel}>
+                                {contextLabels.map((label, labelIdx) => (
+                                  <View key={`context-${labelIdx}`} style={styles.journalLabel}>
                                     <Text style={styles.journalLabelText}>{label}</Text>
                                   </View>
                                 ))}
                               </View>
                             </View>
-                          ))}
-                        </View>
-                      )}
-
-                      {contextLabels.length > 0 && (
-                        <View style={[styles.journalSection, styles.journalSectionSecondary]}>
-                          <Text style={styles.journalSectionTitle}>Context</Text>
-                          <View style={styles.journalLabels}>
-                            {contextLabels.map((label, labelIdx) => (
-                              <View key={`context-${labelIdx}`} style={styles.journalLabel}>
-                                <Text style={styles.journalLabelText}>{label}</Text>
-                              </View>
-                            ))}
-                          </View>
-                        </View>
+                          )}
+                        </>
                       )}
 
                       <ShrinkableTouchable

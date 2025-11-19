@@ -26,7 +26,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
 
   const dynamicStyles = StyleSheet.create({
     modalBackground: {
-      backgroundColor: "rgba(255,235,206,0.3)",
+      backgroundColor: "rgb(255, 255, 255)",
     },
     headerText: {
       color: '#000000',
