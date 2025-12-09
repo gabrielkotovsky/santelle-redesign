@@ -5,7 +5,7 @@ import React, { useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { XIcon } from '../icons/svg/XIcon';
-import { SLogoIcon } from '../icons/svg/SLogoIcon';
+import { LogoCrossIcon } from '../icons/svg/LogoCrossIcon';
 
 type Props = {
   visible: boolean;
@@ -57,7 +57,12 @@ export default function ChatbotModal({ visible, onClose, log }: Props) {
   const [confirmingClose, setConfirmingClose] = useState(false);
 
   const handlePromptPress = (prompt: string) => {
-    setMessage(prompt);
+    const newMessage = {
+      id: `${Date.now()}`,
+      text: prompt,
+      role: 'user' as const,
+    };
+    setMessages(prev => [...prev, newMessage]);
     requestAnimationFrame(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     });
@@ -171,7 +176,7 @@ export default function ChatbotModal({ visible, onClose, log }: Props) {
         {/* Header Content */}
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
-            <Text style={styles.titleText}>Chat</Text>
+            <Text style={styles.titleText}>Santelle</Text>
           </View>
 
           <View style={styles.headerRight}>
@@ -187,27 +192,29 @@ export default function ChatbotModal({ visible, onClose, log }: Props) {
           contentContainerStyle={styles.messagesContainer}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.promptButtonsSection}>
-            <View style={styles.promptButtonsContainer}>
-              {PRESET_PROMPTS.map(({ text, colors, borderColor }) => (
-                <TouchableOpacity
-                  key={text}
-                  onPress={() => handlePromptPress(text)}
-                  style={styles.promptButtonTouchable}
-                  activeOpacity={0.85}
-                >
-                  <LinearGradient
-                    colors={colors}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={[styles.promptButton, { borderColor }]}
+          {messages.length === 0 && (
+            <View style={styles.promptButtonsSection}>
+              <View style={styles.promptButtonsContainer}>
+                {PRESET_PROMPTS.map(({ text, colors, borderColor }) => (
+                  <TouchableOpacity
+                    key={text}
+                    onPress={() => handlePromptPress(text)}
+                    style={styles.promptButtonTouchable}
+                    activeOpacity={0.85}
                   >
-                    <Text style={styles.promptButtonText}>{text}</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              ))}
+                    <LinearGradient
+                      colors={colors}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[styles.promptButton, { borderColor }]}
+                    >
+                      <Text style={styles.promptButtonText}>{text}</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-          </View>
+          )}
           {messages.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}></Text>
@@ -254,9 +261,9 @@ export default function ChatbotModal({ visible, onClose, log }: Props) {
             onPress={handleSend}
             disabled={!message.trim()}
           >
-            <SLogoIcon 
-              size={20} 
-              color={message.trim() ? '#FFFFFF' : '#999999'} 
+            <LogoCrossIcon 
+              size={35} 
+              color={message.trim() ? '#721422' : '#E9ECEF'} 
             />
           </TouchableOpacity>
         </BlurView>
@@ -360,7 +367,7 @@ const styles = StyleSheet.create({
   promptButtonText: {
     fontSize: 14,
     fontFamily: 'Poppins-Regular',
-    color: '#721422',
+    color: '#000000',
     lineHeight: 18,
   },
   emptyState: {
@@ -441,17 +448,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#721422',
+    backgroundColor: '#FD9EAA',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#721422',
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
   },
   sendButtonDisabled: {
-    backgroundColor: '#E9ECEF',
+    backgroundColor: '#999999',
   },
 });
 
