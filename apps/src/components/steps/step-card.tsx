@@ -147,10 +147,11 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
     borderRadius: 20,
-    padding: 10,
+    padding: 0,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 1)',
     marginHorizontal: 10,
+    overflow: 'hidden',
   },
   
   /**

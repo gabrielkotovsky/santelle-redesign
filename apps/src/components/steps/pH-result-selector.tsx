@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { SvgProps } from 'react-native-svg';
 import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 import { useTestSession } from '@/src/features/test-session/testSession.store';
 import { upsertLogResultsFlat } from '@/src/features/test-logs/testLogs.api';
@@ -8,9 +9,10 @@ import { getLogBySession } from '@/src/features/test-logs/testLogs.api';
 
 interface PHResultSelectorProps {
   title?: string;
+  SvgImage?: React.FC<SvgProps>;
 }
 
-export default function PHResultSelector({ title = "Log pH Results" }: PHResultSelectorProps) {
+export default function PHResultSelector({ title = "Log pH Results", SvgImage }: PHResultSelectorProps) {
   const [selectedPH, setSelectedPH] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const session = useTestSession(s => s.session);
@@ -109,6 +111,13 @@ export default function PHResultSelector({ title = "Log pH Results" }: PHResultS
           </ShrinkableTouchable>
         ))}
       </View>
+      
+      {/* SVG image below pH selector */}
+      {SvgImage && typeof SvgImage === 'function' && (
+        <View style={styles.svgImageContainer}>
+          <SvgImage width="100%" height={undefined} style={{ aspectRatio: 1 }} />
+        </View>
+      )}
     </View>
   );
 }
@@ -169,7 +178,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingHorizontal: 10,
-    flex: 1,
+    marginBottom: 20,
   },
   
   /**
@@ -207,5 +216,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     color: '#721422',
     textAlign: 'center',
+  },
+  
+  /**
+   * Container for SVG image below pH selector
+   */
+  svgImageContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    borderRadius: 20,
+    padding: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 1)',
+    marginHorizontal: 10,
+    overflow: 'hidden',
   },
 });

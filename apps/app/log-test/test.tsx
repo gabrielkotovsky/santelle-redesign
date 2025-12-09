@@ -20,6 +20,7 @@ import Step0Svg from "@/assets/images/step0.svg";
 import Step1Svg from "@/assets/images/step1.svg";
 import Step2Svg from "@/assets/images/step2.svg";
 import Step3Svg from "@/assets/images/step3.svg";
+import Step4Svg from "@/assets/images/step4.svg";
 
 // Service imports
 import { scheduleResultsReady, ensureNotifPermission, cancelNotification } from "@/src/services/notifications";
@@ -68,6 +69,7 @@ const TEST_STEPS: Step[] = [
     description: [
       "**Insert** the swab into the sample tube (purple) containing diluent",
       "**Swish** it around for 10 seconds",
+      "**Let it soak** for about 60 seconds",
       "**Squeeze** the tube walls for a few seconds to extract the sample"
     ],
   },
@@ -506,6 +508,7 @@ export default function TestScreen() {
                 ) : (
                   <PHResultSelector 
                     title="5. Log your pH results"
+                    SvgImage={Step4Svg}
                   />
                 )
               ) : index === 5 ? (
