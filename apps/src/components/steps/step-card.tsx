@@ -1,9 +1,11 @@
 import React, { ReactNode } from 'react';
 import { Image, ImageSourcePropType, ScrollView, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { SvgProps } from 'react-native-svg';
 
 interface StepCardProps {
   title: string;
-  image: ImageSourcePropType;
+  image?: ImageSourcePropType;
+  SvgImage?: React.FC<SvgProps>;
   description: string[];
   colorScheme?: 'light' | 'dark';
   maxImageHeight?: number;
@@ -13,7 +15,8 @@ interface StepCardProps {
 
 export default function StepCard({ 
   title, 
-  image, 
+  image,
+  SvgImage,
   description,
   colorScheme: propColorScheme,
   maxImageHeight = 300,
@@ -74,13 +77,19 @@ export default function StepCard({
         {title}
       </Text>
       
-      <View style={styles.stepImageContainer}>
-        <Image 
-          source={image}
-          style={[styles.stepImage, { maxHeight: maxImageHeight }]}
-          resizeMode="contain"
-        />
-      </View>
+      {(image || (SvgImage && typeof SvgImage === 'function')) && (
+        <View style={styles.stepImageContainer}>
+          {SvgImage && typeof SvgImage === 'function' ? (
+            <SvgImage width="100%" height={maxImageHeight} />
+          ) : image ? (
+            <Image 
+              source={image}
+              style={[styles.stepImage, { maxHeight: maxImageHeight }]}
+              resizeMode="contain"
+            />
+          ) : null}
+        </View>
+      )}
       <View style={styles.stepDescriptionContainer}>
         {renderDescription()}
       </View>

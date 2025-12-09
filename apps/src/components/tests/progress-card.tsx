@@ -20,7 +20,7 @@ export default function ProgressCard({
       position: 'absolute',
       top: 17.5, // Center of 25px circle (25/2 = 12.5)
       left: 10,
-      right: 60, // Stop before the cancel button (30px button + 10px margin + 10px padding)
+      right: 65, // Stop before the cancel button (30px button + 10px margin + 10px padding)
       height: 2,
       zIndex: 1,
     },

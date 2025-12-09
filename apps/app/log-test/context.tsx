@@ -333,6 +333,30 @@ export default function PreTestQuestions() {
               <ArrowLeftIcon size={24} color="#721422" />
             </Pressable>
           </View>
+          {/* Skip button - only show when not in edit mode */}
+          {!isEditMode && (
+            <View style={styles.skipButton}>
+              <Pressable
+                style={({ pressed }) => [styles.skipButtonPressable, pressed && { opacity: 0.7 }]}
+                onPress={() => {
+                  Alert.alert(
+                    'Skip Questions?',
+                    'Are you sure you want to skip the pretest questions? You can always answer them later.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { 
+                        text: 'Skip', 
+                        style: 'destructive',
+                        onPress: () => router.replace('/log-test/test')
+                      }
+                    ]
+                  );
+                }}
+              >
+                <Text style={styles.skipButtonText}>Skip</Text>
+              </Pressable>
+            </View>
+          )}
           <View style={styles.headerSection}>
             <LogoCrossIcon size={60} color="#721422" />
             <Text style={styles.title}>
@@ -355,6 +379,31 @@ export default function PreTestQuestions() {
             <ArrowLeftIcon size={24} color="#721422" />
           </Pressable>
         </View>
+
+        {/* Skip button - only show when not in edit mode */}
+        {!isEditMode && (
+          <View style={styles.skipButton}>
+            <Pressable
+              style={({ pressed }) => [styles.skipButtonPressable, pressed && { opacity: 0.7 }]}
+              onPress={() => {
+                Alert.alert(
+                  'Skip Questions?',
+                  'Are you sure you want to skip the pretest questions? You can always answer them later.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { 
+                      text: 'Skip', 
+                      style: 'destructive',
+                      onPress: () => router.replace('/log-test/test')
+                    }
+                  ]
+                );
+              }}
+            >
+              <Text style={styles.skipButtonText}>Skip</Text>
+            </Pressable>
+          </View>
+        )}
 
         <ScrollView 
           style={styles.scrollView}
@@ -397,6 +446,20 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   backButton: { position: 'absolute', top: 60, left: 20, zIndex: 1 },
   backButtonPressable: { padding: 8 },
+  skipButton: { position: 'absolute', top: 60, right: 20, zIndex: 1 },
+  skipButtonPressable: { 
+    padding: 8,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.6)',
+  },
+  skipButtonText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Medium',
+    color: '#721422',
+  },
   scrollView: { flex: 1 },
   scrollContent: { paddingTop: 100, paddingBottom: 120, paddingHorizontal: 20 },
   headerSection: { alignItems: 'center', marginBottom: 30 },

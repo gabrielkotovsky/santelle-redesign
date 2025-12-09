@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { View, FlatList, Dimensions, NativeScrollEvent, NativeSyntheticEvent, Text, TouchableOpacity, Alert } from "react-native";
-import Animated, { FadeInUp, FadeOutUp, LinearTransition } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInUp, FadeOut, FadeOutUp, LinearTransition } from "react-native-reanimated";
 import { router } from "expo-router";
 
 // Component imports
@@ -15,6 +15,12 @@ import PHTimerCard from "@/src/components/steps/pH-timer-card";
 import TestTimerCard from "@/src/components/steps/test-timer-card";
 import SmallTimerCard from "@/src/components/steps/small-timer-card";
 
+// SVG imports
+import Step0Svg from "@/assets/images/step0.svg";
+import Step1Svg from "@/assets/images/step1.svg";
+import Step2Svg from "@/assets/images/step2.svg";
+import Step3Svg from "@/assets/images/step3.svg";
+
 // Service imports
 import { scheduleResultsReady, ensureNotifPermission, cancelNotification } from "@/src/services/notifications";
 
@@ -26,17 +32,29 @@ import { getLogBySession } from "@/src/features/test-logs/testLogs.api";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // Types
+import { SvgProps } from "react-native-svg";
+
 type Step = {
   title: string;
   image?: any;
+  SvgImage?: React.FC<SvgProps>;
   description: string[];
 };
 
 // Constants
 const TEST_STEPS: Step[] = [
   {
-    title: "1. Collect your sample",
-    image: require("@/assets/images/step1.png"),
+    title: "1. Prepare your swab",
+    SvgImage: Step0Svg,
+    description: [
+      "**Wash** your hands thoroughly",
+      "**Open** the swab package and carefully peel back the end (as shown in the diagram) to grasp the swab handle and pull it out",
+      "**Do not** let the swab tip touch anything"
+    ],
+  },
+  {
+    title: "2. Collect your sample",
+    SvgImage: Step1Svg,
     description: [
       "**Insert** the swab gently about half an index into your vagina",
       "**Rotate** the swab slowly and evenly against the vaginal wall for 10–15 seconds",
@@ -45,8 +63,8 @@ const TEST_STEPS: Step[] = [
     ],
   },
   {
-    title: "2. Prepare your solution",
-    image: require("@/assets/images/step2.png"),
+    title: "3. Prepare your solution",
+    SvgImage: Step2Svg,
     description: [
       "**Insert** the swab into the sample tube (purple) containing diluent",
       "**Swish** it around for 10 seconds",
@@ -54,20 +72,13 @@ const TEST_STEPS: Step[] = [
     ],
   },
   {
-    title: "3. Add your solution to the wells",
-    image: require("@/assets/images/step3.png"),
+    title: "4. Add your solution to the wells",
+    SvgImage: Step3Svg,
     description: [
       "**Discard** the swab",
       "**Tighten** the sample tube cap",
       "**Remove** the dropper cap",
       "**Add 1 drop** of the solution to each reaction well"
-    ],
-  },
-  {
-    title: "4. Add reagent to the SNA well",
-    image: require("@/assets/images/step4.png"),
-    description: [
-      "Use the pasteur dropper to **add 1 drop of reagent** (blue cap) to the SNA well ONLY"
     ],
   },
   {
@@ -77,15 +88,7 @@ const TEST_STEPS: Step[] = [
     ],
   },
   {
-    title: "6. Stop the NAG reaction",
-    image: require("@/assets/images/step6.png"),
-    description: [
-      "**Add 1 drop** of stop solution (grey cap) to the NAG well",
-      "**Note:** Disregard all results past 15 minutes"
-    ],
-  },
-  {
-    title: "7. Log your final test results",
+    title: "6. Log your final test results",
     description: [
       "**Log your final test results**"
     ],
@@ -113,7 +116,7 @@ export default function TestScreen() {
   const [minAllowedStep, setMinAllowedStep] = useState<number>(1);
   const [step3Confirmed, setStep3Confirmed] = useState<boolean>(() => {
     const s = useTestSession.getState().session;
-    return (s?.current_step ?? 1) >= 4;
+    return (s?.current_step ?? 1) >= 5;
   });
   
   // Timer state
@@ -124,6 +127,9 @@ export default function TestScreen() {
   
   // pH validation state
   const [phSelected, setPhSelected] = useState<boolean>(false);
+  
+  // Swipe hint overlay state
+  const [showSwipeHint, setShowSwipeHint] = useState<boolean>(true);
   
   // Refs
   const listRef = useRef<FlatList<Step>>(null);
@@ -142,17 +148,17 @@ export default function TestScreen() {
   // Event handlers and functions
   // ===============================
   const onStepChanged = async (newStep: number) => {
-    if (newStep === 4 && !step3Confirmed) {
+    if (newStep === 5 && !step3Confirmed) {
       programmaticScroll.current = true;
       requestAnimationFrame(() => {
-        listRef.current?.scrollToIndex({ index: 2, animated: true });
+        listRef.current?.scrollToIndex({ index: 3, animated: true });
         setTimeout(() => { programmaticScroll.current = false; }, 50);
       });
       return;
     }
 
-    // Prevent navigation to step 7 without pH selection
-    if (newStep === 7 && !phSelected) {
+    // Prevent navigation to step 6 without pH selection
+    if (newStep === 6 && !phSelected) {
       Alert.alert(
         'pH Required',
         'Please select your pH result before proceeding to final results.',
@@ -168,7 +174,7 @@ export default function TestScreen() {
     
     setCurrentStep(newStep);
 
-    if (newStep === 4) {
+    if (newStep === 5) {
       const t = Date.now();
       if (!phEndsAt) 
         setPhEndsAt(new Date(t + 60 * 1000).toISOString());
@@ -193,25 +199,28 @@ export default function TestScreen() {
       }
     }
 
-    if (newStep === 7 && isResultsTimerRunning) {
+    if (newStep === 6 && isResultsTimerRunning) {
       goToStep(5);
       return;
     }
   };
 
   const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    // Hide swipe hint on any swipe
+    if (showSwipeHint) setShowSwipeHint(false);
+    
     if (programmaticScroll.current) return;
     const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     const step = index + 1;
-    if (step === 4 && !step3Confirmed) {
+    if (step === 5 && !step3Confirmed) {
       programmaticScroll.current = true;
       requestAnimationFrame(() => {
-        listRef.current?.scrollToIndex({ index: 2, animated: true });
+        listRef.current?.scrollToIndex({ index: 3, animated: true });
         setTimeout(() => { programmaticScroll.current = false; }, 50);
       });
       return;
     }
-    if (step === 7 && !phSelected) {
+    if (step === 6 && !phSelected) {
       Alert.alert(
         'pH Required',
         'Please select your pH result before proceeding to final results.',
@@ -246,6 +255,14 @@ export default function TestScreen() {
     return () => clearInterval(id);
   }, []);
 
+  // Auto-hide swipe hint after 3 seconds
+  useEffect(() => {
+    if (showSwipeHint) {
+      const timer = setTimeout(() => setShowSwipeHint(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSwipeHint]);
+
   // Cancel notification when timer expires
   useEffect(() => {
     if (resultsNotifId && resultsRemaining <= 0) {
@@ -264,7 +281,7 @@ export default function TestScreen() {
   // Sync with server session data
   useEffect(() => {
     if (!session || !listRef.current) return;
-    const step = Math.max(1, Math.min(7, session.current_step || 1));
+    const step = Math.max(1, Math.min(6, session.current_step || 1));
     setMinAllowedStep(step);
     if (session.ph_result_ready_at && !phEndsAt) {
       setPhEndsAt(session.ph_result_ready_at);
@@ -272,7 +289,7 @@ export default function TestScreen() {
     if (session.results_ready_at && !resultsEndsAt) {
       setResultsEndsAt(session.results_ready_at);
       setCurrentStep(step);
-      if (step >= 4) setStep3Confirmed(true);
+      if (step >= 5) setStep3Confirmed(true);
       programmaticScroll.current = true;
       requestAnimationFrame(() => {
         listRef.current?.scrollToIndex({ index: step - 1, animated: false });
@@ -354,7 +371,7 @@ export default function TestScreen() {
       <View style={{height: 1, backgroundColor: "rgba(255,255,255,0.3)", marginVertical: 10}} />
 
       {/* Timer card for results countdown */}
-      {isResultsTimerRunning && currentStep < 6 && currentStep > 3 && (
+      {isResultsTimerRunning && currentStep < 6 && currentStep > 4 && (
         <Animated.View
           entering={FadeInUp.duration(200)}
           exiting={FadeOutUp.duration(200)}
@@ -364,18 +381,70 @@ export default function TestScreen() {
       )}
 
       {/* Swipeable test steps */}
-      <Animated.View layout={LinearTransition.duration(200)} style={{ flex: 1 }}>
+      <Animated.View layout={LinearTransition.duration(200)} style={{ flex: 1, position: 'relative' }}>
+        {/* Swipe hint overlay */}
+        {showSwipeHint && currentStep === 1 && (
+          <Animated.View
+            entering={FadeIn.duration(300)}
+            exiting={FadeOut.duration(300)}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 10,
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingHorizontal: 40,
+            }}
+            pointerEvents="none"
+          >
+            <View style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              borderRadius: 20,
+              padding: 24,
+              alignItems: 'center',
+            }}>
+              <Text style={{
+                fontSize: 32,
+                marginBottom: 12,
+              }}>
+                ⏮️ ⏭️
+              </Text>
+              <Text style={{
+                fontSize: 18,
+                fontFamily: 'Poppins-SemiBold',
+                color: '#721422',
+                textAlign: 'center',
+                marginBottom: 4,
+              }}>
+                Swipe to navigate
+              </Text>
+              <Text style={{
+                fontSize: 14,
+                fontFamily: 'Poppins-Regular',
+                color: '#666',
+                textAlign: 'center',
+              }}>
+                Swipe left or right to move between steps
+              </Text>
+            </View>
+          </Animated.View>
+        )}
+        
         <FlatList
           ref={listRef}
           data={TEST_STEPS}
           keyExtractor={(_, i) => String(i)}
           renderItem={({ item, index }) => (
             <View style={{ width: SCREEN_WIDTH }}>
-              {/* Step 3: Add solution to wells - requires confirmation */}
-              {index === 2 ? (
+              {/* Step 4: Add solution to wells - requires confirmation */}
+              {index === 3 ? (
                 <StepCard 
                   title={item.title} 
-                  image={item.image} 
+                  SvgImage={item.SvgImage}
                   description={item.description}
                   button={
                     <TouchableOpacity
@@ -399,11 +468,11 @@ export default function TestScreen() {
                               style: 'default',
                               onPress: () => {
                                 setStep3Confirmed(true);
-                                setMinAllowedStep(4);
-                                onStepChanged(4);
+                                setMinAllowedStep(5);
+                                onStepChanged(5);
                                 programmaticScroll.current = true;
                                 requestAnimationFrame(() => {
-                                  listRef.current?.scrollToIndex({ index: 3, animated: true }); // 0-based -> step 4
+                                  listRef.current?.scrollToIndex({ index: 4, animated: true }); // 0-based -> step 5
                                   setTimeout(() => { programmaticScroll.current = false; }, 50);
                                 });
                               },
@@ -440,23 +509,20 @@ export default function TestScreen() {
                   />
                 )
               ) : index === 5 ? (
-                /* Step 6: NAG reaction - timer or instructions */
+                /* Step 6: Final results - timer or selector */
                 isResultsTimerRunning ? (
                   <TestTimerCard 
                     timeRemaining={Math.floor(resultsRemaining / 1000)}
                     onSkip={() => setResultsEndsAt(new Date().toISOString())}
                   />
                 ) : (
-                  <StepCard title={item.title} image={item.image} description={item.description} />
+                  <ResultSelector 
+                    title="6. Log your final test results"
+                  />
                 )
-              ) : index === 6 ? (
-                /* Step 7: Final results */
-                <ResultSelector 
-                  title="7. Log your final test results"
-                />
               ) : (
                 /* All other steps: standard step card */
-                <StepCard title={item.title} image={item.image} description={item.description} />
+                <StepCard title={item.title} SvgImage={item.SvgImage} description={item.description} />
               )}
             </View>
           )}
@@ -466,6 +532,7 @@ export default function TestScreen() {
           windowSize={2}
           maxToRenderPerBatch={1}
           onMomentumScrollEnd={onMomentumEnd}
+          onScrollBeginDrag={() => { if (showSwipeHint) setShowSwipeHint(false); }}
           getItemLayout={(_, index) => ({
             length: SCREEN_WIDTH,
             offset: SCREEN_WIDTH * index,
