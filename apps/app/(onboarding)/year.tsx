@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Alert, 
   KeyboardAvoidingView, 
@@ -18,7 +18,22 @@ import {
   updateOnboardingResponse 
 } from '@/src/features/auth/auth.api';
 
-export default function Year() {
+const MONTHS = [
+  { label: 'January', value: 1 },
+  { label: 'February', value: 2 },
+  { label: 'March', value: 3 },
+  { label: 'April', value: 4 },
+  { label: 'May', value: 5 },
+  { label: 'June', value: 6 },
+  { label: 'July', value: 7 },
+  { label: 'August', value: 8 },
+  { label: 'September', value: 9 },
+  { label: 'October', value: 10 },
+  { label: 'November', value: 11 },
+  { label: 'December', value: 12 },
+];
+
+export default function BirthDate() {
   const currentYear = new Date().getFullYear();
   const minYear = currentYear - 100; // 100 years ago
   const maxYear = currentYear - 16; // Must be at least 16 years old
@@ -26,11 +41,26 @@ export default function Year() {
   const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i);
   
   const [selectedYear, setSelectedYear] = useState<number>(maxYear - 25); // Default to ~25 years old
+  const [selectedMonth, setSelectedMonth] = useState<number>(1); // Default to January
+  const [selectedDay, setSelectedDay] = useState<number>(1); // Default to 1st
   const [loading, setLoading] = useState(false);
 
+  // Calculate days in the selected month/year
+  const daysInMonth = useMemo(() => {
+    const days = new Date(selectedYear, selectedMonth, 0).getDate();
+    return Array.from({ length: days }, (_, i) => i + 1);
+  }, [selectedYear, selectedMonth]);
+
+  // Adjust day if it exceeds days in month (use useEffect for side effects, not useMemo)
+  React.useEffect(() => {
+    if (selectedDay > daysInMonth.length) {
+      setSelectedDay(daysInMonth.length);
+    }
+  }, [daysInMonth.length]);
+
   const handleContinue = async () => {
-    if (!selectedYear) {
-      Alert.alert('Error', 'Please select your year of birth');
+    if (!selectedYear || !selectedMonth || !selectedDay) {
+      Alert.alert('Error', 'Please select your full date of birth');
       return;
     }
 
@@ -42,16 +72,16 @@ export default function Year() {
         return;
       }
 
-      // Save year of birth as a date (January 1st of that year)
-      const dateOfBirth = `${selectedYear}-01-01`;
+      // Format date as YYYY-MM-DD
+      const dateOfBirth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
       await updateOnboardingResponse(user.id, {
         date_of_birth: dateOfBirth
       });
       
-      // Navigate to next onboarding step (or home for now)
+      // Navigate to next onboarding step
       router.push('/(onboarding)/country');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save your year of birth. Please try again.');
+      Alert.alert('Error', error.message || 'Failed to save your date of birth. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -86,40 +116,82 @@ export default function Year() {
             />
           </View>
           
-          <Text style={styles.title}>What year were you born?</Text>
+          <Text style={styles.title}>When were you born?</Text>
           <Text style={styles.subtitle}>
             This helps us personalize your experience
           </Text>
 
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedYear}
-              onValueChange={(itemValue) => setSelectedYear(itemValue)}
-              style={styles.picker}
-              itemStyle={styles.pickerItem}
-            >
-              {years.map((year) => (
-                <Picker.Item 
-                  key={year} 
-                  label={year.toString()} 
-                  value={year} 
-                />
-              ))}
-            </Picker>
+          <View style={styles.pickersRow}>
+            {/* Month Picker */}
+            <View style={[styles.pickerContainer, styles.monthPicker]}>
+              <Text style={styles.pickerLabel}>Month</Text>
+              <Picker
+                selectedValue={selectedMonth}
+                onValueChange={(itemValue) => setSelectedMonth(itemValue)}
+                style={styles.picker}
+                itemStyle={styles.pickerItem}
+              >
+                {MONTHS.map((month) => (
+                  <Picker.Item 
+                    key={month.value} 
+                    label={month.label} 
+                    value={month.value} 
+                  />
+                ))}
+              </Picker>
+            </View>
+
+            {/* Day Picker */}
+            <View style={[styles.pickerContainer, styles.dayPicker]}>
+              <Text style={styles.pickerLabel}>Day</Text>
+              <Picker
+                selectedValue={selectedDay}
+                onValueChange={(itemValue) => setSelectedDay(itemValue)}
+                style={styles.picker}
+                itemStyle={styles.pickerItem}
+              >
+                {daysInMonth.map((day) => (
+                  <Picker.Item 
+                    key={day} 
+                    label={day.toString()} 
+                    value={day} 
+                  />
+                ))}
+              </Picker>
+            </View>
+
+            {/* Year Picker */}
+            <View style={[styles.pickerContainer, styles.yearPicker]}>
+              <Text style={styles.pickerLabel}>Year</Text>
+              <Picker
+                selectedValue={selectedYear}
+                onValueChange={(itemValue) => setSelectedYear(itemValue)}
+                style={styles.picker}
+                itemStyle={styles.pickerItem}
+              >
+                {years.map((year) => (
+                  <Picker.Item 
+                    key={year} 
+                    label={year.toString()} 
+                    value={year} 
+                  />
+                ))}
+              </Picker>
+            </View>
           </View>
 
           <Pressable
             style={({ pressed }) => [
               styles.continueButton,
-              (!selectedYear || loading) && styles.continueButtonDisabled,
+              (!selectedYear || !selectedMonth || !selectedDay || loading) && styles.continueButtonDisabled,
               pressed && { opacity: 0.8 }
             ]}
             onPress={handleContinue}
-            disabled={!selectedYear || loading}
+            disabled={!selectedYear || !selectedMonth || !selectedDay || loading}
           >
             <Text style={[
               styles.continueButtonText,
-              (!selectedYear || loading) && styles.continueButtonTextDisabled
+              (!selectedYear || !selectedMonth || !selectedDay || loading) && styles.continueButtonTextDisabled
             ]}>
               {loading ? 'Saving...' : 'Continue'}
             </Text>
@@ -164,26 +236,49 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     fontFamily: 'Poppins-Regular',
   },
+  pickersRow: {
+    flexDirection: 'row',
+    width: '95%',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    gap: 6,
+  },
   pickerContainer: {
-    width: '85%',
-    height: 200,
-    alignSelf: 'center',
     backgroundColor: 'rgba(255, 255, 255, .9)',
-    borderRadius: 10,
+    borderRadius: 20,
     borderWidth: 0.5,
     borderColor: '#721422',
-    marginTop: 30,
-    overflow: 'hidden',
+    overflow: 'visible',
     justifyContent: 'center',
+  },
+  monthPicker: {
+    flex: 2,
+    height: 180,
+  },
+  dayPicker: {
+    flex: 1,
+    height: 180,
+  },
+  yearPicker: {
+    flex: 1.5,
+    height: 180,
+  },
+  pickerLabel: {
+    fontSize: 12,
+    fontFamily: 'Poppins-Medium',
+    color: '#721422',
+    textAlign: 'center',
+    paddingTop: 8,
+    opacity: 0.7,
   },
   picker: {
     width: '100%',
-    height: 200,
+    height: 150,
   },
   pickerItem: {
-    fontSize: 40,
+    fontSize: 16,
     fontFamily: 'Poppins-Medium',
-    height: 200,
+    height: 150,
     color: '#721422',
   },
   continueButton: {
@@ -192,7 +287,7 @@ const styles = StyleSheet.create({
     left: 30,
     right: 30,
     backgroundColor: '#721422',
-    borderRadius: 10,
+    borderRadius: 30,
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
@@ -210,4 +305,3 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, .5)',
   },
 });
-

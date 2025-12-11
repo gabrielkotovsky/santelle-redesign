@@ -15,7 +15,7 @@ interface StepCardProps {
 
 export default function StepCard({ 
   title, 
-  image,
+  image, 
   SvgImage,
   description,
   colorScheme: propColorScheme,
@@ -78,17 +78,17 @@ export default function StepCard({
       </Text>
       
       {(image || (SvgImage && typeof SvgImage === 'function')) && (
-        <View style={styles.stepImageContainer}>
+      <View style={styles.stepImageContainer}>
           {SvgImage && typeof SvgImage === 'function' ? (
             <SvgImage width="100%" height={maxImageHeight} />
           ) : image ? (
-            <Image 
-              source={image}
-              style={[styles.stepImage, { maxHeight: maxImageHeight }]}
-              resizeMode="contain"
-            />
+        <Image 
+          source={image}
+          style={[styles.stepImage, { maxHeight: maxImageHeight }]}
+          resizeMode="contain"
+        />
           ) : null}
-        </View>
+      </View>
       )}
       <View style={styles.stepDescriptionContainer}>
         {renderDescription()}
