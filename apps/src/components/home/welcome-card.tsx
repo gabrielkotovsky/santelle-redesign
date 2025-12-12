@@ -18,7 +18,6 @@ import AccountModal from '../modals/account-modal';
 interface WelcomeCardProps {
   displayName?: string;
   daysMessage: string;
-  healthSummary?: string;
   hasTests: boolean;
   selectedTestResult?: any;
   onViewRecentTestPress: () => void;
@@ -32,7 +31,6 @@ interface WelcomeCardProps {
 export default function WelcomeCard({
   displayName,
   daysMessage,
-  healthSummary,
   hasTests,
   selectedTestResult,
   onViewRecentTestPress,
@@ -133,12 +131,6 @@ export default function WelcomeCard({
       textAlign: 'left',
       marginBottom: 8,
     },
-    healthText: {
-      fontSize: 23,
-      fontFamily: 'Poppins-SemiBold',
-      color: Colors["light"].rush,
-      textAlign: 'left',
-    },
     viewRecentTestButtonText: {
       fontSize: 16,
       fontFamily: 'Poppins-SemiBold',
@@ -228,9 +220,6 @@ export default function WelcomeCard({
             Hello {displayName || 'there'},
           </Text>
           <Text style={dynamicStyles.daysText}>{daysMessage}</Text>
-          {hasTests && healthSummary && (
-            <Text style={dynamicStyles.healthText}>{healthSummary}</Text>
-          )}
         </View>
         
         {/* View Recent Test Button */}

@@ -34,27 +34,6 @@ function daysSince(dateStr?: string | null) {
   return Math.max(0, Math.floor((now - testTime) / msPerDay));
 }
 
-function extractSummary(text?: string | null) {
-  if (!text) return null;
-
-  // normalize line endings
-  const s = text.replace(/\r/g, "");
-
-  // match lines like:
-  // "Summary: ..." OR "# Summary: ..." OR "### Summary: ..." OR "- Summary: ..."
-  const re = /(^|\n)\s{0,3}(?:[-*]\s*)?(?:#{1,6}\s*)?summary\s*:\s*(.+?)(?=\n{2,}|$)/gi;
-
-  const all = [...s.matchAll(re)];
-  if (all.length === 0) return null;
-
-  // take the last Summary line if there are multiple
-  const last = all[all.length - 1][2]
-    .replace(/\*\*|__/g, "")   // strip simple bold markdown
-    .trim();
-
-  return last || null;
-}
-
 interface AnimatedArticleCardProps {
   title: string;
   description: string;
@@ -197,8 +176,6 @@ export default function HomeScreen() {
       : days === 1
         ? "It's been 1 day since your last test."
         : `It's been ${days} days since your last test.`;
-  
-  const healthSummary = extractSummary(latestTestLog?.analysis) || "Your health summary will appear here after analysis.";
 
   return (
     <ScreenBackground>
@@ -237,7 +214,6 @@ export default function HomeScreen() {
               <WelcomeCard 
                 displayName={displayName || undefined}
                 daysMessage={daysMessage}
-                healthSummary={healthSummary}
                 hasTests={!!latestTestLog}
                 selectedTestResult={latestTestLog ? { id: latestTestLog.id, result: 'positive' } : undefined}
                 hasActiveSession={hasActive}
