@@ -568,31 +568,6 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
             </View>
           )}
 
-          <View style={styles.divider} />
-
-          {/* Ask Santelle Button */}
-          <ShrinkableTouchable 
-            style={styles.askSantelleButton}
-            onPress={() => setAskSantelleModalVisible(true)}
-          >
-            <LinearGradient
-              colors={['#EF7D88','#FFEBCE','#FABDD7','#FD9EAA']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.askSantelleGradient}
-            >
-              <Text style={styles.askSantelleButtonText}>Ask Santelle</Text>
-            </LinearGradient>
-          </ShrinkableTouchable>
-
-          {/* Chatbot Button */}
-          <ShrinkableTouchable 
-            style={styles.chatbotButton}
-            onPress={() => setChatbotModalVisible(true)}
-          >
-            <Text style={styles.chatbotButtonText}>Chat</Text>
-          </ShrinkableTouchable>
-
         </ScrollView>
         </View>
       </ScreenBackground>

@@ -106,12 +106,6 @@ export async function getUserNavigationRoute(): Promise<string> {
         const user = await getUser();
         if (!user) return '/(auth)/landing';
         
-        // Check subscription status first - users must have active subscription or trial
-        const hasAccess = await hasActiveSubscriptionOrTrial();
-        if (!hasAccess) {
-            return '/(auth)/subscription';
-        }
-        
         // Check onboarding status
         const needsOnboardingFlow = await needsOnboarding();
         if (needsOnboardingFlow) {

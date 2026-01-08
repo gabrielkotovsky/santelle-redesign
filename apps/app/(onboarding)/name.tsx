@@ -23,12 +23,7 @@ export default function Name() {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleContinue = async () => {
-    if (!displayName.trim()) {
-      Alert.alert('Error', 'Please enter your name');
-      return;
-    }
-
+  const handleContinue = async (skip: boolean = false) => {
     setLoading(true);
     try {
       // Get current user
@@ -41,14 +36,19 @@ export default function Name() {
       // Check if onboarding record exists
       const existingRecord = await getOnboardingResponse(user.id);
       
+      // Use display name if provided, otherwise use a default or empty string
+      const nameToSave = (!skip && displayName.trim()) ? displayName.trim() : '';
+      
       if (existingRecord) {
         // Update existing record with display name (don't mark complete yet)
-        await updateOnboardingResponse(user.id, {
-          display_name: displayName.trim()
-        });
+        if (nameToSave) {
+          await updateOnboardingResponse(user.id, {
+            display_name: nameToSave
+          });
+        }
       } else {
         // Create new record (onboarding_complete will be false by default)
-        await createOnboardingResponse(user.id, displayName.trim());
+        await createOnboardingResponse(user.id, nameToSave);
       }
       
       // Navigate to next onboarding step
@@ -81,6 +81,9 @@ export default function Name() {
           <Text style={styles.subtitle}>
             This is how you&apos;ll appear in the app
           </Text>
+          <Text style={styles.optionalText}>
+            (Optional - you can skip this step)
+          </Text>
 
           <View style={styles.inputContainer}>
             <TextInput
@@ -95,22 +98,41 @@ export default function Name() {
             />
           </View>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.continueButton,
-              (!displayName.trim() || loading) && styles.continueButtonDisabled,
-              pressed && { opacity: 0.8 }
-            ]}
-            onPress={handleContinue}
-            disabled={!displayName.trim() || loading}
-          >
-            <Text style={[
-              styles.continueButtonText,
-              (!displayName.trim() || loading) && styles.continueButtonTextDisabled
-            ]}>
-              {loading ? 'Saving...' : 'Continue'}
-            </Text>
-          </Pressable>
+          <View style={styles.buttonContainer}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.skipButton,
+                loading && styles.skipButtonDisabled,
+                pressed && { opacity: 0.8 }
+              ]}
+              onPress={() => handleContinue(true)}
+              disabled={loading}
+            >
+              <Text style={[
+                styles.skipButtonText,
+                loading && styles.skipButtonTextDisabled
+              ]}>
+                Skip
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.continueButton,
+                loading && styles.continueButtonDisabled,
+                pressed && { opacity: 0.8 }
+              ]}
+              onPress={() => handleContinue(false)}
+              disabled={loading}
+            >
+              <Text style={[
+                styles.continueButtonText,
+                loading && styles.continueButtonTextDisabled
+              ]}>
+                {loading ? 'Saving...' : 'Continue'}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </ScreenBackground>
@@ -142,6 +164,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     fontFamily: 'Poppins-Regular',
   },
+  optionalText: {
+    fontSize: 14,
+    color: 'rgba(114, 20, 34, 0.6)',
+    marginTop: 4,
+    textAlign: 'center',
+    fontFamily: 'Poppins-Regular',
+    fontStyle: 'italic',
+  },
   inputContainer: {
     width: '85%',
     alignSelf: 'center',
@@ -159,11 +189,38 @@ const styles = StyleSheet.create({
     color: '#721422',
     minHeight: 50,
   },
-  continueButton: {
+  buttonContainer: {
     position: 'absolute',
     bottom: 30,
     left: 30,
     right: 30,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  skipButton: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderRadius: 30,
+    minHeight: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#721422',
+  },
+  skipButtonDisabled: {
+    borderColor: 'rgba(114, 20, 34, .5)',
+  },
+  skipButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Poppins-Medium',
+    color: '#721422',
+  },
+  skipButtonTextDisabled: {
+    color: 'rgba(114, 20, 34, .5)',
+  },
+  continueButton: {
+    flex: 1,
     backgroundColor: '#721422',
     borderRadius: 30,
     minHeight: 50,

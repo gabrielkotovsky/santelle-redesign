@@ -64,12 +64,7 @@ export default function Country() {
     Keyboard.dismiss();
   };
 
-  const handleContinue = async () => {
-    if (!selectedCountry) {
-      Alert.alert('Error', 'Please select your country');
-      return;
-    }
-
+  const handleContinue = async (skip: boolean = false) => {
     setLoading(true);
     try {
       const user = await getUser();
@@ -78,14 +73,19 @@ export default function Country() {
         return;
       }
 
-      // Save country and mark onboarding as complete
-      await updateOnboardingResponse(user.id, {
-        country: selectedCountry,
+      // Save country (if provided) and mark onboarding as complete
+      const updates: { country?: string; onboarding_complete: boolean } = {
         onboarding_complete: true
-      });
+      };
+      
+      if (!skip && selectedCountry) {
+        updates.country = selectedCountry;
+      }
+      
+      await updateOnboardingResponse(user.id, updates);
       
       // Navigate to questionnaire (next step in the flow)
-      router.replace('/(questionnaire)/motivation');
+      router.push('/(questionnaire)/motivation');
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to complete onboarding. Please try again.');
     } finally {
@@ -125,6 +125,9 @@ export default function Country() {
           <Text style={styles.title}>Where are you based?</Text>
           <Text style={styles.subtitle}>
             Select your country
+          </Text>
+          <Text style={styles.optionalText}>
+            (Optional - you can skip this step)
           </Text>
 
           <View style={styles.inputWrapper}>
@@ -168,22 +171,41 @@ export default function Country() {
             )}
           </View>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.continueButton,
-              (!selectedCountry || loading) && styles.continueButtonDisabled,
-              pressed && { opacity: 0.8 }
-            ]}
-            onPress={handleContinue}
-            disabled={!selectedCountry || loading}
-          >
-            <Text style={[
-              styles.continueButtonText,
-              (!selectedCountry || loading) && styles.continueButtonTextDisabled
-            ]}>
-              {loading ? 'Finishing...' : 'Continue'}
-            </Text>
-          </Pressable>
+          <View style={styles.buttonContainer}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.skipButton,
+                loading && styles.skipButtonDisabled,
+                pressed && { opacity: 0.8 }
+              ]}
+              onPress={() => handleContinue(true)}
+              disabled={loading}
+            >
+              <Text style={[
+                styles.skipButtonText,
+                loading && styles.skipButtonTextDisabled
+              ]}>
+                Skip
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.continueButton,
+                loading && styles.continueButtonDisabled,
+                pressed && { opacity: 0.8 }
+              ]}
+              onPress={() => handleContinue(false)}
+              disabled={loading}
+            >
+              <Text style={[
+                styles.continueButtonText,
+                loading && styles.continueButtonTextDisabled
+              ]}>
+                {loading ? 'Finishing...' : 'Continue'}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </ScreenBackground>
@@ -223,6 +245,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
     fontFamily: 'Poppins-Regular',
+  },
+  optionalText: {
+    fontSize: 14,
+    color: 'rgba(114, 20, 34, 0.6)',
+    marginTop: 4,
+    textAlign: 'center',
+    fontFamily: 'Poppins-Regular',
+    fontStyle: 'italic',
   },
   inputWrapper: {
     width: '85%',
@@ -266,11 +296,38 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#721422',
   },
-  continueButton: {
+  buttonContainer: {
     position: 'absolute',
     bottom: 30,
     left: 30,
     right: 30,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  skipButton: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderRadius: 30,
+    minHeight: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#721422',
+  },
+  skipButtonDisabled: {
+    borderColor: 'rgba(114, 20, 34, .5)',
+  },
+  skipButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Poppins-Medium',
+    color: '#721422',
+  },
+  skipButtonTextDisabled: {
+    color: 'rgba(114, 20, 34, .5)',
+  },
+  continueButton: {
+    flex: 1,
     backgroundColor: '#721422',
     borderRadius: 30,
     minHeight: 50,

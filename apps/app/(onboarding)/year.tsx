@@ -58,12 +58,7 @@ export default function BirthDate() {
     }
   }, [daysInMonth.length]);
 
-  const handleContinue = async () => {
-    if (!selectedYear || !selectedMonth || !selectedDay) {
-      Alert.alert('Error', 'Please select your full date of birth');
-      return;
-    }
-
+  const handleContinue = async (skip: boolean = false) => {
     setLoading(true);
     try {
       const user = await getUser();
@@ -72,11 +67,13 @@ export default function BirthDate() {
         return;
       }
 
-      // Format date as YYYY-MM-DD
-      const dateOfBirth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
-      await updateOnboardingResponse(user.id, {
-        date_of_birth: dateOfBirth
-      });
+      if (!skip && selectedYear && selectedMonth && selectedDay) {
+        // Format date as YYYY-MM-DD
+        const dateOfBirth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
+        await updateOnboardingResponse(user.id, {
+          date_of_birth: dateOfBirth
+        });
+      }
       
       // Navigate to next onboarding step
       router.push('/(onboarding)/country');
@@ -119,6 +116,9 @@ export default function BirthDate() {
           <Text style={styles.title}>When were you born?</Text>
           <Text style={styles.subtitle}>
             This helps us personalize your experience
+          </Text>
+          <Text style={styles.optionalText}>
+            (Optional - you can skip this step)
           </Text>
 
           <View style={styles.pickersRow}>
@@ -180,22 +180,41 @@ export default function BirthDate() {
             </View>
           </View>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.continueButton,
-              (!selectedYear || !selectedMonth || !selectedDay || loading) && styles.continueButtonDisabled,
-              pressed && { opacity: 0.8 }
-            ]}
-            onPress={handleContinue}
-            disabled={!selectedYear || !selectedMonth || !selectedDay || loading}
-          >
-            <Text style={[
-              styles.continueButtonText,
-              (!selectedYear || !selectedMonth || !selectedDay || loading) && styles.continueButtonTextDisabled
-            ]}>
-              {loading ? 'Saving...' : 'Continue'}
-            </Text>
-          </Pressable>
+          <View style={styles.buttonContainer}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.skipButton,
+                loading && styles.skipButtonDisabled,
+                pressed && { opacity: 0.8 }
+              ]}
+              onPress={() => handleContinue(true)}
+              disabled={loading}
+            >
+              <Text style={[
+                styles.skipButtonText,
+                loading && styles.skipButtonTextDisabled
+              ]}>
+                Skip
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.continueButton,
+                loading && styles.continueButtonDisabled,
+                pressed && { opacity: 0.8 }
+              ]}
+              onPress={() => handleContinue(false)}
+              disabled={loading}
+            >
+              <Text style={[
+                styles.continueButtonText,
+                loading && styles.continueButtonTextDisabled
+              ]}>
+                {loading ? 'Saving...' : 'Continue'}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </ScreenBackground>
@@ -235,6 +254,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
     fontFamily: 'Poppins-Regular',
+  },
+  optionalText: {
+    fontSize: 14,
+    color: 'rgba(114, 20, 34, 0.6)',
+    marginTop: 4,
+    textAlign: 'center',
+    fontFamily: 'Poppins-Regular',
+    fontStyle: 'italic',
   },
   pickersRow: {
     flexDirection: 'row',
@@ -281,11 +308,38 @@ const styles = StyleSheet.create({
     height: 150,
     color: '#721422',
   },
-  continueButton: {
+  buttonContainer: {
     position: 'absolute',
     bottom: 30,
     left: 30,
     right: 30,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  skipButton: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderRadius: 30,
+    minHeight: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#721422',
+  },
+  skipButtonDisabled: {
+    borderColor: 'rgba(114, 20, 34, .5)',
+  },
+  skipButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Poppins-Medium',
+    color: '#721422',
+  },
+  skipButtonTextDisabled: {
+    color: 'rgba(114, 20, 34, .5)',
+  },
+  continueButton: {
+    flex: 1,
     backgroundColor: '#721422',
     borderRadius: 30,
     minHeight: 50,
