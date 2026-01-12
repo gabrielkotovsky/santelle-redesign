@@ -7,8 +7,10 @@ const GREY  = '#9E9E9E';
 
 const norm = (s?: string | null) => (s ?? '').replace('−', '-').trim();
 
+const USER_MANUAL_URL = 'https://kvagkkkyashwuvbkegvo.supabase.co/storage/v1/object/public/manufacturer/SantelleUserManualEnglish.pdf';
+
 const disclaimer =
-  '\n\n---\n\n⚠️ This info is a general interpretation from the kit instructions and is not medical advice. For medical guidance, consult a clinician.';
+  `\n\n---\n\n⚠️ This info is a general interpretation from the kit instructions and is not medical advice. For medical guidance, consult a clinician.\n\n📖 [View Full User Guide](${USER_MANUAL_URL})`;
 
 export function getPHStatus(pH?: number | null) {
   if (typeof pH !== 'number') return { color: GREY, tag: 'Unknown' };

@@ -13,7 +13,7 @@ interface SessionRecoveryData {
 
 export class SessionRecoveryService {
   private static instance: SessionRecoveryService;
-  private checkTimeout: NodeJS.Timeout | null = null;
+  private checkTimeout: ReturnType<typeof setTimeout> | null = null;
   private isMonitoring = false;
 
   static getInstance(): SessionRecoveryService {

@@ -5,7 +5,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { router } from 'expo-router';
@@ -445,7 +445,42 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                           {disclaimer && (
                             <>
                               <View style={styles.divider} />
-                              <Text style={styles.disclaimerText}>{disclaimer}</Text>
+                              {(() => {
+                                // Parse markdown links [text](url)
+                                const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+                                const parts: Array<{ type: 'text' | 'link'; content: string; url?: string }> = [];
+                                let lastIndex = 0;
+                                let match;
+                                
+                                while ((match = linkRegex.exec(disclaimer)) !== null) {
+                                  if (match.index > lastIndex) {
+                                    parts.push({ type: 'text', content: disclaimer.slice(lastIndex, match.index) });
+                                  }
+                                  parts.push({ type: 'link', content: match[1], url: match[2] });
+                                  lastIndex = match.index + match[0].length;
+                                }
+                                if (lastIndex < disclaimer.length) {
+                                  parts.push({ type: 'text', content: disclaimer.slice(lastIndex) });
+                                }
+                                
+                                return (
+                                  <Text style={styles.disclaimerText}>
+                                    {parts.map((part, idx) => 
+                                      part.type === 'link' ? (
+                                        <Text
+                                          key={idx}
+                                          style={styles.linkText}
+                                          onPress={() => part.url && Linking.openURL(part.url)}
+                                        >
+                                          {part.content}
+                                        </Text>
+                                      ) : (
+                                        <Text key={idx}>{part.content}</Text>
+                                      )
+                                    )}
+                                  </Text>
+                                );
+                              })()}
                             </>
                           )}
                         </>
@@ -553,7 +588,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                           if (sessionId) {
                             onClose();
                             router.push({
-                              pathname: '/log-test/context',
+                              pathname: '/log-test/questionnaire' as const,
                               params: { test_session_id: sessionId, edit: 'true' }
                             });
                           }
@@ -702,6 +737,12 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     opacity: 0.8,
     fontStyle: 'italic'
+  },
+  linkText: {
+    color: '#2563EB',
+    textDecorationLine: 'underline',
+    fontFamily: 'Poppins-SemiBold',
+    fontStyle: 'normal',
   },
 
   analysisBox: { marginTop: -10, padding: 15, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.5)' },

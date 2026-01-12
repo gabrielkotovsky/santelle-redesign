@@ -25,27 +25,27 @@ type Props = {
 const PRESET_PROMPTS = [
   {
     text: 'What do my results mean?',
-    colors: ['#A1E3D8', '#D8C8F1', '#F9F9FF'],
+    colors: ['#A1E3D8', '#D8C8F1', '#F9F9FF'] as const,
     borderColor: 'rgba(161, 227, 216, 0.75)',
   },
   {
     text: 'What factors can influence my results?',
-    colors: ['#FBE5A2', '#F8B6A2', '#D8B9E5'],
+    colors: ['#FBE5A2', '#F8B6A2', '#D8B9E5'] as const,
     borderColor: 'rgba(216, 185, 229, 0.7)',
   },
   {
     text: 'Holistic tips for comfort',
-    colors: ['#A6C48A', '#F3C6B8', '#FFF9EE'],
+    colors: ['#A6C48A', '#F3C6B8', '#FFF9EE'] as const,
     borderColor: 'rgba(166, 196, 138, 0.7)',
   },
   {
     text: 'Trend analysis',
-    colors: ['#9FD7F9', '#F9D4B4', '#E4E3F5'],
+    colors: ['#9FD7F9', '#F9D4B4', '#E4E3F5'] as const,
     borderColor: 'rgba(159, 215, 249, 0.7)',
   },
   {
     text: 'I need reassurance',
-    colors: ['#C9D8FC', '#F6C9C0', '#FFF5F2'],
+    colors: ['#C9D8FC', '#F6C9C0', '#FFF5F2'] as const,
     borderColor: 'rgba(201, 216, 252, 0.7)',
   },
 ];

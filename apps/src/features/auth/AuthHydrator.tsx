@@ -13,7 +13,7 @@ import { useAuthStore } from "./auth.store";
 export function AuthHydrator() {
   const refreshSession = useAuthStore(s => s.refreshSession);
   const reinitializeListener = useAuthStore(s => s.reinitializeListener);
-  const sessionCheckInterval = useRef<NodeJS.Timeout | null>(null);
+  const sessionCheckInterval = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttempts = useRef<number>(0);
   const maxReconnectAttempts = 5;
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);

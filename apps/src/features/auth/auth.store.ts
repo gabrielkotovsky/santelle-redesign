@@ -460,6 +460,7 @@ export const useAuth = () => {
     signOut: store.signOut,
     clearError: store.clearError,
     refreshSession: store.refreshSession,
+    reinitializeListener: store.reinitializeListener,
   };
 };
 
