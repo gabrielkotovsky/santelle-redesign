@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ImageBackground, StyleSheet } from 'react-native';
-import { LogoCrossIcon } from './icons/svg/LogoCrossIcon';
+import { FullLogoIcon } from './icons/svg/FullLogoIcon';
 
 export function SplashScreen() {
   return (
@@ -10,7 +10,7 @@ export function SplashScreen() {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        <LogoCrossIcon size={120} color="#721422" />
+        <FullLogoIcon width={280} color="#721422" />
       </View>
     </ImageBackground>
   );
