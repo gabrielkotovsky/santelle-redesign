@@ -458,7 +458,15 @@ export const appTranslations = {
   fr: appTranslationsFr,
 } as const;
 
-export type AppT = typeof appTranslations.en;
+// Use a mapped type that converts literal strings to `string` for flexibility across languages
+export type AppT = {
+  [K in keyof typeof appTranslations.en]: 
+    typeof appTranslations.en[K] extends readonly string[] 
+      ? readonly string[]
+      : typeof appTranslations.en[K] extends (...args: infer Args) => infer R
+        ? (...args: Args) => R
+        : string;
+};
 
 export function getAppT(lang: AppLang): AppT {
   return appTranslations[lang] as AppT;

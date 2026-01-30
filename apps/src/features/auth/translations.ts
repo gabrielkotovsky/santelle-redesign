@@ -169,7 +169,13 @@ export const authOnboardingTranslations = {
   },
 } as const;
 
-export type AuthOnboardingT = typeof authOnboardingTranslations.en;
+// Use a mapped type that converts literal strings to `string` for flexibility across languages
+export type AuthOnboardingT = {
+  [K in keyof typeof authOnboardingTranslations.en]: 
+    typeof authOnboardingTranslations.en[K] extends readonly string[] 
+      ? readonly string[] 
+      : string;
+};
 
 export function getAuthOnboardingT(lang: AuthOnboardingLang): AuthOnboardingT {
   return authOnboardingTranslations[lang];
