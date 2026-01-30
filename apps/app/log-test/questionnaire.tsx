@@ -8,8 +8,10 @@ import { router } from "expo-router";
 import WarningModal from "@/src/components/modals/test-warning";
 import { useTestSession } from "@/src/features/test-session/testSession.store";
 import { XIcon } from "@/src/components/icons/svg/XIcon";
+import { useTranslations } from "@/src/i18n/useTranslations";
 
 export default function Questionnaire() {
+  const { t } = useTranslations();
   const [onPeriod, setOnPeriod] = useState<boolean | null>(null);
   const [hadIntercourse, setHadIntercourse] = useState<boolean | null>(null);
   const [showWarningModal, setShowWarningModal] = useState(false);
@@ -68,14 +70,14 @@ export default function Questionnaire() {
 
       <View style={styles.questionnaireScreen}>
         <View style={styles.questionnaireContent}>
-          <Text style={[styles.questionnaireTitle, dynamicStyles.questionnaireTitle]}>Before You Begin</Text>
+          <Text style={[styles.questionnaireTitle, dynamicStyles.questionnaireTitle]}>{t.beforeYouBeginTitle}</Text>
           <Text style={[styles.questionnaireSubtitle, dynamicStyles.questionnaireSubtitle]}>
-            Please answer these questions to ensure accurate test results
+            {t.beforeYouBeginSubtitle}
           </Text>
                 
                 <View style={styles.questionContainer}>
                   <Text style={[styles.questionText, dynamicStyles.questionText]}>
-                    Are you currently on your period?
+                    {t.beforeYouBeginPeriodQuestion}
                   </Text>
                   <View style={styles.yesNoContainer}>
                     <ShrinkableTouchable 
@@ -88,7 +90,7 @@ export default function Questionnaire() {
                       <Text style={[
                         styles.yesNoButtonText,
                         onPeriod === true && dynamicStyles.yesNoButtonTextSelected
-                      ]}>Yes</Text>
+                      ]}>{t.yes}</Text>
                     </ShrinkableTouchable>
                     <ShrinkableTouchable 
                       style={[
@@ -100,14 +102,14 @@ export default function Questionnaire() {
                       <Text style={[
                         styles.yesNoButtonText,
                         onPeriod === false && dynamicStyles.yesNoButtonTextSelected
-                      ]}>No</Text>
+                      ]}>{t.no}</Text>
                     </ShrinkableTouchable>
                   </View>
                 </View>
 
                 <View style={styles.questionContainer}>
                   <Text style={[styles.questionText, dynamicStyles.questionText]}>
-                    Have you had sex in the last 24 hours?
+                    {t.beforeYouBeginSexQuestion}
                   </Text>
                   <View style={styles.yesNoContainer}>
                     <ShrinkableTouchable 
@@ -120,7 +122,7 @@ export default function Questionnaire() {
                       <Text style={[
                         styles.yesNoButtonText,
                         hadIntercourse === true && dynamicStyles.yesNoButtonTextSelected
-                      ]}>Yes</Text>
+                      ]}>{t.yes}</Text>
                     </ShrinkableTouchable>
                     <ShrinkableTouchable 
                       style={[
@@ -132,7 +134,7 @@ export default function Questionnaire() {
                       <Text style={[
                         styles.yesNoButtonText,
                         hadIntercourse === false && dynamicStyles.yesNoButtonTextSelected
-                      ]}>No</Text>
+                      ]}>{t.no}</Text>
                     </ShrinkableTouchable>
                   </View>
                 </View>
@@ -148,7 +150,7 @@ export default function Questionnaire() {
                   <Text style={[
                     styles.submitButtonText,
                     (onPeriod === null || hadIntercourse === null) && styles.submitButtonTextDisabled
-                  ]}>Continue</Text>
+                  ]}>{t.continue}</Text>
                 </ShrinkableTouchable>
         </View>
       </View>
@@ -157,7 +159,13 @@ export default function Questionnaire() {
       <WarningModal 
         visible={showWarningModal} 
         onGoBack={handleGoBack} 
-        onContinueAnyway={handleContinueAnyway} 
+        onContinueAnyway={handleContinueAnyway}
+        title={t.testNotRecommended}
+        intro={t.testNotRecommendedIntro}
+        periodItem={t.testNotRecommendedPeriod}
+        sexItem={t.testNotRecommendedSex}
+        goBackLabel={t.goBack}
+        continueLabel={t.continue}
       />
     </ScreenBackground>
   );

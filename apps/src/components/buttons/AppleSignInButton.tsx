@@ -11,13 +11,19 @@ interface AppleSignInButtonProps {
   onError?: (error: any) => void;
   style?: any;
   disabled?: boolean;
+  /** Button label (e.g. for i18n: "Continue with Apple" / "Continuer avec Apple") */
+  label?: string;
+  /** Label shown while signing in (e.g. "Signing in..." / "Connexion...") */
+  loadingLabel?: string;
 }
 
 export default function AppleSignInButton({ 
   onSuccess, 
   onError, 
   style, 
-  disabled = false 
+  disabled = false,
+  label = 'Continue with Apple',
+  loadingLabel = 'Signing in...',
 }: AppleSignInButtonProps) {
   const [loading, setLoading] = useState(false);
   const { signInWithApple: authStoreSignIn } = useAuthStore();
@@ -97,7 +103,7 @@ export default function AppleSignInButton({
       </View>
       <View style={styles.textColumn}>
         <Text style={[styles.socialButtonText, styles.appleButtonText]}>
-          {loading ? 'Signing in...' : 'Continue with Apple'}
+          {loading ? loadingLabel : label}
         </Text>
       </View>
     </Pressable>

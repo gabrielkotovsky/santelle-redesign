@@ -13,42 +13,20 @@ import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
 import { getUser, saveQuestionnaireAnswer } from '@/src/features/auth/auth.api';
+import { useTranslations } from '@/src/i18n';
 
 const QUESTION_NUMBER = 2; // Test frequency question
 
-const FREQUENCIES = [
-  {
-    id: 'regularly',
-    answerId: 1,
-    emoji: '📅',
-    title: 'Regularly',
-    explanation: 'I check every month or more.',
-  },
-  {
-    id: 'occasionally',
-    answerId: 2,
-    emoji: '🔄',
-    title: 'Occasionally',
-    explanation: 'A few times per year.',
-  },
-  {
-    id: 'symptoms',
-    answerId: 3,
-    emoji: '⚠️',
-    title: 'Only when I have symptoms',
-    explanation: 'I test if something feels off.',
-  },
-  {
-    id: 'never',
-    answerId: 4,
-    emoji: '🚫',
-    title: 'Never tested before',
-    explanation: 'This is my first time.',
-  },
-];
+interface FrequencyOption {
+  id: string;
+  answerId: number;
+  emoji: string;
+  title: string;
+  explanation: string;
+}
 
 interface AnimatedOptionProps {
-  frequency: typeof FREQUENCIES[0];
+  frequency: FrequencyOption;
   isSelected: boolean;
   onPress: () => void;
 }
@@ -128,10 +106,17 @@ function AnimatedOption({ frequency, isSelected, onPress }: AnimatedOptionProps)
 export default function TestFrequency() {
   const [selectedFrequency, setSelectedFrequency] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslations();
+  const frequencies: FrequencyOption[] = React.useMemo(() => [
+    { id: 'regularly', answerId: 1, emoji: '📅', title: t.testFreq1Title, explanation: t.testFreq1Explanation },
+    { id: 'occasionally', answerId: 2, emoji: '🔄', title: t.testFreq2Title, explanation: t.testFreq2Explanation },
+    { id: 'symptoms', answerId: 3, emoji: '⚠️', title: t.testFreq3Title, explanation: t.testFreq3Explanation },
+    { id: 'never', answerId: 4, emoji: '🚫', title: t.testFreq4Title, explanation: t.testFreq4Explanation },
+  ], [t]);
 
   const handleContinue = async () => {
     if (!selectedFrequency) {
-      Alert.alert('Please select an option', 'Let us know how often you monitor your health');
+      Alert.alert(t.pleaseSelectOption, t.testFreqSubtitle);
       return;
     }
 
@@ -139,12 +124,11 @@ export default function TestFrequency() {
     try {
       const user = await getUser();
       if (!user) {
-        Alert.alert('Error', 'User not found. Please try again.');
+        Alert.alert(t.error, t.userNotFound);
         return;
       }
 
-      // Get the answer ID for the selected frequency
-      const answerId = FREQUENCIES.find(f => f.id === selectedFrequency)?.answerId;
+      const answerId = frequencies.find(f => f.id === selectedFrequency)?.answerId;
       if (!answerId) return;
 
       // Save answer to database (q2 column)
@@ -153,7 +137,7 @@ export default function TestFrequency() {
       // Navigate to next question
       router.push('/(questionnaire)/confidence-level');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save. Please try again.');
+      Alert.alert(t.error, error.message || t.failedToSave);
     } finally {
       setLoading(false);
     }
@@ -182,7 +166,7 @@ export default function TestFrequency() {
             ]}
             onPress={() => router.push('/(questionnaire)/confidence-level')}
           >
-            <Text style={styles.skipButtonText}>Skip</Text>
+            <Text style={styles.skipButtonText}>{t.skip}</Text>
           </Pressable>
         </View>
 
@@ -196,12 +180,12 @@ export default function TestFrequency() {
               size={60}
               color="#721422"
             />
-            <Text style={styles.title}>How often do you monitor your vaginal health?</Text>
-            <Text style={styles.subtitle}>Select one</Text>
+            <Text style={styles.title}>{t.testFreqTitle}</Text>
+            <Text style={styles.subtitle}>{t.confidenceSelectOne}</Text>
           </View>
 
           <View style={styles.optionsContainer}>
-            {FREQUENCIES.map((frequency) => (
+            {frequencies.map((frequency) => (
               <AnimatedOption
                 key={frequency.id}
                 frequency={frequency}
@@ -226,7 +210,7 @@ export default function TestFrequency() {
               styles.continueButtonText,
               (!selectedFrequency || loading) && styles.continueButtonTextDisabled
             ]}>
-              {loading ? 'Saving...' : 'Continue'}
+              {loading ? t.saving : t.continue}
             </Text>
           </Pressable>
         </View>

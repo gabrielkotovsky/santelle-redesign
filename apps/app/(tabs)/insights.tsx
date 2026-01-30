@@ -9,54 +9,22 @@ import { useSupabaseRefresh } from '../../src/hooks/useSupabaseRefresh';
 import { supabase } from '../../src/services/supabase';
 import type { TestLog } from '../../src/features/test-logs/testLogs.api';
 import { Colors } from '../../src/theme/colors';
+import { useTranslations } from '../../src/i18n';
 
-// Biomarker configurations
-const BIOMARKER_CONFIG = {
-  pH: {
-    title: 'pH Level',
-    color: '#E57373',
-    unit: '',
-    minValue: 3.5,
-    maxValue: 7.5,
-    description: 'Vaginal acidity level',
-  },
-  h2o2: {
-    title: 'H₂O₂',
-    color: '#64B5F6',
-    unit: '',
-    description: 'Hydrogen peroxide (protective bacteria)',
-  },
-  le: {
-    title: 'Leukocyte Esterase',
-    color: '#81C784',
-    unit: '',
-    description: 'White blood cell activity',
-  },
-  sna: {
-    title: 'Sialidase',
-    color: '#FFB74D',
-    unit: '',
-    description: 'BV-associated enzyme',
-  },
-  beta_g: {
-    title: 'β-Glucuronidase',
-    color: '#BA68C8',
-    unit: '',
-    description: 'Bacterial/yeast overgrowth marker',
-  },
-  nag: {
-    title: 'NAG',
-    color: '#4DD0E1',
-    unit: '',
-    description: 'Tissue irritation indicator',
-  },
-} as const;
-
-type BiomarkerKey = keyof typeof BIOMARKER_CONFIG;
+type BiomarkerKey = 'pH' | 'h2o2' | 'le' | 'sna' | 'beta_g' | 'nag';
 
 export default function InsightsScreen() {
   const [testHistory, setTestHistory] = useState<TestLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslations();
+  const BIOMARKER_CONFIG = React.useMemo(() => ({
+    pH: { title: t.insightsPh, color: '#E57373', unit: '', minValue: 3.5, maxValue: 7.5, description: t.insightsPhDesc },
+    h2o2: { title: t.insightsH2o2, color: '#64B5F6', unit: '', description: t.insightsH2o2Desc },
+    le: { title: t.insightsLe, color: '#81C784', unit: '', description: t.insightsLeDesc },
+    sna: { title: t.insightsSna, color: '#FFB74D', unit: '', description: t.insightsSnaDesc },
+    beta_g: { title: t.insightsBetaG, color: '#BA68C8', unit: '', description: t.insightsBetaGDesc },
+    nag: { title: t.insightsNag, color: '#4DD0E1', unit: '', description: t.insightsNagDesc },
+  }), [t]);
 
   const fetchTestHistory = useCallback(async () => {
     try {
@@ -180,23 +148,23 @@ export default function InsightsScreen() {
         {/* Header */}
         <View style={styles.headerSection}>
           <BlurView intensity={20} tint="light" style={styles.headerBubble}>
-            <Text style={styles.headerTitle}>INSIGHTS</Text>
+            <Text style={styles.headerTitle}>{t.insightsHeader}</Text>
           </BlurView>
         </View>
 
         {loading ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>Loading your data...</Text>
+            <Text style={styles.emptyStateText}>{t.loadingYourData}</Text>
           </View>
         ) : !hasEnoughData ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>Track Your Progress</Text>
+            <Text style={styles.emptyStateTitle}>{t.trackYourProgress}</Text>
             <Text style={styles.emptyStateText}>
-              Complete at least 2 tests to see your biomarker trends over time.
+              {t.completeTwoTests}
             </Text>
             <View style={styles.testCountBadge}>
               <Text style={styles.testCountText}>
-                {testHistory.length} / 2 tests completed
+                {typeof t.testsCompleted === 'function' ? t.testsCompleted(testHistory.length, 2) : `${testHistory.length} / 2 tests completed`}
               </Text>
             </View>
           </View>

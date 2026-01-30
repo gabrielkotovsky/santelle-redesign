@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
+import { useAuthOnboardingTranslations } from '@/src/features/auth/useAuthOnboardingTranslations';
 import { 
   getUser, 
   updateOnboardingResponse 
@@ -52,6 +53,7 @@ export default function Country() {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { t } = useAuthOnboardingTranslations();
 
   const filteredCountries = COUNTRIES.filter(country =>
     country.toLowerCase().includes(inputValue.toLowerCase())
@@ -69,11 +71,10 @@ export default function Country() {
     try {
       const user = await getUser();
       if (!user) {
-        Alert.alert('Error', 'User not found. Please try again.');
+        Alert.alert(t.error, t.userNotFound);
         return;
       }
 
-      // Save country (if provided) and mark onboarding as complete
       const updates: { country?: string; onboarding_complete: boolean } = {
         onboarding_complete: true
       };
@@ -84,10 +85,9 @@ export default function Country() {
       
       await updateOnboardingResponse(user.id, updates);
       
-      // Navigate to questionnaire (next step in the flow)
       router.push('/(questionnaire)/motivation');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to complete onboarding. Please try again.');
+      Alert.alert(t.error, error.message || t.failedToCompleteOnboarding);
     } finally {
       setLoading(false);
     }
@@ -122,19 +122,19 @@ export default function Country() {
             />
           </View>
           
-          <Text style={styles.title}>Where are you based?</Text>
+          <Text style={styles.title}>{t.whereBased}</Text>
           <Text style={styles.subtitle}>
-            Select your country
+            {t.selectCountry}
           </Text>
           <Text style={styles.optionalText}>
-            (Optional - you can skip this step)
+            {t.optionalSkip}
           </Text>
 
           <View style={styles.inputWrapper}>
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Search or type country..."
+                placeholder={t.searchCountryPlaceholder}
                 placeholderTextColor="#999999"
                 value={inputValue}
                 onChangeText={(text) => {
@@ -185,7 +185,7 @@ export default function Country() {
                 styles.skipButtonText,
                 loading && styles.skipButtonTextDisabled
               ]}>
-                Skip
+                {t.skip}
               </Text>
             </Pressable>
 
@@ -202,7 +202,7 @@ export default function Country() {
                 styles.continueButtonText,
                 loading && styles.continueButtonTextDisabled
               ]}>
-                {loading ? 'Finishing...' : 'Continue'}
+                {loading ? t.finishing : t.continue}
               </Text>
             </Pressable>
           </View>

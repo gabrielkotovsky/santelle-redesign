@@ -13,27 +13,15 @@ import { router } from 'expo-router';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
+import { useAuthOnboardingTranslations } from '@/src/features/auth/useAuthOnboardingTranslations';
 import { 
   getUser, 
   updateOnboardingResponse 
 } from '@/src/features/auth/auth.api';
 
-const MONTHS = [
-  { label: 'January', value: 1 },
-  { label: 'February', value: 2 },
-  { label: 'March', value: 3 },
-  { label: 'April', value: 4 },
-  { label: 'May', value: 5 },
-  { label: 'June', value: 6 },
-  { label: 'July', value: 7 },
-  { label: 'August', value: 8 },
-  { label: 'September', value: 9 },
-  { label: 'October', value: 10 },
-  { label: 'November', value: 11 },
-  { label: 'December', value: 12 },
-];
-
 export default function BirthDate() {
+  const { t } = useAuthOnboardingTranslations();
+  const months = t.months.map((label, i) => ({ label, value: i + 1 }));
   const currentYear = new Date().getFullYear();
   const minYear = currentYear - 100; // 100 years ago
   const maxYear = currentYear - 16; // Must be at least 16 years old
@@ -63,22 +51,20 @@ export default function BirthDate() {
     try {
       const user = await getUser();
       if (!user) {
-        Alert.alert('Error', 'User not found. Please try again.');
+        Alert.alert(t.error, t.userNotFound);
         return;
       }
 
       if (!skip && selectedYear && selectedMonth && selectedDay) {
-        // Format date as YYYY-MM-DD
         const dateOfBirth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
         await updateOnboardingResponse(user.id, {
           date_of_birth: dateOfBirth
         });
       }
       
-      // Navigate to next onboarding step
       router.push('/(onboarding)/country');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save your date of birth. Please try again.');
+      Alert.alert(t.error, error.message || t.failedToSaveDob);
     } finally {
       setLoading(false);
     }
@@ -113,25 +99,24 @@ export default function BirthDate() {
             />
           </View>
           
-          <Text style={styles.title}>When were you born?</Text>
+          <Text style={styles.title}>{t.whenBorn}</Text>
           <Text style={styles.subtitle}>
-            This helps us personalize your experience
+            {t.personalizeExperience}
           </Text>
           <Text style={styles.optionalText}>
-            (Optional - you can skip this step)
+            {t.optionalSkip}
           </Text>
 
           <View style={styles.pickersRow}>
-            {/* Month Picker */}
             <View style={[styles.pickerContainer, styles.monthPicker]}>
-              <Text style={styles.pickerLabel}>Month</Text>
+              <Text style={styles.pickerLabel}>{t.month}</Text>
               <Picker
                 selectedValue={selectedMonth}
                 onValueChange={(itemValue) => setSelectedMonth(itemValue)}
                 style={styles.picker}
                 itemStyle={styles.pickerItem}
               >
-                {MONTHS.map((month) => (
+                {months.map((month) => (
                   <Picker.Item 
                     key={month.value} 
                     label={month.label} 
@@ -141,9 +126,8 @@ export default function BirthDate() {
               </Picker>
             </View>
 
-            {/* Day Picker */}
             <View style={[styles.pickerContainer, styles.dayPicker]}>
-              <Text style={styles.pickerLabel}>Day</Text>
+              <Text style={styles.pickerLabel}>{t.day}</Text>
               <Picker
                 selectedValue={selectedDay}
                 onValueChange={(itemValue) => setSelectedDay(itemValue)}
@@ -160,9 +144,8 @@ export default function BirthDate() {
               </Picker>
             </View>
 
-            {/* Year Picker */}
             <View style={[styles.pickerContainer, styles.yearPicker]}>
-              <Text style={styles.pickerLabel}>Year</Text>
+              <Text style={styles.pickerLabel}>{t.year}</Text>
               <Picker
                 selectedValue={selectedYear}
                 onValueChange={(itemValue) => setSelectedYear(itemValue)}
@@ -194,7 +177,7 @@ export default function BirthDate() {
                 styles.skipButtonText,
                 loading && styles.skipButtonTextDisabled
               ]}>
-                Skip
+                {t.skip}
               </Text>
             </Pressable>
 
@@ -211,7 +194,7 @@ export default function BirthDate() {
                 styles.continueButtonText,
                 loading && styles.continueButtonTextDisabled
               ]}>
-                {loading ? 'Saving...' : 'Continue'}
+                {loading ? t.saving : t.continue}
               </Text>
             </Pressable>
           </View>

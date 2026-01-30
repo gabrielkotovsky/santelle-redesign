@@ -5,9 +5,11 @@ import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { signOut } from '@/src/features/auth/auth.api';
 import { useAuthStore } from '@/src/features/auth/auth.store';
+import { useAuthOnboardingTranslations } from '@/src/features/auth/useAuthOnboardingTranslations';
 
 export default function Subscription() {
   const { signOut: signOutStore } = useAuthStore();
+  const { t } = useAuthOnboardingTranslations();
 
   const handleSignOut = async () => {
     try {
@@ -15,7 +17,7 @@ export default function Subscription() {
       await signOutStore();
       router.replace('/(auth)/landing');
     } catch (error: any) {
-      Alert.alert('Error', 'Failed to sign out. Please try again.');
+      Alert.alert(t.error, t.failedToSignOut);
     }
   };
 
@@ -27,12 +29,12 @@ export default function Subscription() {
             size={60}
             color="#721422"
           />
-          <Text style={styles.title}>Subscription Required</Text>
+          <Text style={styles.title}>{t.subscriptionRequired}</Text>
           <Text style={styles.subtitle}>
-            You need an active subscription or trial to access Santelle.
+            {t.subscriptionSubtitle}
           </Text>
           <Text style={styles.description}>
-            Subscribe to unlock all features and start tracking your health journey.
+            {t.subscriptionDescription}
           </Text>
         </View>
 
@@ -45,18 +47,18 @@ export default function Subscription() {
               if (supported) {
                 await Linking.openURL(url);
               } else {
-                Alert.alert('Error', 'Unable to open the subscription page.');
+                Alert.alert(t.error, t.unableToOpenSubscription);
               }
             }}
           >
-            <Text style={styles.subscribeButtonText}>Subscribe Now</Text>
+            <Text style={styles.subscribeButtonText}>{t.subscribeNow}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.signOutButton}
             onPress={handleSignOut}
           >
-            <Text style={styles.signOutButtonText}>Sign Out</Text>
+            <Text style={styles.signOutButtonText}>{t.signOut}</Text>
           </TouchableOpacity>
         </View>
       </View>

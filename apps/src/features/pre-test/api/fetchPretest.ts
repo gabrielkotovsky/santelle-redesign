@@ -1,12 +1,16 @@
 import { supabase } from '@/src/services/supabase';
+import type { AppLang } from '@/src/i18n/translations';
 import type { PretestChoice, PretestQuestion, UUID } from '../models';
 
 /** Prefer a view that returns questions + JSON choices in one call:
   * view name suggestion: app_pretest_v1_json
   * If you don't have it yet, this stitches client-side.
+  * For French locale, uses prompt_french (app_pretest_questions) and label_french (app_pretest_choices).
   */
-export async function fetchPretest(version = 1): Promise<PretestQuestion[]> {
-  // 1) questions
+export async function fetchPretest(version = 1, locale: AppLang = 'en'): Promise<PretestQuestion[]> {
+  const isFrench = locale === 'fr';
+
+  // 1) questions (prompt_french used when locale is 'fr')
   const { data: q, error: qErr } = await supabase
     .from('app_pretest_questions')
     .select('*')
@@ -18,7 +22,7 @@ export async function fetchPretest(version = 1): Promise<PretestQuestion[]> {
   const ids = (q ?? []).map(r => r.id as UUID);
   if (!ids.length) return [];
 
-  // 2) choices
+  // 2) choices (label_french used when locale is 'fr')
   const { data: c, error: cErr } = await supabase
     .from('app_pretest_choices')
     .select('*')
@@ -28,17 +32,27 @@ export async function fetchPretest(version = 1): Promise<PretestQuestion[]> {
 
   if (cErr) throw cErr;
 
-  // 3) stitch
+  // 3) stitch — use prompt_french / label_french for French
   const byQ: Record<UUID, PretestChoice[]> = {};
   (c ?? []).forEach(ch => {
     const qid = ch.question_id as UUID;
-    (byQ[qid] ??= []).push(ch as unknown as PretestChoice);
+    const raw = ch as any;
+    const choice: PretestChoice = {
+      ...raw,
+      label: isFrench && raw.label_french != null ? raw.label_french : raw.label,
+    };
+    (byQ[qid] ??= []).push(choice);
   });
 
-  const result = (q ?? []).map(row => ({
-    ...(row as any),
-    choices: byQ[row.id as UUID] ?? [],
-  })) as PretestQuestion[];
-  
+  const result = (q ?? []).map(row => {
+    const raw = row as any;
+    const prompt = isFrench && raw.prompt_french != null ? raw.prompt_french : raw.prompt;
+    return {
+      ...raw,
+      prompt,
+      choices: byQ[row.id as UUID] ?? [],
+    } as PretestQuestion;
+  });
+
   return result;
 }

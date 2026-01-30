@@ -28,6 +28,7 @@ import { scheduleResultsReady, ensureNotifPermission, cancelNotification } from 
 // Store imports
 import { useTestSession } from "@/src/features/test-session/testSession.store";
 import { getLogBySession } from "@/src/features/test-logs/testLogs.api";
+import { useTranslations } from "@/src/i18n";
 
 // Constants
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -42,62 +43,17 @@ type Step = {
   description: string[];
 };
 
-// Constants
-const TEST_STEPS: Step[] = [
-  {
-    title: "1. Prepare your swab",
-    SvgImage: Step0Svg,
-    description: [
-      "**Wash** your hands thoroughly",
-      "**Open** the swab package and carefully peel back the end (as shown in the diagram) to grasp the swab handle and pull it out",
-      "**Do not** let the swab tip touch anything"
-    ],
-  },
-  {
-    title: "2. Collect your sample",
-    SvgImage: Step1Svg,
-    description: [
-      "**Insert** the swab gently about half an index into your vagina",
-      "**Rotate** the swab slowly and evenly against the vaginal wall for 10–15 seconds",
-      "**Make sure** vaginal secretions are visible on the swab",
-      "**Remove** the swab and do not touch it to any surface"
-    ],
-  },
-  {
-    title: "3. Prepare your solution",
-    SvgImage: Step2Svg,
-    description: [
-      "**Insert** the swab into the sample tube (purple) containing diluent",
-      "**Swish** it around for 10 seconds",
-      "**Let it soak** for about 60 seconds",
-      "**Squeeze** the tube walls for a few seconds to extract the sample"
-    ],
-  },
-  {
-    title: "4. Add your solution to the wells",
-    SvgImage: Step3Svg,
-    description: [
-      "**Discard** the swab",
-      "**Tighten** the sample tube cap",
-      "**Remove** the dropper cap",
-      "**Add 1 drop** of the solution to each reaction well"
-    ],
-  },
-  {
-    title: "5. Log your pH results",
-    description: [
-      "**Log your pH results**"
-    ],
-  },
-  {
-    title: "6. Log your final test results",
-    description: [
-      "**Log your final test results**"
-    ],
-  }
-];
-
 export default function TestScreen() {
+  const { t } = useTranslations();
+  const TEST_STEPS: Step[] = useMemo(() => [
+    { title: t.step1Title, SvgImage: Step0Svg, description: [t.step1Desc1, t.step1Desc2, t.step1Desc3] },
+    { title: t.step2Title, SvgImage: Step1Svg, description: [t.step2Desc1, t.step2Desc2, t.step2Desc3, t.step2Desc4] },
+    { title: t.step3Title, SvgImage: Step2Svg, description: [t.step3Desc1, t.step3Desc2, t.step3Desc3, t.step3Desc4] },
+    { title: t.step4Title, SvgImage: Step3Svg, description: [t.step4Desc1, t.step4Desc2, t.step4Desc3, t.step4Desc4] },
+    { title: t.step5Title, description: [t.step5Desc1] },
+    { title: t.step6Title, description: [t.step6Desc1] },
+  ], [t]);
+
   // ===============================
   // Zustand store hooks
   // ===============================
@@ -162,9 +118,9 @@ export default function TestScreen() {
     // Prevent navigation to step 6 without pH selection
     if (newStep === 6 && !phSelected) {
       Alert.alert(
-        'pH Required',
-        'Please select your pH result before proceeding to final results.',
-        [{ text: 'OK' }]
+        t.testStepPhRequired,
+        t.testStepPhRequiredMessage,
+        [{ text: t.ok }]
       );
       programmaticScroll.current = true;
       requestAnimationFrame(() => {
@@ -224,9 +180,9 @@ export default function TestScreen() {
     }
     if (step === 6 && !phSelected) {
       Alert.alert(
-        'pH Required',
-        'Please select your pH result before proceeding to final results.',
-        [{ text: 'OK' }]
+        t.testStepPhRequired,
+        t.testStepPhRequiredMessage,
+        [{ text: t.ok }]
       );
       programmaticScroll.current = true;
       requestAnimationFrame(() => {
@@ -422,7 +378,7 @@ export default function TestScreen() {
                 textAlign: 'center',
                 marginBottom: 4,
               }}>
-                Swipe to navigate
+                {t.testStepSwipeToNavigate}
               </Text>
               <Text style={{
                 fontSize: 14,
@@ -430,7 +386,7 @@ export default function TestScreen() {
                 color: '#666',
                 textAlign: 'center',
               }}>
-                Swipe left or right to move between steps
+                {t.testStepSwipeHint}
               </Text>
             </View>
           </Animated.View>
@@ -458,15 +414,15 @@ export default function TestScreen() {
                       }}
                       onPress={() => {
                         Alert.alert(
-                          'Start Results Timer',
-                          'Have you added 1 drop of solution to each reaction well?',
+                          t.testStepStartTimer,
+                          t.testStepStartTimerConfirm,
                           [
                             {
-                              text: 'Cancel',
+                              text: t.testStepCancel,
                               style: 'cancel',
                             },
                             {
-                              text: 'Yes, Start Timer',
+                              text: t.testStepYesStartTimer,
                               style: 'default',
                               onPress: () => {
                                 setStep3Confirmed(true);
@@ -486,10 +442,10 @@ export default function TestScreen() {
                         );
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel="Start Results Timer"
+                      accessibilityLabel={t.testStepStartTimer}
                     >
                       <Text style={{ color: 'white', fontFamily: 'Poppins-SemiBold', fontSize: 16 }}>
-                        Start Results Timer
+                        {t.testStepStartTimer}
                       </Text>
                     </TouchableOpacity>
                   }
@@ -507,7 +463,7 @@ export default function TestScreen() {
                   />
                 ) : (
                   <PHResultSelector 
-                    title="5. Log your pH results"
+                    title={t.step5Title}
                     SvgImage={Step4Svg}
                   />
                 )
@@ -520,7 +476,7 @@ export default function TestScreen() {
                   />
                 ) : (
                   <ResultSelector 
-                    title="6. Log your final test results"
+                    title={t.step6Title}
                   />
                 )
               ) : (

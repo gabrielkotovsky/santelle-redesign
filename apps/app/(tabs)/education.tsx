@@ -15,6 +15,7 @@ import { LottieRefreshIcon } from '../../src/components/animations/LottieRefresh
 import { ArticleModal } from '../../src/components/modals/article-modal';
 import { Colors } from '../../src/theme/colors';
 import { useSupabaseRefresh } from '../../src/hooks/useSupabaseRefresh';
+import { useTranslations } from '../../src/i18n';
 
 interface AnimatedArticleCardProps {
   title: string;
@@ -65,16 +66,17 @@ export default function EducationScreen() {
   const [selected, setSelected] = useState<Article | null>(null);
   const [articleModalVisible, setArticleModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { t, lang } = useTranslations();
 
   const fetchArticles = useCallback(async () => {
     setLoading(true);
     try {
-      const fetchedArticles = await listArticles();
+      const fetchedArticles = await listArticles({ locale: lang });
       setArticles(fetchedArticles);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [lang]);
 
   // Custom refresh function for education screen data
   const refreshEducationData = useCallback(async () => {
@@ -113,7 +115,7 @@ export default function EducationScreen() {
     <ScreenBackground>
       {/* Fixed LEARN bubble */}
       <BlurView intensity={20} tint="light" style={styles.learnBubble}>
-        <Text style={styles.learnTitle}>LEARN</Text>
+        <Text style={styles.learnTitle}>{t.educationHeader}</Text>
       </BlurView>
       
       {/* Loading spinner positioned between LEARN bubble and articles */}

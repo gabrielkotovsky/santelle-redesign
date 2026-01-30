@@ -21,6 +21,7 @@ import { useTestSession } from '../../src/features/test-session/testSession.stor
 import { supabase } from '../../src/services/supabase';
 import { Colors } from '../../src/theme/colors';
 import { useSupabaseRefresh } from '../../src/hooks/useSupabaseRefresh';
+import { useTranslations } from '../../src/i18n';
 
 interface AnimatedCompactTestProps {
   date: string;
@@ -89,6 +90,7 @@ const AnimatedCompactTest = ({
 
 export default function TestsScreen() {
   const router = useRouter();
+  const { t } = useTranslations();
   const session = useTestSession(s => s.session);
   const hydrateFromServer = useTestSession(s => s.hydrateFromServer);
   const [now, setNow] = useState(() => Date.now());
@@ -224,7 +226,7 @@ export default function TestsScreen() {
 
         <View style={styles.historySection}>
           <BlurView intensity={20} tint="light" style={styles.historyBubble}>
-            <Text style={styles.historyTitle}>HISTORY</Text>
+            <Text style={styles.historyTitle}>{t.history}</Text>
           </BlurView>
         </View>
 

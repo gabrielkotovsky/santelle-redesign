@@ -13,42 +13,20 @@ import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
 import { getUser, saveQuestionnaireAnswer } from '@/src/features/auth/auth.api';
+import { useTranslations } from '@/src/i18n';
 
 const QUESTION_NUMBER = 5; // Infection frequency question
 
-const FREQUENCY_OPTIONS = [
-  {
-    id: 'very-often',
-    answerId: 1,
-    emoji: '🔄',
-    title: 'Very often',
-    explanation: 'Every 1–2 months.',
-  },
-  {
-    id: 'sometimes',
-    answerId: 2,
-    emoji: '📅',
-    title: 'Sometimes',
-    explanation: 'A few times per year.',
-  },
-  {
-    id: 'rarely',
-    answerId: 3,
-    emoji: '🌸',
-    title: 'Rarely',
-    explanation: 'Once a year or less.',
-  },
-  {
-    id: 'never',
-    answerId: 4,
-    emoji: '❓',
-    title: 'Never / I\'m not sure',
-    explanation: 'I haven\'t noticed issues.',
-  },
-];
+interface InfectionOption {
+  id: string;
+  answerId: number;
+  emoji: string;
+  title: string;
+  explanation: string;
+}
 
 interface AnimatedOptionProps {
-  option: typeof FREQUENCY_OPTIONS[0];
+  option: InfectionOption;
   isSelected: boolean;
   onPress: () => void;
 }
@@ -118,10 +96,17 @@ function AnimatedOption({ option, isSelected, onPress }: AnimatedOptionProps) {
 export default function InfectionFrequency() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslations();
+  const options: InfectionOption[] = React.useMemo(() => [
+    { id: 'very-often', answerId: 1, emoji: '🔄', title: t.infection1Title, explanation: t.infection1Explanation },
+    { id: 'sometimes', answerId: 2, emoji: '📅', title: t.infection2Title, explanation: t.infection2Explanation },
+    { id: 'rarely', answerId: 3, emoji: '🌸', title: t.infection3Title, explanation: t.infection3Explanation },
+    { id: 'never', answerId: 4, emoji: '❓', title: t.infection4Title, explanation: t.infection4Explanation },
+  ], [t]);
 
   const handleContinue = async () => {
     if (!selectedOption) {
-      Alert.alert('Please select an option', 'Let us know how often you experience infections');
+      Alert.alert(t.pleaseSelectOption, t.infectionSubtitle);
       return;
     }
 
@@ -129,17 +114,17 @@ export default function InfectionFrequency() {
     try {
       const user = await getUser();
       if (!user) {
-        Alert.alert('Error', 'User not found. Please try again.');
+        Alert.alert(t.error, t.userNotFound);
         return;
       }
 
-      const answerId = FREQUENCY_OPTIONS.find(o => o.id === selectedOption)?.answerId;
+      const answerId = options.find(o => o.id === selectedOption)?.answerId;
       if (!answerId) return;
 
       await saveQuestionnaireAnswer(user.id, QUESTION_NUMBER, answerId);
       router.push('/(questionnaire)/gynecologist-satisfaction');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save. Please try again.');
+      Alert.alert(t.error, error.message || t.failedToSave);
     } finally {
       setLoading(false);
     }
@@ -162,7 +147,7 @@ export default function InfectionFrequency() {
             style={({ pressed }) => [styles.skipButtonPressable, pressed && { opacity: 0.7 }]}
             onPress={() => router.push('/(questionnaire)/gynecologist-satisfaction')}
           >
-            <Text style={styles.skipButtonText}>Skip</Text>
+            <Text style={styles.skipButtonText}>{t.skip}</Text>
           </Pressable>
         </View>
 
@@ -173,12 +158,12 @@ export default function InfectionFrequency() {
         >
           <View style={styles.headerSection}>
             <LogoCrossIcon size={60} color="#721422" />
-            <Text style={styles.title}>How often do you experience infections or discomfort?</Text>
-            <Text style={styles.subtitle}>Select one</Text>
+            <Text style={styles.title}>{t.infectionTitle}</Text>
+            <Text style={styles.subtitle}>{t.confidenceSelectOne}</Text>
           </View>
 
           <View style={styles.optionsContainer}>
-            {FREQUENCY_OPTIONS.map((option) => (
+            {options.map((option) => (
               <AnimatedOption
                 key={option.id}
                 option={option}
@@ -203,7 +188,7 @@ export default function InfectionFrequency() {
               styles.continueButtonText,
               (!selectedOption || loading) && styles.continueButtonTextDisabled
             ]}>
-              {loading ? 'Saving...' : 'Continue'}
+              {loading ? t.saving : t.continue}
             </Text>
           </Pressable>
         </View>

@@ -1,6 +1,7 @@
 // app/_layout.tsx
 import { SplashScreen } from "@/src/components/SplashScreen";
 import { AuthHydrator } from "@/src/features/auth/AuthHydrator";
+import { LanguageHydrator } from "@/src/i18n";
 import { initializeAuth } from "@/src/features/auth/auth.store";
 import SessionHydrator from "@/src/features/test-session/sessionHydrator";
 import { supabase } from "@/src/services/supabase";
@@ -88,6 +89,7 @@ export default Sentry.wrap(function RootLayout() {
   return (
     <>
     <AuthHydrator />
+    <LanguageHydrator />
     <SessionHydrator />
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />

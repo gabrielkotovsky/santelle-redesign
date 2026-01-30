@@ -13,49 +13,20 @@ import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
 import { getUser, saveQuestionnaireAnswer } from '@/src/features/auth/auth.api';
+import { useTranslations } from '@/src/i18n';
 
 const QUESTION_NUMBER = 6; // Gynecologist satisfaction question
 
-const SATISFACTION_OPTIONS = [
-  {
-    id: 'very-satisfied',
-    answerId: 1,
-    emoji: '🌸',
-    title: 'Very satisfied',
-    explanation: 'I feel listened to, supported, and my concerns are addressed.',
-  },
-  {
-    id: 'somewhat-satisfied',
-    answerId: 2,
-    emoji: '🙂',
-    title: 'Somewhat satisfied',
-    explanation: 'It\'s fine overall, but I sometimes feel rushed or overlooked.',
-  },
-  {
-    id: 'neutral',
-    answerId: 3,
-    emoji: '😐',
-    title: 'Neutral',
-    explanation: 'Neither good nor bad, just a routine experience.',
-  },
-  {
-    id: 'not-satisfied',
-    answerId: 4,
-    emoji: '😕',
-    title: 'Not really satisfied',
-    explanation: 'I often feel dismissed, judged, or that my issues aren\'t taken seriously.',
-  },
-  {
-    id: 'no-gynecologist',
-    answerId: 5,
-    emoji: '🚫',
-    title: 'I don\'t currently have / don\'t see a gynecologist',
-    explanation: 'I usually manage things on my own or avoid visits.',
-  },
-];
+interface SatisfactionOption {
+  id: string;
+  answerId: number;
+  emoji: string;
+  title: string;
+  explanation: string;
+}
 
 interface AnimatedOptionProps {
-  option: typeof SATISFACTION_OPTIONS[0];
+  option: SatisfactionOption;
   isSelected: boolean;
   onPress: () => void;
 }
@@ -125,10 +96,18 @@ function AnimatedOption({ option, isSelected, onPress }: AnimatedOptionProps) {
 export default function GynecologistSatisfaction() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslations();
+  const options: SatisfactionOption[] = React.useMemo(() => [
+    { id: 'very-satisfied', answerId: 1, emoji: '🌸', title: t.gyno1Title, explanation: t.gyno1Explanation },
+    { id: 'somewhat-satisfied', answerId: 2, emoji: '🙂', title: t.gyno2Title, explanation: t.gyno2Explanation },
+    { id: 'neutral', answerId: 3, emoji: '😐', title: t.gyno3Title, explanation: t.gyno3Explanation },
+    { id: 'not-satisfied', answerId: 4, emoji: '😕', title: t.gyno4Title, explanation: t.gyno4Explanation },
+    { id: 'no-gynecologist', answerId: 5, emoji: '🚫', title: t.gyno5Title, explanation: t.gyno5Explanation },
+  ], [t]);
 
   const handleContinue = async () => {
     if (!selectedOption) {
-      Alert.alert('Please select an option', 'Let us know about your gynecologist care');
+      Alert.alert(t.pleaseSelectOption, t.gynoSubtitle);
       return;
     }
 
@@ -136,17 +115,17 @@ export default function GynecologistSatisfaction() {
     try {
       const user = await getUser();
       if (!user) {
-        Alert.alert('Error', 'User not found. Please try again.');
+        Alert.alert(t.error, t.userNotFound);
         return;
       }
 
-      const answerId = SATISFACTION_OPTIONS.find(o => o.id === selectedOption)?.answerId;
+      const answerId = options.find(o => o.id === selectedOption)?.answerId;
       if (!answerId) return;
 
       await saveQuestionnaireAnswer(user.id, QUESTION_NUMBER, answerId);
       router.push('/(questionnaire)/emotional-reaction');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save. Please try again.');
+      Alert.alert(t.error, error.message || t.failedToSave);
     } finally {
       setLoading(false);
     }
@@ -169,7 +148,7 @@ export default function GynecologistSatisfaction() {
             style={({ pressed }) => [styles.skipButtonPressable, pressed && { opacity: 0.7 }]}
             onPress={() => router.push('/(questionnaire)/emotional-reaction')}
           >
-            <Text style={styles.skipButtonText}>Skip</Text>
+            <Text style={styles.skipButtonText}>{t.skip}</Text>
           </Pressable>
         </View>
 
@@ -180,12 +159,12 @@ export default function GynecologistSatisfaction() {
         >
           <View style={styles.headerSection}>
             <LogoCrossIcon size={60} color="#721422" />
-            <Text style={styles.title}>How satisfied are you with your gynecologist care?</Text>
-            <Text style={styles.subtitle}>Select one</Text>
+            <Text style={styles.title}>{t.gynoTitle}</Text>
+            <Text style={styles.subtitle}>{t.confidenceSelectOne}</Text>
           </View>
 
           <View style={styles.optionsContainer}>
-            {SATISFACTION_OPTIONS.map((option) => (
+            {options.map((option) => (
               <AnimatedOption
                 key={option.id}
                 option={option}
@@ -210,7 +189,7 @@ export default function GynecologistSatisfaction() {
               styles.continueButtonText,
               (!selectedOption || loading) && styles.continueButtonTextDisabled
             ]}>
-              {loading ? 'Saving...' : 'Continue'}
+              {loading ? t.saving : t.continue}
             </Text>
           </Pressable>
         </View>

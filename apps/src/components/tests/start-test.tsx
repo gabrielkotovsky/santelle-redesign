@@ -12,8 +12,10 @@ import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 import { SLogoIcon } from '../icons/svg/SLogoIcon';
 import { router } from 'expo-router';
 import { useTestSession } from '@/src/features/test-session/testSession.store';
+import { useTranslations } from '@/src/i18n';
 
 export default function StartTest() {
+  const { t } = useTranslations();
   // Animation values
   const cardTranslateY = useSharedValue(-200);
   const cardOpacity = useSharedValue(0);
@@ -85,7 +87,7 @@ export default function StartTest() {
                 size={20} 
                 color="#FFFFFF" 
             />
-            <Text style={dynamicStyles.buttonText}>Activate Kit</Text>
+            <Text style={dynamicStyles.buttonText}>{t.activateKit}</Text>
         </ShrinkableTouchable>
 
       </BlurView>

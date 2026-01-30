@@ -13,49 +13,20 @@ import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
 import { getUser, saveQuestionnaireAnswer, markQuestionnaireComplete } from '@/src/features/auth/auth.api';
+import { useTranslations } from '@/src/i18n';
 
 const QUESTION_NUMBER = 7; // Emotional reaction question
 
-const EMOTION_OPTIONS = [
-  {
-    id: 'worried',
-    answerId: 1,
-    emoji: '😟',
-    title: 'Worried or anxious',
-    explanation: 'I stress about what it could mean.',
-  },
-  {
-    id: 'embarrassed',
-    answerId: 2,
-    emoji: '😳',
-    title: 'Embarrassed or hesitant',
-    explanation: 'I don\'t feel comfortable talking about it.',
-  },
-  {
-    id: 'frustrated',
-    answerId: 3,
-    emoji: '😤',
-    title: 'Frustrated',
-    explanation: 'It keeps happening and it bothers me.',
-  },
-  {
-    id: 'curious',
-    answerId: 4,
-    emoji: '🤔',
-    title: 'Curious',
-    explanation: 'I want to learn more and understand better.',
-  },
-  {
-    id: 'ignore',
-    answerId: 5,
-    emoji: '🙈',
-    title: 'I try to ignore it',
-    explanation: 'I push it aside and hope it goes away.',
-  },
-];
+interface EmotionOption {
+  id: string;
+  answerId: number;
+  emoji: string;
+  title: string;
+  explanation: string;
+}
 
 interface AnimatedOptionProps {
-  option: typeof EMOTION_OPTIONS[0];
+  option: EmotionOption;
   isSelected: boolean;
   onPress: () => void;
 }
@@ -125,6 +96,14 @@ function AnimatedOption({ option, isSelected, onPress }: AnimatedOptionProps) {
 export default function EmotionalReaction() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslations();
+  const options: EmotionOption[] = React.useMemo(() => [
+    { id: 'worried', answerId: 1, emoji: '😟', title: t.emotional1Title, explanation: t.emotional1Explanation },
+    { id: 'embarrassed', answerId: 2, emoji: '😳', title: t.emotional2Title, explanation: t.emotional2Explanation },
+    { id: 'frustrated', answerId: 3, emoji: '😤', title: t.emotional3Title, explanation: t.emotional3Explanation },
+    { id: 'curious', answerId: 4, emoji: '🤔', title: t.emotional4Title, explanation: t.emotional4Explanation },
+    { id: 'ignore', answerId: 5, emoji: '🙈', title: t.emotional5Title, explanation: t.emotional5Explanation },
+  ], [t]);
 
   const handleSkip = async () => {
     try {
@@ -140,7 +119,7 @@ export default function EmotionalReaction() {
 
   const handleContinue = async () => {
     if (!selectedOption) {
-      Alert.alert('Please select an option', 'Let us know how you usually feel');
+      Alert.alert(t.pleaseSelectOption, t.emotionalSubtitle);
       return;
     }
 
@@ -148,11 +127,11 @@ export default function EmotionalReaction() {
     try {
       const user = await getUser();
       if (!user) {
-        Alert.alert('Error', 'User not found. Please try again.');
+        Alert.alert(t.error, t.userNotFound);
         return;
       }
 
-      const answerId = EMOTION_OPTIONS.find(o => o.id === selectedOption)?.answerId;
+      const answerId = options.find(o => o.id === selectedOption)?.answerId;
       if (!answerId) return;
 
       // Save answer to q7 column
@@ -164,7 +143,7 @@ export default function EmotionalReaction() {
       // Questionnaire complete - navigate to home
       router.replace('/(tabs)/home');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save. Please try again.');
+      Alert.alert(t.error, error.message || t.failedToSave);
     } finally {
       setLoading(false);
     }
@@ -187,7 +166,7 @@ export default function EmotionalReaction() {
             style={({ pressed }) => [styles.skipButtonPressable, pressed && { opacity: 0.7 }]}
             onPress={handleSkip}
           >
-            <Text style={styles.skipButtonText}>Skip</Text>
+            <Text style={styles.skipButtonText}>{t.skip}</Text>
           </Pressable>
         </View>
 
@@ -198,12 +177,12 @@ export default function EmotionalReaction() {
         >
           <View style={styles.headerSection}>
             <LogoCrossIcon size={60} color="#721422" />
-            <Text style={styles.title}>When something feels &quot;off&quot; down there, how do you usually feel?</Text>
-            <Text style={styles.subtitle}>Question 7 of 7 • Select one</Text>
+            <Text style={styles.title}>{t.emotionalTitle}</Text>
+            <Text style={styles.subtitle}>{t.emotionalSubtitle}</Text>
           </View>
 
           <View style={styles.optionsContainer}>
-            {EMOTION_OPTIONS.map((option) => (
+            {options.map((option) => (
               <AnimatedOption
                 key={option.id}
                 option={option}
@@ -228,7 +207,7 @@ export default function EmotionalReaction() {
               styles.continueButtonText,
               (!selectedOption || loading) && styles.continueButtonTextDisabled
             ]}>
-              {loading ? 'Finishing...' : 'Finish'}
+              {loading ? t.finishing : t.continue}
             </Text>
           </Pressable>
         </View>

@@ -14,21 +14,23 @@ import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
 import { requestEmailOtp } from '@/src/features/auth/auth.api';
+import { useAuthOnboardingTranslations } from '@/src/features/auth/useAuthOnboardingTranslations';
 
 export default function Email() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const { t } = useAuthOnboardingTranslations();
 
   const handleContinue = async () => {
     if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email address');
+      Alert.alert(t.error, t.pleaseEnterEmail);
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      Alert.alert(t.error, t.pleaseEnterValidEmail);
       return;
     }
 
@@ -36,9 +38,9 @@ export default function Email() {
     try {
       await requestEmailOtp(email);
       Alert.alert(
-        'Check your email', 
-        'We\'ve sent you a verification code. Please check your inbox.',
-        [{ text: 'OK', onPress: () => {
+        t.checkYourEmail,
+        t.verificationCodeSent,
+        [{ text: t.ok, onPress: () => {
           router.push({
             pathname: '/otp',
             params: { email: email }
@@ -46,7 +48,7 @@ export default function Email() {
         }}]
       );
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to send verification code. Please try again.');
+      Alert.alert(t.error, error.message || t.failedToSendCode);
     } finally {
       setLoading(false);
     }
@@ -81,15 +83,15 @@ export default function Email() {
             />
           </View>
           
-          <Text style={styles.title}>Enter your email</Text>
+          <Text style={styles.title}>{t.enterYourEmail}</Text>
           <Text style={styles.subtitle}>
-            We&apos;ll send you a verification code
+            {t.weWillSendCode}
           </Text>
 
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.emailInput}
-              placeholder="email"
+              placeholder={t.emailPlaceholder}
               placeholderTextColor="#999999"
               value={email}
               onChangeText={setEmail}
@@ -113,7 +115,7 @@ export default function Email() {
               styles.continueButtonText,
               (!email.trim() || loading) && styles.continueButtonTextDisabled
             ]}>
-              {loading ? 'Sending...' : 'Continue'}
+              {loading ? t.sending : t.continue}
             </Text>
           </Pressable>
         </View>

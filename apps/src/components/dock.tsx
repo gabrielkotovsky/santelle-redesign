@@ -8,6 +8,7 @@ import { Animated, Dimensions, Platform, StyleSheet, Text, TouchableOpacity, Vie
 
 import { CustomIcon } from './icons';
 import { Colors } from '../theme/colors';
+import { useTranslations } from '@/src/i18n';
 import { useColorScheme } from 'react-native';
 
 interface NavItem {
@@ -16,30 +17,6 @@ interface NavItem {
   icon: string;
   weight?: 'outline' | 'filled';
 }
-
-const navItems: NavItem[] = [
-  {
-    name: 'Home',
-    path: '/(tabs)/home',
-    icon: 'home',
-    weight: 'filled',
-  },
-  {
-    name: 'Tests',
-    path: '/(tabs)/tests',
-    icon: 's-logo',
-  },
-  {
-    name: 'Learn',
-    path: '/(tabs)/education',
-    icon: 'history',
-  },
-  {
-    name: 'Insights',
-    path: '/(tabs)/insights',
-    icon: 'analytics',
-  },
-];
 
 interface CustomDockNavbarProps {
   state?: any;
@@ -51,8 +28,16 @@ interface CustomDockNavbarProps {
 export function CustomDockNavbar(props: CustomDockNavbarProps) {
   const colorScheme = useColorScheme();
   const pathname = usePathname();
+  const { t } = useTranslations();
   const activeColor = Colors.light.rush;
   const inactiveColor = '#B08A9A';
+
+  const navItems: NavItem[] = React.useMemo(() => [
+    { name: t.navHome, path: '/(tabs)/home', icon: 'home', weight: 'filled' },
+    { name: t.navTests, path: '/(tabs)/tests', icon: 's-logo' },
+    { name: t.navLearn, path: '/(tabs)/education', icon: 'history' },
+    { name: t.navInsights, path: '/(tabs)/insights', icon: 'analytics' },
+  ], [t.navHome, t.navTests, t.navLearn, t.navInsights]);
   
   // Animation setup
   const slideAnim = useRef(new Animated.Value(0)).current;

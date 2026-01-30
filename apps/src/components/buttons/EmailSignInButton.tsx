@@ -7,12 +7,15 @@ interface EmailSignInButtonProps {
   onPress?: () => void | Promise<void>;
   style?: any;
   disabled?: boolean;
+  /** Button label (e.g. for i18n: "Continue with Email" / "Continuer avec courriel") */
+  label?: string;
 }
 
 export default function EmailSignInButton({ 
   onPress, 
   style, 
-  disabled = false 
+  disabled = false,
+  label = 'Continue with Email',
 }: EmailSignInButtonProps) {
   const [loading, setLoading] = useState(false);
 
@@ -51,7 +54,7 @@ export default function EmailSignInButton({
         </View>
       </View>
       <View style={styles.textColumn}>
-        <Text style={[styles.socialButtonText, styles.emailButtonText]}>Continue with Email</Text>
+        <Text style={[styles.socialButtonText, styles.emailButtonText]}>{label}</Text>
       </View>
     </Pressable>
   );

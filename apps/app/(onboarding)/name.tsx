@@ -12,6 +12,8 @@ import {
 import { router } from 'expo-router';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
+import { useAuthStore } from '@/src/features/auth/auth.store';
+import { useAuthOnboardingTranslations } from '@/src/features/auth/useAuthOnboardingTranslations';
 import { 
   getUser, 
   getOnboardingResponse, 
@@ -22,14 +24,14 @@ import {
 export default function Name() {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
+  const { t } = useAuthOnboardingTranslations();
 
   const handleContinue = async (skip: boolean = false) => {
     setLoading(true);
     try {
-      // Get current user
       const user = await getUser();
       if (!user) {
-        Alert.alert('Error', 'User not found. Please try again.');
+        Alert.alert(t.error, t.userNotFound);
         return;
       }
 
@@ -39,22 +41,23 @@ export default function Name() {
       // Use display name if provided, otherwise use a default or empty string
       const nameToSave = (!skip && displayName.trim()) ? displayName.trim() : '';
       
+      const storedLanguage = useAuthStore.getState().signUpLanguage;
+
       if (existingRecord) {
-        // Update existing record with display name (don't mark complete yet)
-        if (nameToSave) {
-          await updateOnboardingResponse(user.id, {
-            display_name: nameToSave
-          });
-        }
+        // Update existing record with display name and language (don't mark complete yet)
+        await updateOnboardingResponse(user.id, {
+          ...(nameToSave && { display_name: nameToSave }),
+          language: storedLanguage,
+        });
       } else {
         // Create new record (onboarding_complete will be false by default)
-        await createOnboardingResponse(user.id, nameToSave);
+        await createOnboardingResponse(user.id, nameToSave, storedLanguage);
       }
       
       // Navigate to next onboarding step
       router.push('/(onboarding)/year');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save your name. Please try again.');
+      Alert.alert(t.error, error.message || t.failedToSaveName);
     } finally {
       setLoading(false);
     }
@@ -77,18 +80,18 @@ export default function Name() {
             />
           </View>
           
-          <Text style={styles.title}>What should we call you?</Text>
+          <Text style={styles.title}>{t.whatShouldWeCallYou}</Text>
           <Text style={styles.subtitle}>
-            This is how you&apos;ll appear in the app
+            {t.howYouAppear}
           </Text>
           <Text style={styles.optionalText}>
-            (Optional - you can skip this step)
+            {t.optionalSkip}
           </Text>
 
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.nameInput}
-              placeholder="display name"
+              placeholder={t.displayNamePlaceholder}
               placeholderTextColor="#999999"
               value={displayName}
               onChangeText={setDisplayName}
@@ -112,7 +115,7 @@ export default function Name() {
                 styles.skipButtonText,
                 loading && styles.skipButtonTextDisabled
               ]}>
-                Skip
+                {t.skip}
               </Text>
             </Pressable>
 
@@ -129,7 +132,7 @@ export default function Name() {
                 styles.continueButtonText,
                 loading && styles.continueButtonTextDisabled
               ]}>
-                {loading ? 'Saving...' : 'Continue'}
+                {loading ? t.saving : t.continue}
               </Text>
             </Pressable>
           </View>

@@ -1,5 +1,5 @@
 // src/components/modals/test-result.tsx
-import { getArticleBySlug } from '@/src/features/articles/articles.api';
+import { getArticleBySlug, listArticles } from '@/src/features/articles/articles.api';
 import { Colors } from '@/src/theme/colors';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,6 +17,7 @@ import AskSantelleModal from './ask-santelle-modal';
 import ChatbotModal from './chatbot-modal';
 import { getBiomarkerDescription, getBiomarkerStatus, getPHStatus } from './biomarker-utils';
 import { supabase } from '@/src/services/supabase';
+import { useTranslations } from '@/src/i18n/useTranslations';
 
 const SYMPTOM_GROUPING_RULES = [
   { title: 'Pain & irritation', match: /(itch|burn|pain|irrit)/i },
@@ -119,6 +120,7 @@ function highlightMedicalTerms(text: string): string {
 }
 
 export default function TestLogModal({ visible, onClose, log }: Props) {
+  const { t, lang } = useTranslations();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [articleModalVisible, setArticleModalVisible] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<any>(null);
@@ -180,14 +182,15 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
 
         if (!testSessionId || !mounted) return;
 
-        // Fetch symptoms and context
+        const useFrench = lang === 'fr';
+        // Fetch symptoms and context (use prompt_french / label_french when French)
         const [symptomsResult, contextResult] = await Promise.all([
           supabase
             .from("app_pretest_responses")
             .select(`
-              app_pretest_questions!inner ( prompt, symptom_or_context ),
+              app_pretest_questions!inner ( prompt, prompt_french, symptom_or_context ),
               app_pretest_response_choices (
-                app_pretest_choices!inner ( label )
+                app_pretest_choices!inner ( label, label_french )
               )
             `)
             .eq("test_session_id", testSessionId)
@@ -195,9 +198,9 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
           supabase
             .from("app_pretest_responses")
             .select(`
-              app_pretest_questions!inner ( prompt, symptom_or_context ),
+              app_pretest_questions!inner ( prompt, prompt_french, symptom_or_context ),
               app_pretest_response_choices (
-                app_pretest_choices!inner ( label )
+                app_pretest_choices!inner ( label, label_french )
               )
             `)
             .eq("test_session_id", testSessionId)
@@ -209,19 +212,18 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
         if (symptomsResult.error) throw symptomsResult.error;
         if (contextResult.error) throw contextResult.error;
 
+        const pickPrompt = (r: any) => (useFrench && r.app_pretest_questions?.prompt_french != null ? r.app_pretest_questions.prompt_french : r.app_pretest_questions.prompt);
+        const pickLabel = (c: any) => (useFrench && c.app_pretest_choices?.label_french != null ? c.app_pretest_choices.label_french : c.app_pretest_choices.label);
+
         const symptoms: PretestEntry[] = (symptomsResult.data ?? []).map((r: any) => ({
-          question_prompt: r.app_pretest_questions.prompt,
-          selected_labels: (r.app_pretest_response_choices ?? []).map(
-            (c: any) => c.app_pretest_choices.label
-          ),
+          question_prompt: pickPrompt(r),
+          selected_labels: (r.app_pretest_response_choices ?? []).map((c: any) => pickLabel(c)),
           type: 'symptoms' as const,
         }));
 
         const context: PretestEntry[] = (contextResult.data ?? []).map((r: any) => ({
-          question_prompt: r.app_pretest_questions.prompt,
-          selected_labels: (r.app_pretest_response_choices ?? []).map(
-            (c: any) => c.app_pretest_choices.label
-          ),
+          question_prompt: pickPrompt(r),
+          selected_labels: (r.app_pretest_response_choices ?? []).map((c: any) => pickLabel(c)),
           type: 'context' as const,
         }));
 
@@ -243,7 +245,23 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
     return () => {
       mounted = false;
     };
-  }, [visible, log?.id, log?.test_session_id]);
+  }, [visible, log?.id, log?.test_session_id, lang]);
+
+  // Load biomarkers article from same source as education when article modal opens from "Learn more" button
+  useEffect(() => {
+    if (!articleModalVisible || selectedArticle) return;
+    let mounted = true;
+    (async () => {
+      try {
+        const articles = await listArticles({ locale: lang, limit: 10 });
+        const biomarkersArticle = articles.find((a) => a.slug === 'learn_about_biomarkers') ?? articles[0];
+        if (mounted && biomarkersArticle) setSelectedArticle(biomarkersArticle);
+      } catch {
+        // Keep selectedArticle null to show fallback content
+      }
+    })();
+    return () => { mounted = false; };
+  }, [articleModalVisible, lang]);
 
   // Early return AFTER all hooks
   if (!log) return null;
@@ -258,7 +276,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
     
     if (infectionTerms.includes(term.toLowerCase())) {
       // Handle async operation without blocking
-      getArticleBySlug('what_is_bv_yeast_infections_and_trichomoniasis')
+      getArticleBySlug('what_is_bv_yeast_infections_and_trichomoniasis', lang)
         .then((article) => {
           if (article) {
             setSelectedArticle(article);
@@ -347,8 +365,8 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
           {/* Biomarker Grid */}
           {biomarkers.filter(([_, v]) => v).map(([name, value]) => {
             const status = name === 'pH'
-              ? getPHStatus(Number(value))
-              : getBiomarkerStatus(value!, name, log.ph ?? undefined);
+              ? getPHStatus(Number(value), lang)
+              : getBiomarkerStatus(value!, name, log.ph ?? undefined, lang);
             const isExpanded = expanded.has(name);
             const bgColor = (status?.color ?? '#000') + '30';
             const biomarkerRowStyle = [
@@ -387,7 +405,8 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                       const description = getBiomarkerDescription(
                         name as any,
                         String(value),
-                        biomarkers.map(([n, v]) => ({ name: n, value: v || '' }))
+                        biomarkers.map(([n, v]) => ({ name: n, value: v || '' })),
+                        lang
                       );
                       const parts = description?.split('\n\n---\n\n') || [];
                       const mainContent = parts[0];
@@ -497,7 +516,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
             style={styles.learnMoreButton}
             onPress={() => setArticleModalVisible(true)}
           >
-            <Text style={styles.learnMoreButtonText}>Learn more about your biomarkers</Text>
+            <Text style={styles.learnMoreButtonText}>{t.learnMoreAboutBiomarkers}</Text>
           </ShrinkableTouchable>
 
           <View style={styles.divider} />
@@ -510,7 +529,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                 onPress={() => setJournalExpanded(!journalExpanded)}
               >
                 <Text style={styles.journalButtonText}>
-                  🔖 Journal Entry
+                  🔖 {t.journalEntry}
                 </Text>
                 <View
                   style={[
@@ -525,7 +544,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                     ]}
                   >
                     {journalLoading ? '...' : totalInsights}{' '}
-                    {totalInsights === 1 ? 'note' : 'notes'}
+                    {totalInsights === 1 ? t.note : t.notes}
                   </Text>
                   <Text style={styles.journalExpandIcon}>
                     {journalExpanded ? '▲' : '▼'}
@@ -540,17 +559,17 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                 >
                   {journalLoading ? (
                     <View style={styles.journalLoadingContainer}>
-                      <Text style={styles.journalLoadingText}>Loading journal entry...</Text>
+                      <Text style={styles.journalLoadingText}>{t.loadingJournalEntry}</Text>
                     </View>
                   ) : (
                     <>
                       {journalEntries.length === 0 ? (
-                        <Text style={styles.journalEmptyText}>No journal entry data available for this test.</Text>
+                        <Text style={styles.journalEmptyText}>{t.noJournalEntryData}</Text>
                       ) : (
                         <>
                           {symptomLabels.length > 0 && (
                             <View style={[styles.journalSection, styles.journalSectionPrimary]}>
-                              <Text style={styles.journalSectionTitle}>Symptoms</Text>
+                              <Text style={styles.journalSectionTitle}>{t.symptoms}</Text>
                               {Object.entries(groupedSymptoms).map(([groupTitle, labels]) => (
                                 <View key={groupTitle} style={styles.journalSubsection}>
                                   <Text style={styles.journalSubsectionTitle}>{groupTitle}</Text>
@@ -568,7 +587,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
 
                           {contextLabels.length > 0 && (
                             <View style={[styles.journalSection, styles.journalSectionSecondary]}>
-                              <Text style={styles.journalSectionTitle}>Context</Text>
+                              <Text style={styles.journalSectionTitle}>{t.context}</Text>
                               <View style={styles.journalLabels}>
                                 {contextLabels.map((label, labelIdx) => (
                                   <View key={`context-${labelIdx}`} style={styles.journalLabel}>
@@ -594,7 +613,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                           }
                         }}
                       >
-                        <Text style={styles.journalEditButtonText}>Edit Answers</Text>
+                        <Text style={styles.journalEditButtonText}>{t.editAnswers}</Text>
                       </ShrinkableTouchable>
                     </>
                   )}
@@ -613,7 +632,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
           setArticleModalVisible(false);
           setSelectedArticle(null);
         }}
-        title={selectedArticle?.title || "Learn about your biomarkers"}
+        title={selectedArticle?.title || t.learnBiomarkers}
         content={selectedArticle?.content_md || `### Potential Hydrogen
 **pH** measures how acidic your vagina is. A healthy vagina is slightly acidic, which helps block infections. When pH rises, it usually means unwanted bacteria or parasites are taking over.
 

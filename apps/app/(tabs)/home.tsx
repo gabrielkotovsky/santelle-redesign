@@ -1,5 +1,3 @@
-// 246 lines
-
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { 
   useSharedValue, 
@@ -17,11 +15,12 @@ import { ArticleModal } from '../../src/components/modals/article-modal';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTestSession } from '../../src/features/test-session/testSession.store';
 import { fetchLatestTestLog, type TestLog } from '../../src/features/test-logs/testLogs.api';
+import { listArticles, type Article } from '../../src/features/articles/articles.api';
 import TestLogModal from '../../src/components/modals/test-result';
-import { buildWelcomeCopy } from '../../src/features/test-logs/welcomeCopy';
 import { useAuth } from '../../src/features/auth/auth.store';
 import { getUserDisplayName } from '../../src/features/auth/auth.api';
 import { useSupabaseRefresh } from '../../src/hooks/useSupabaseRefresh';
+import { useTranslations } from '../../src/i18n';
 
 // utils local to this screen
 function daysSince(dateStr?: string | null) {
@@ -81,23 +80,35 @@ const AnimatedArticleCard = ({ title, description, image, onPress, index }: Anim
 export default function HomeScreen() {
   const scrollY = useSharedValue(0);
   const [articleModalVisible, setArticleModalVisible] = useState(false);
+  const [featuredArticle, setFeaturedArticle] = useState<Article | null>(null);
   const [testModalVisible, setTestModalVisible] = useState(false);
   const [latestTestLog, setLatestTestLog] = useState<TestLog | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const router = useRouter();
+  const { t, lang } = useTranslations();
   const session = useTestSession(s => s.session);
   const hydrateFromServer = useTestSession(s => s.hydrateFromServer);
   const { user } = useAuth();
+
+  const loadFeaturedArticle = useCallback(async () => {
+    try {
+      const articles = await listArticles({ limit: 1, locale: lang });
+      setFeaturedArticle(articles[0] ?? null);
+    } catch {
+      setFeaturedArticle(null);
+    }
+  }, [lang]);
 
   // Custom refresh function for home screen data
   const refreshHomeData = useCallback(async () => {
     await Promise.all([
       hydrateFromServer(),
       loadLatestTest(),
-      loadDisplayName()
+      loadDisplayName(),
+      loadFeaturedArticle()
     ]);
-  }, [hydrateFromServer]);
+  }, [hydrateFromServer, loadFeaturedArticle]);
 
   // Use the Supabase refresh hook
   const { refreshing, onRefresh } = useSupabaseRefresh({
@@ -110,23 +121,25 @@ export default function HomeScreen() {
       await Promise.all([
         hydrateFromServer(),
         loadLatestTest(),
-        loadDisplayName()
+        loadDisplayName(),
+        loadFeaturedArticle()
       ]);
       setIsLoading(false);
     };
     initData();
-  }, [hydrateFromServer]);
+  }, [hydrateFromServer, loadFeaturedArticle]);
   
   useFocusEffect(useCallback(() => {
     const refreshData = async () => {
       await Promise.all([
         hydrateFromServer(),
         loadLatestTest(),
-        loadDisplayName()
+        loadDisplayName(),
+        loadFeaturedArticle()
       ]);
     };
     refreshData();
-  }, [hydrateFromServer]));
+  }, [hydrateFromServer, loadFeaturedArticle]));
 
   const loadLatestTest = async () => {
     try {
@@ -170,12 +183,12 @@ export default function HomeScreen() {
 
   const days = daysSince(latestTestLog?.created_at);
   const daysMessage = days == null
-    ? "Take your first test to get started!"
+    ? t.welcomeFirstTest
     : days === 0
-      ? "Your last test was today!"
+      ? t.welcomeToday
       : days === 1
-        ? "It's been 1 day since your last test."
-        : `It's been ${days} days since your last test.`;
+        ? t.welcomeDaysOne
+        : typeof t.welcomeDays === 'function' ? t.welcomeDays(days) : `It's been ${days} days since your last test.`;
 
   return (
     <ScreenBackground>
@@ -226,48 +239,36 @@ export default function HomeScreen() {
               
               <View style={[styles.divider]} />
 
-              <View style={styles.articlesContainer}>
-                <AnimatedArticleCard
-                  title="Learn about your biomarkers"
-                  description="Understand how to interpret each of your biomarkers."
-                  image={require('@/assets/images/fig.png')}
-                  index={0}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setArticleModalVisible(true);
-                  }}
-                />
-              </View>
+              {featuredArticle && (
+                <View style={styles.articlesContainer}>
+                  <AnimatedArticleCard
+                    title={featuredArticle.title}
+                    description={featuredArticle.subtitle ?? t.learnBiomarkersDesc}
+                    image={featuredArticle.hero_image_url ?? undefined}
+                    index={0}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setArticleModalVisible(true);
+                    }}
+                  />
+                </View>
+              )}
             </>
           )}
 
 
-          <ArticleModal
-          visible={articleModalVisible}
-          onClose={() => setArticleModalVisible(false)}
-          title="Learn about your biomarkers"
-          content={`### Potential Hydrogen
-**pH** measures how acidic your vagina is. A healthy vagina is slightly acidic, which helps block infections. When pH rises, it usually means unwanted bacteria or parasites are taking over.
-
-### Hydrogen Peroxide
-**H₂O₂** measures the natural protection made by good bacteria (lactobacilli). If levels are low, it means those “bodyguard” bacteria aren’t keeping balance as they should.
-
-### Leukocyte Esterase 
-**LE** measures white blood cell activity. These are your body’s natural helpers, and higher activity can show they’re responding to something.
-
-### Sialidase
-**SNA** measures an enzyme linked to bacteria that cause BV (bacterial vaginosis). Its presence can point to BV being the reason for your symptoms.
-
-### Beta-Glucuronidase
-**β-G** measures an enzyme linked to bacterial or yeast overgrowth. It highlights when “too much of the wrong microbes” are present.
-
-### N-acetyl-β-D-glucosaminidase
-**NAG** measures signs of gentle irritation in the vaginal lining, helping spot when your tissue is under stress.`}
-          image={require('@/assets/images/fig1.png')}
-          author="Santelle Health Team"
-          publishDate="December 2024"
-          category="Health Education"
-        />
+          {featuredArticle && (
+            <ArticleModal
+              visible={articleModalVisible}
+              onClose={() => setArticleModalVisible(false)}
+              title={featuredArticle.title}
+              content={featuredArticle.content_md}
+              image={featuredArticle.hero_image_url ?? undefined}
+              author={featuredArticle.author ?? undefined}
+              publishDate={featuredArticle.published_at ?? undefined}
+              category={featuredArticle.category ?? undefined}
+            />
+          )}
           
         </ScrollView>
         

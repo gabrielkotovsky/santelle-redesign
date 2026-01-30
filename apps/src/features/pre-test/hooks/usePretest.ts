@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuthStore } from '@/src/features/auth/auth.store';
 import { fetchPretest } from '../api/fetchPretest';
 import { submitPretestAnswers, saveIndividualAnswer } from '../api/submitPretest';
 import type { PretestAnswer, PretestQuestion, UUID } from '../models';
 
 export function usePretest(version = 1) {
+  const locale = useAuthStore((s) => s.signUpLanguage ?? 'en');
   const [questions, setQuestions] = useState<PretestQuestion[]>([]);
   const [answers, setAnswers] = useState<PretestAnswer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -13,20 +15,19 @@ export function usePretest(version = 1) {
     let mounted = true;
     (async () => {
       setLoading(true);
-      const key = `pretest:v${version}`;
+      const key = `pretest:v${version}:${locale}`;
       
       try {
-        // Try to load cached questions first
+        // Try to load cached questions first (per locale)
         const cached = await AsyncStorage.getItem(key);
         if (cached && mounted) {
           setQuestions(JSON.parse(cached));
         }
 
-        // Fetch fresh questions
-        const fresh = await fetchPretest(version);
+        // Fetch fresh questions (uses prompt_french / label_french when locale is 'fr')
+        const fresh = await fetchPretest(version, locale);
         if (mounted) {
           setQuestions(fresh);
-          // Cache the fresh data
           await AsyncStorage.setItem(key, JSON.stringify(fresh));
         }
       } catch (error) {
@@ -38,7 +39,7 @@ export function usePretest(version = 1) {
       }
     })();
     return () => { mounted = false; };
-  }, [version]);
+  }, [version, locale]);
 
   const setSingle = (qId: UUID, choiceId: UUID) =>
     setAnswers(prev => {

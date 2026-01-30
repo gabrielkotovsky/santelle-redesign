@@ -13,49 +13,20 @@ import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
 import { getUser, saveQuestionnaireAnswer } from '@/src/features/auth/auth.api';
+import { useTranslations } from '@/src/i18n';
 
 const QUESTION_NUMBER = 4; // Reaction to discomfort question
 
-const REACTION_OPTIONS = [
-  {
-    id: 'wait',
-    answerId: 1,
-    emoji: '⏳',
-    title: 'Wait and see',
-    explanation: 'I hope it clears on its own.',
-  },
-  {
-    id: 'home-remedies',
-    answerId: 2,
-    emoji: '🌿',
-    title: 'Try home remedies',
-    explanation: 'I use natural or at-home solutions.',
-  },
-  {
-    id: 'otc',
-    answerId: 3,
-    emoji: '💊',
-    title: 'Buy treatments over the counter',
-    explanation: 'I self-treat with pharmacy options.',
-  },
-  {
-    id: 'doctor',
-    answerId: 4,
-    emoji: '🩺',
-    title: 'Book a doctor\'s appointment',
-    explanation: 'I go to a gynecologist or clinic.',
-  },
-  {
-    id: 'unsure',
-    answerId: 5,
-    emoji: '❓',
-    title: 'Feel unsure and usually do nothing',
-    explanation: 'I\'m not sure how to act.',
-  },
-];
+interface ReactionOption {
+  id: string;
+  answerId: number;
+  emoji: string;
+  title: string;
+  explanation: string;
+}
 
 interface AnimatedOptionProps {
-  option: typeof REACTION_OPTIONS[0];
+  option: ReactionOption;
   isSelected: boolean;
   onPress: () => void;
 }
@@ -125,10 +96,18 @@ function AnimatedOption({ option, isSelected, onPress }: AnimatedOptionProps) {
 export default function ReactionToDiscomfort() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslations();
+  const options: ReactionOption[] = React.useMemo(() => [
+    { id: 'wait', answerId: 1, emoji: '⏳', title: t.reaction1Title, explanation: t.reaction1Explanation },
+    { id: 'home-remedies', answerId: 2, emoji: '🌿', title: t.reaction2Title, explanation: t.reaction2Explanation },
+    { id: 'otc', answerId: 3, emoji: '💊', title: t.reaction3Title, explanation: t.reaction3Explanation },
+    { id: 'doctor', answerId: 4, emoji: '🩺', title: t.reaction4Title, explanation: t.reaction4Explanation },
+    { id: 'unsure', answerId: 5, emoji: '❓', title: t.reaction5Title, explanation: t.reaction5Explanation },
+  ], [t]);
 
   const handleContinue = async () => {
     if (!selectedOption) {
-      Alert.alert('Please select an option', 'Let us know how you usually react');
+      Alert.alert(t.pleaseSelectOption, t.reactionSubtitle);
       return;
     }
 
@@ -136,17 +115,17 @@ export default function ReactionToDiscomfort() {
     try {
       const user = await getUser();
       if (!user) {
-        Alert.alert('Error', 'User not found. Please try again.');
+        Alert.alert(t.error, t.userNotFound);
         return;
       }
 
-      const answerId = REACTION_OPTIONS.find(o => o.id === selectedOption)?.answerId;
+      const answerId = options.find(o => o.id === selectedOption)?.answerId;
       if (!answerId) return;
 
       await saveQuestionnaireAnswer(user.id, QUESTION_NUMBER, answerId);
       router.push('/(questionnaire)/infection-frequency');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save. Please try again.');
+      Alert.alert(t.error, error.message || t.failedToSave);
     } finally {
       setLoading(false);
     }
@@ -169,7 +148,7 @@ export default function ReactionToDiscomfort() {
             style={({ pressed }) => [styles.skipButtonPressable, pressed && { opacity: 0.7 }]}
             onPress={() => router.push('/(questionnaire)/infection-frequency')}
           >
-            <Text style={styles.skipButtonText}>Skip</Text>
+            <Text style={styles.skipButtonText}>{t.skip}</Text>
           </Pressable>
         </View>
 
@@ -180,12 +159,12 @@ export default function ReactionToDiscomfort() {
         >
           <View style={styles.headerSection}>
             <LogoCrossIcon size={60} color="#721422" />
-            <Text style={styles.title}>When you notice unusual discharge or discomfort, what do you usually do?</Text>
-            <Text style={styles.subtitle}>Select one</Text>
+            <Text style={styles.title}>{t.reactionTitle}</Text>
+            <Text style={styles.subtitle}>{t.confidenceSelectOne}</Text>
           </View>
 
           <View style={styles.optionsContainer}>
-            {REACTION_OPTIONS.map((option) => (
+            {options.map((option) => (
               <AnimatedOption
                 key={option.id}
                 option={option}
@@ -210,7 +189,7 @@ export default function ReactionToDiscomfort() {
               styles.continueButtonText,
               (!selectedOption || loading) && styles.continueButtonTextDisabled
             ]}>
-              {loading ? 'Saving...' : 'Continue'}
+              {loading ? t.saving : t.continue}
             </Text>
           </Pressable>
         </View>

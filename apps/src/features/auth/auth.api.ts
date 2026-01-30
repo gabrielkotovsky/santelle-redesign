@@ -135,7 +135,7 @@ export async function updateUserMetadata(metadata: Record<string, any>) {
 }
 
 // Onboarding database functions
-export async function createOnboardingResponse(userId: string, displayName: string) {
+export async function createOnboardingResponse(userId: string, displayName: string, language?: string) {
     const user = await getUser();
     const { data, error } = await supabase
         .from('onboarding_responses')
@@ -143,13 +143,27 @@ export async function createOnboardingResponse(userId: string, displayName: stri
             user_id: userId,
             display_name: displayName,
             email: user?.email,
-            onboarding_complete: false
+            onboarding_complete: false,
+            ...(language && { language }),
         })
         .select()
         .single();
     
     if (error) throw error;
     return data;
+}
+
+/** Saves the sign-up language to onboarding_responses when the user has signed in. Call after sign-in. */
+export async function saveSignUpLanguageToOnboarding(userId: string, language: string) {
+    const { data: existing } = await supabase
+        .from('onboarding_responses')
+        .select('user_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (existing) {
+        await updateOnboardingResponse(userId, { language });
+    }
+    // If no row yet, language will be saved when createOnboardingResponse is called in name step
 }
 
 export async function updateOnboardingResponse(userId: string, updates: Partial<{

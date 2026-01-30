@@ -13,77 +13,74 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
+import { useAuthStore } from '@/src/features/auth/auth.store';
+import { useAuthOnboardingTranslations } from '@/src/features/auth/useAuthOnboardingTranslations';
 import { 
   verifyEmailOtp, 
   requestEmailOtp, 
   getUserNavigationRoute,
   getUser,
   getQuestionnaireEntry,
-  createQuestionnaireEntry
+  createQuestionnaireEntry,
+  saveSignUpLanguageToOnboarding
 } from '@/src/features/auth/auth.api';
 
 export default function OTP() {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const { email } = useLocalSearchParams<{ email: string }>();
+  const { t } = useAuthOnboardingTranslations();
 
   const handleContinue = async () => {
     if (!otp.trim()) {
-      Alert.alert('Error', 'Please enter the verification code');
+      Alert.alert(t.error, t.pleaseEnterCode);
       return;
     }
 
     if (otp.length < 6) {
-      Alert.alert('Error', 'Please enter the complete 6-digit code');
+      Alert.alert(t.error, t.pleaseEnterCompleteCode);
       return;
     }
 
     setLoading(true);
     try {
       if (!email) {
-        Alert.alert('Error', 'Email not found. Please try again.');
+        Alert.alert(t.error, t.emailNotFound);
         return;
       }
-      
-      // Attempting to verify OTP
       
       const session = await verifyEmailOtp(email, otp);
       
       if (session) {
-        // Get the user
         const user = await getUser();
         
         if (user) {
-          // Check if questionnaire entry exists, if not create it
           const questionnaireEntry = await getQuestionnaireEntry(user.id);
           if (!questionnaireEntry) {
             await createQuestionnaireEntry(user.id);
           }
+          const storedLanguage = useAuthStore.getState().signUpLanguage;
+          await saveSignUpLanguageToOnboarding(user.id, storedLanguage);
         }
         
-        // Get the appropriate navigation route based on completion status
         const navigationRoute = await getUserNavigationRoute();
         
         Alert.alert(
-          'Success!', 
-          'You have been successfully verified.',
-          [{ text: 'OK', onPress: () => {
+          t.success,
+          t.successfullyVerified,
+          [{ text: t.ok, onPress: () => {
             router.replace(navigationRoute as any);
           }}]
         );
       }
     } catch (error: any) {
-      // Handle OTP verification error
-      
-      let errorMessage = 'Invalid verification code. Please try again.';
-      
+      let errorMessage = t.invalidCode;
       if (error.message?.includes('expired')) {
-        errorMessage = 'The verification code has expired. Please request a new one.';
+        errorMessage = t.codeExpired;
       } else if (error.message?.includes('invalid')) {
-        errorMessage = 'Invalid verification code. Please check and try again.';
+        errorMessage = t.invalidCodeCheck;
       }
-      
-      Alert.alert('Error', errorMessage);
+      Alert.alert(t.error, errorMessage);
     } finally {
       setLoading(false);
     }
@@ -92,13 +89,13 @@ export default function OTP() {
   const handleResendCode = async () => {
     try {
       if (!email) {
-        Alert.alert('Error', 'Email not found. Please try again.');
+        Alert.alert(t.error, t.emailNotFound);
         return;
       }
       await requestEmailOtp(email);
-      Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
+      Alert.alert(t.codeSent, t.newCodeSent);
     } catch (error: any) {
-      Alert.alert('Error', 'Failed to resend code. Please try again.');
+      Alert.alert(t.error, t.failedToResend);
     }
   };
 
@@ -131,9 +128,9 @@ export default function OTP() {
             />
           </View>
           
-          <Text style={styles.title}>Enter verification code</Text>
+          <Text style={styles.title}>{t.enterVerificationCode}</Text>
           <Text style={styles.subtitle}>
-            We sent a 6-digit code to your email
+            {t.weSentCodeToEmail}
           </Text>
 
           <View style={styles.inputContainer}>
@@ -161,7 +158,7 @@ export default function OTP() {
               styles.continueButtonText,
               (!otp.trim() || loading || otp.length < 6) && styles.continueButtonTextDisabled
             ]}>
-              {loading ? 'Verifying...' : 'Continue'}
+              {loading ? t.verifying : t.continue}
             </Text>
           </Pressable>
 
@@ -173,7 +170,7 @@ export default function OTP() {
             onPress={handleResendCode}
           >
             <Text style={styles.resendButtonText}>
-              Didn&apos;t receive the code? Resend
+              {t.resendPrompt}
             </Text>
           </Pressable>
         </View>

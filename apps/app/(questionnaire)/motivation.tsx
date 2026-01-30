@@ -13,49 +13,20 @@ import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
 import { getUser, saveQuestionnaireAnswer } from '@/src/features/auth/auth.api';
+import { useTranslations } from '@/src/i18n';
 
 const QUESTION_NUMBER = 1; // Motivation question
 
-const MOTIVATIONS = [
-  {
-    id: 'prevention',
-    answerId: 1,
-    emoji: '🌸',
-    title: 'To prevent recurring infections',
-    explanation: 'I want fewer flare-ups and better prevention.',
-  },
-  {
-    id: 'fertility',
-    answerId: 2,
-    emoji: '👶',
-    title: 'To support fertility and conception',
-    explanation: 'I want to track my health while trying to conceive.',
-  },
-  {
-    id: 'stigma',
-    answerId: 3,
-    emoji: '🤐',
-    title: 'To get answers without stigma or judgment',
-    explanation: 'I don\'t always feel comfortable asking elsewhere.',
-  },
-  {
-    id: 'complement',
-    answerId: 4,
-    emoji: '🩺',
-    title: 'To complement my gynecologist visits',
-    explanation: 'I want support between appointments.',
-  },
-  {
-    id: 'understanding',
-    answerId: 5,
-    emoji: '✨',
-    title: 'To understand my body',
-    explanation: 'I\'d like more clarity on my body\'s patterns.',
-  },
-];
+interface MotivationOption {
+  id: string;
+  answerId: number;
+  emoji: string;
+  title: string;
+  explanation: string;
+}
 
 interface AnimatedOptionProps {
-  motivation: typeof MOTIVATIONS[0];
+  motivation: MotivationOption;
   isSelected: boolean;
   onPress: () => void;
 }
@@ -144,9 +115,18 @@ export default function Motivation() {
     }
   };
 
+  const { t } = useTranslations();
+  const motivations: MotivationOption[] = React.useMemo(() => [
+    { id: 'prevention', answerId: 1, emoji: '🌸', title: t.motivation1Title, explanation: t.motivation1Explanation },
+    { id: 'fertility', answerId: 2, emoji: '👶', title: t.motivation2Title, explanation: t.motivation2Explanation },
+    { id: 'stigma', answerId: 3, emoji: '🤐', title: t.motivation3Title, explanation: t.motivation3Explanation },
+    { id: 'complement', answerId: 4, emoji: '🩺', title: t.motivation4Title, explanation: t.motivation4Explanation },
+    { id: 'understanding', answerId: 5, emoji: '✨', title: t.motivation5Title, explanation: t.motivation5Explanation },
+  ], [t]);
+
   const handleContinue = async () => {
     if (selectedMotivations.length === 0) {
-      Alert.alert('Please select at least one option', 'Let us know what brought you to Santelle');
+      Alert.alert(t.pleaseSelectOne, t.whatBroughtYou);
       return;
     }
 
@@ -154,13 +134,12 @@ export default function Motivation() {
     try {
       const user = await getUser();
       if (!user) {
-        Alert.alert('Error', 'User not found. Please try again.');
+        Alert.alert(t.error, t.userNotFound);
         return;
       }
 
-      // Convert selected motivation IDs to answer IDs
       const answerIds = selectedMotivations
-        .map(id => MOTIVATIONS.find(m => m.id === id)?.answerId)
+        .map(id => motivations.find(m => m.id === id)?.answerId)
         .filter((id): id is number => id !== undefined);
 
       // Save answers to database (q1 is an array column)
@@ -169,7 +148,7 @@ export default function Motivation() {
       // Navigate to next question
       router.push('/(questionnaire)/test-frequency');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save. Please try again.');
+      Alert.alert(t.error, error.message || t.failedToSave);
     } finally {
       setLoading(false);
     }
@@ -198,7 +177,7 @@ export default function Motivation() {
             ]}
             onPress={() => router.push('/(questionnaire)/test-frequency')}
           >
-            <Text style={styles.skipButtonText}>Skip</Text>
+            <Text style={styles.skipButtonText}>{t.skip}</Text>
           </Pressable>
         </View>
 
@@ -212,12 +191,12 @@ export default function Motivation() {
               size={60}
               color="#721422"
             />
-            <Text style={styles.title}>What made you curious about Santelle?</Text>
-            <Text style={styles.subtitle}>Select all that apply</Text>
+            <Text style={styles.title}>{t.motivationTitle}</Text>
+            <Text style={styles.subtitle}>{t.motivationSubtitle}</Text>
           </View>
 
           <View style={styles.optionsContainer}>
-            {MOTIVATIONS.map((motivation) => (
+            {motivations.map((motivation) => (
               <AnimatedOption
                 key={motivation.id}
                 motivation={motivation}
@@ -242,7 +221,7 @@ export default function Motivation() {
               styles.continueButtonText,
               (selectedMotivations.length === 0 || loading) && styles.continueButtonTextDisabled
             ]}>
-              {loading ? 'Saving...' : 'Continue'}
+              {loading ? t.saving : t.continue}
             </Text>
           </Pressable>
         </View>

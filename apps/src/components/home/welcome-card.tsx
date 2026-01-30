@@ -14,6 +14,7 @@ import { LogoCrossIcon } from '../icons/svg/LogoCrossIcon';
 import { SLogoIcon } from '../icons/svg/SLogoIcon';
 import { UserIcon } from '../icons/svg/UserIcon';
 import AccountModal from '../modals/account-modal';
+import { useTranslations } from '@/src/i18n';
 
 interface WelcomeCardProps {
   displayName?: string;
@@ -42,6 +43,7 @@ export default function WelcomeCard({
 }: WelcomeCardProps) {  
   const isResume = !!hasActiveSession;
   const [accountModalVisible, setAccountModalVisible] = useState(false);
+  const { t } = useTranslations();
 
   // Animation refs for button feedback and welcome card
   const buttonScale = useSharedValue(1);
@@ -217,7 +219,7 @@ export default function WelcomeCard({
         {/* Text Content */}
         <View style={styles.textContainer}>
           <Text style={dynamicStyles.greetingText}>
-            Hello {displayName || 'there'},
+            Hello {displayName || t.helloThere},
           </Text>
           <Text style={dynamicStyles.daysText}>{daysMessage}</Text>
         </View>
@@ -229,7 +231,7 @@ export default function WelcomeCard({
             onPress={handleViewRecentTestPress}
             activeOpacity={0.8}
           >
-            <Text style={dynamicStyles.viewRecentTestButtonText}>View Latest Test</Text>
+            <Text style={dynamicStyles.viewRecentTestButtonText}>{t.viewLatestTest}</Text>
           </ShrinkableTouchable>
         )}
         
@@ -245,7 +247,7 @@ export default function WelcomeCard({
               color="#FFFFFF" 
             />
             <Text style={dynamicStyles.buttonText}>
-              {isResume ? 'Resume Test' : 'Activate Kit'}
+              {isResume ? t.resumeTest : t.activateKit}
             </Text>
           </ShrinkableTouchable>
         </Animated.View>

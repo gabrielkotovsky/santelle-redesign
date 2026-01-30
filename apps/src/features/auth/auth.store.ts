@@ -52,6 +52,8 @@ export type Session = {
   user: User;
 };
 
+export type SignUpLanguage = 'en' | 'fr';
+
 export type AuthState = {
   // State
   user: User | null;
@@ -59,6 +61,9 @@ export type AuthState = {
   loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
+  
+  // Sign-up language (persisted, used when saving to onboarding_responses)
+  signUpLanguage: SignUpLanguage;
   
   // Email OTP State
   emailOtpLoading: boolean;
@@ -79,6 +84,7 @@ export type AuthState = {
   clearEmailOtpState: () => void;
   refreshSession: () => Promise<void>;
   reinitializeListener: () => Promise<void>;
+  setSignUpLanguage: (lang: SignUpLanguage) => void;
   
   // Internal actions
   setUser: (user: User | null) => void;
@@ -96,6 +102,7 @@ export const useAuthStore = create<AuthState>()(
       loading: true,
       error: null,
       isAuthenticated: false,
+      signUpLanguage: 'en',
       emailOtpLoading: false,
       emailOtpSent: false,
       emailOtpError: null,
@@ -418,6 +425,10 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
+      setSignUpLanguage: (lang: SignUpLanguage) => {
+        set({ signUpLanguage: lang });
+      },
+
       // Internal setters (for direct state updates if needed)
       setUser: (user: User | null) => {
         set({ user, isAuthenticated: !!user });
@@ -443,6 +454,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         session: state.session,
         isAuthenticated: state.isAuthenticated,
+        signUpLanguage: state.signUpLanguage,
       }),
     }
   )

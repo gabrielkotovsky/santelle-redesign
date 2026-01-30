@@ -7,9 +7,33 @@ interface WarningModalProps {
   visible: boolean;
   onGoBack: () => void;
   onContinueAnyway: () => void;
+  /** Optional translated strings (when provided, modal shows in app language) */
+  title?: string;
+  intro?: string;
+  periodItem?: string;
+  sexItem?: string;
+  goBackLabel?: string;
+  continueLabel?: string;
 }
 
-export default function WarningModal({ visible, onGoBack, onContinueAnyway }: WarningModalProps) {
+const DEFAULT_TITLE = 'Test Not Recommended';
+const DEFAULT_INTRO = 'We recommend waiting until:';
+const DEFAULT_PERIOD = 'Your period has ended';
+const DEFAULT_SEX = '24h have passed since you last had sex';
+const DEFAULT_GO_BACK = 'Go Back';
+const DEFAULT_CONTINUE = 'Continue';
+
+export default function WarningModal({
+  visible,
+  onGoBack,
+  onContinueAnyway,
+  title = DEFAULT_TITLE,
+  intro = DEFAULT_INTRO,
+  periodItem = DEFAULT_PERIOD,
+  sexItem = DEFAULT_SEX,
+  goBackLabel = DEFAULT_GO_BACK,
+  continueLabel = DEFAULT_CONTINUE,
+}: WarningModalProps) {
   if (!visible) return null;
 
   const dynamicStyles = StyleSheet.create({
@@ -45,24 +69,24 @@ export default function WarningModal({ visible, onGoBack, onContinueAnyway }: Wa
       <BlurView intensity={20} tint="light" style={styles.blurBackground} />
       <View style={styles.modalContent}>
         <Text style={[styles.recommendationWarning, dynamicStyles.recommendationWarning]}>⚠️</Text>
-        <Text style={[styles.recommendationTitle, dynamicStyles.recommendationTitle]}>Test Not Recommended</Text>
+        <Text style={[styles.recommendationTitle, dynamicStyles.recommendationTitle]}>{title}</Text>
         <Text style={[styles.recommendationText, dynamicStyles.recommendationText]}>
-          We recommend waiting until:
+          {intro}
         </Text>
         <View style={styles.recommendationList}>
           <Text style={[styles.recommendationListItem, dynamicStyles.recommendationListItem]}>
-            Your period has ended
+            {periodItem}
           </Text>
           <Text style={[styles.recommendationListItem, dynamicStyles.recommendationListItem]}>
-            24h have passed since you last had sex
+            {sexItem}
           </Text>
         </View>
         <View style={styles.buttonContainer}>
           <ShrinkableTouchable style={[styles.modalButton, styles.goBackButton] as any} onPress={onGoBack}>
-            <Text style={[styles.modalButtonText, styles.goBackButtonText]}>Go Back</Text>
+            <Text style={[styles.modalButtonText, styles.goBackButtonText]}>{goBackLabel}</Text>
           </ShrinkableTouchable>
           <ShrinkableTouchable style={[styles.modalButton, styles.continueButton] as any} onPress={onContinueAnyway}>
-            <Text style={styles.modalButtonText}>Continue</Text>
+            <Text style={styles.modalButtonText}>{continueLabel}</Text>
           </ShrinkableTouchable>
         </View>
       </View>
