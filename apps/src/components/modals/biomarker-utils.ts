@@ -106,7 +106,7 @@ export function getBiomarkerStatus(
       if (value === '+') {
         if (typeof pH === 'number') {
           if (pH >= 4.8) return { color: RED, tag: lang === 'fr' ? 'Positif (trichomonase plus probable avec pH élevé)' : 'Positive (Trich more likely with high pH)' };
-          if (pH <= 4.6) return { color: RED, tag: lang === 'fr' ? 'Positif (levure plus probable avec pH bas)' : 'Positive (Yeast more likely with low pH)' };
+          if (pH <= 4.6) return { color: RED, tag: lang === 'fr' ? 'Positif (mycose plus probable avec pH bas)' : 'Positive (Yeast more likely with low pH)' };
         }
         return { color: RED, tag: lang === 'fr' ? 'Positif' : 'Positive' };
       }
@@ -300,10 +300,10 @@ YOU ARE GOOD!${disclaimer}`;
   }
   if (v === '±') {
     if (lang === 'fr') {
-      return `**Trichomonase ou levure possible**
+      return `**Trichomonase ou mycose possible**
 Votre test montre des signes d'infection limites — pas assez faibles pour être négatif ni assez nets pour être clairement positif, avec une acidité vaginale en zone intermédiaire. Cela peut indiquer une infection très légère en début ou en guérison. Les fluides sexuels ou une douche récente peuvent affecter le test ; les règles, un rapport récent ou sprays/lubrifiants peuvent aussi modifier temporairement l'acidité — surveillez l'évolution.
 
-**Que faire pour un résultat « trichomonase ou levure possible » ?**
+**Que faire pour un résultat « trichomonase ou mycose possible » ?**
 Refaites un test dans 5 à 7 jours — évitez rapports, douches ou crèmes vaginales 24 h avant, et attendez au moins 3 jours après la fin des règles.${disclaimer}`;
     }
     return `**Possible Trich or Yeast**
@@ -331,9 +331,9 @@ Retest in 5–7 days—avoid sex, douches, or vaginal creams for 24 hours before
       if (pH <= 4.6) {
         if (lang === 'fr') {
           return `**NAG positif avec pH ${pH}**
-Avec un pH de ${pH} (≤ 4,6), il s'agit plus probablement d'une **infection à levures**.
+Avec un pH de ${pH} (≤ 4,6), il s'agit plus probablement d'une **mycose**.
 
-**Que faire pour un résultat infection à levures ?**
+**Que faire pour un résultat d'une mycose ?**
 Refaites un test dans 5 à 7 jours — évitez rapports, douches ou crèmes vaginales 24 h avant, et attendez au moins 3 jours après la fin des règles.${disclaimer}`;
         }
         return `**Positive NAG with pH ${pH}**
@@ -345,11 +345,11 @@ Retest in 5–7 days—avoid sex, douches, or vaginal creams for 24 hours before
     }
     if (lang === 'fr') {
       return `**Positif**
-**(NAG) est un marqueur commun à la trichomonase et aux levures, il ne peut pas les distinguer seul — mais avec le pH vaginal, il aide à savoir si c'est plutôt trichomonase ou levure :**
+**(NAG) est un marqueur commun à la trichomonase et aux mycoses, il ne peut pas les distinguer seul — mais avec le pH vaginal, il aide à savoir si c'est plutôt trichomonase ou mycose :**
 * Positif (« + ») et pH élevé (4,8 ou plus) → plus probablement **trichomonase**. (La trichomonase élève le pH.)
-* Positif (« + ») et pH bas (4,6 ou moins) → plus probablement **infection à levures**.
+* Positif (« + ») et pH bas (4,6 ou moins) → plus probablement **infection à mycoses**.
 
-**Que faire pour un résultat « trichomonase ou levure possible » ?**
+**Que faire pour un résultat « trichomonase ou mycoses possible » ?**
 Refaites un test dans 5 à 7 jours — évitez rapports, douches ou crèmes vaginales 24 h avant, et attendez au moins 3 jours après la fin des règles.${disclaimer}`;
     }
     return `**Positive**
