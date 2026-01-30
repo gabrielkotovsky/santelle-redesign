@@ -357,7 +357,7 @@ const appTranslationsFr = {
   insightsH2o2Desc: 'Peroxyde d\'hydrogène (bactéries protectrices)',
   insightsLeDesc: 'Activité des globules blancs',
   insightsSnaDesc: 'Enzyme associée à la BV',
-  insightsBetaGDesc: 'Marqueur de surcroissance bactérienne/levures',
+  insightsBetaGDesc: 'Marqueur de surcroissance bactérienne/mycoses',
   insightsNagDesc: 'Indicateur d\'irritation tissulaire',
   insightsNeedMoreData: 'Plus de tests nécessaires pour voir les tendances',
   insightsHeader: 'ANALYSES',
