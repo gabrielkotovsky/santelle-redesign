@@ -24,7 +24,11 @@ export default function EmailSignInButton({
     
     setLoading(true);
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch {
+        // Haptics may fail on some devices; don't block the main action
+      }
       
       if (onPress) {
         await onPress();

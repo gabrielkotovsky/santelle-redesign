@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, Linking, Pressable } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, View, Linking, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import AppleSignInButton from '@/src/components/buttons/AppleSignInButton';
 import EmailSignInButton from '@/src/components/buttons/EmailSignInButton';
@@ -42,36 +42,38 @@ export default function Landing() {
             <EmailSignInButton
               label={t.continueWithEmail}
               onPress={() => {
-                router.push('/email');
+                router.push('/(auth)/email');
               }}
             />
-            <AppleSignInButton
-              label={t.continueWithApple}
-              loadingLabel={t.signingIn}
-        onSuccess={async () => {
-          setTimeout(async () => {
-            let currentUser = null;
-            try {
-              currentUser = await getUser();
-              if (currentUser) {
-                const questionnaireEntry = await getQuestionnaireEntry(currentUser.id);
-                if (!questionnaireEntry) {
-                  await createQuestionnaireEntry(currentUser.id);
-                }
-                const storedLanguage = useAuthStore.getState().signUpLanguage;
-                await saveSignUpLanguageToOnboarding(currentUser.id, storedLanguage);
-              }
-            } catch (error) {
-              // Handle error but continue
-            }
-            const navigationRoute = await getUserNavigationRoute();
-            router.replace(navigationRoute as any);
-          }, 100);
-        }}
-        onError={(err) => {
-          // Handle error silently or show user-friendly message
-        }}
-      />
+            {Platform.OS === 'ios' && (
+              <AppleSignInButton
+                label={t.continueWithApple}
+                loadingLabel={t.signingIn}
+                onSuccess={async () => {
+                  setTimeout(async () => {
+                    let currentUser = null;
+                    try {
+                      currentUser = await getUser();
+                      if (currentUser) {
+                        const questionnaireEntry = await getQuestionnaireEntry(currentUser.id);
+                        if (!questionnaireEntry) {
+                          await createQuestionnaireEntry(currentUser.id);
+                        }
+                        const storedLanguage = useAuthStore.getState().signUpLanguage;
+                        await saveSignUpLanguageToOnboarding(currentUser.id, storedLanguage);
+                      }
+                    } catch (error) {
+                      // Handle error but continue
+                    }
+                    const navigationRoute = await getUserNavigationRoute();
+                    router.replace(navigationRoute as any);
+                  }, 100);
+                }}
+                onError={() => {
+                  Alert.alert(t.error, t.appleSignInFailed);
+                }}
+              />
+            )}
       
         </View>
 
