@@ -15,19 +15,7 @@ export default function QuestionnaireLayout() {
         }}
       />
       <Stack.Screen 
-        name="test-frequency" 
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen 
         name="reaction-to-discomfort" 
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen 
-        name="confidence-level" 
         options={{
           headerShown: false,
         }}
@@ -40,12 +28,6 @@ export default function QuestionnaireLayout() {
       />
       <Stack.Screen 
         name="gynecologist-satisfaction" 
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen 
-        name="emotional-reaction" 
         options={{
           headerShown: false,
         }}

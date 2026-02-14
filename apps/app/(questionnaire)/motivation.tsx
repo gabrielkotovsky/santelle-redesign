@@ -146,7 +146,7 @@ export default function Motivation() {
       await saveQuestionnaireAnswer(user.id, QUESTION_NUMBER, answerIds);
       
       // Navigate to next question
-      router.push('/(questionnaire)/test-frequency');
+      router.push('/(questionnaire)/reaction-to-discomfort');
     } catch (error: any) {
       Alert.alert(t.error, error.message || t.failedToSave);
     } finally {
@@ -175,7 +175,7 @@ export default function Motivation() {
               styles.skipButtonPressable,
               pressed && { opacity: 0.7 }
             ]}
-            onPress={() => router.push('/(questionnaire)/test-frequency')}
+            onPress={() => router.push('/(questionnaire)/reaction-to-discomfort')}
           >
             <Text style={styles.skipButtonText}>{t.skip}</Text>
           </Pressable>

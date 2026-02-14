@@ -12,7 +12,7 @@ import { router } from 'expo-router';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
-import { getUser, saveQuestionnaireAnswer } from '@/src/features/auth/auth.api';
+import { getUser, saveQuestionnaireAnswer, markQuestionnaireComplete } from '@/src/features/auth/auth.api';
 import { useTranslations } from '@/src/i18n';
 
 const QUESTION_NUMBER = 6; // Gynecologist satisfaction question
@@ -123,7 +123,8 @@ export default function GynecologistSatisfaction() {
       if (!answerId) return;
 
       await saveQuestionnaireAnswer(user.id, QUESTION_NUMBER, answerId);
-      router.push('/(questionnaire)/emotional-reaction');
+      await markQuestionnaireComplete(user.id);
+      router.replace('/(tabs)/home');
     } catch (error: any) {
       Alert.alert(t.error, error.message || t.failedToSave);
     } finally {
@@ -146,7 +147,15 @@ export default function GynecologistSatisfaction() {
         <View style={styles.skipButton}>
           <Pressable
             style={({ pressed }) => [styles.skipButtonPressable, pressed && { opacity: 0.7 }]}
-            onPress={() => router.push('/(questionnaire)/emotional-reaction')}
+            onPress={async () => {
+              try {
+                const user = await getUser();
+                if (user) await markQuestionnaireComplete(user.id);
+                router.replace('/(tabs)/home');
+              } catch {
+                router.replace('/(tabs)/home');
+              }
+            }}
           >
             <Text style={styles.skipButtonText}>{t.skip}</Text>
           </Pressable>
