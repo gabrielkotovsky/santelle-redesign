@@ -69,8 +69,9 @@ export default function Landing() {
                     router.replace(navigationRoute as any);
                   }, 100);
                 }}
-                onError={() => {
-                  Alert.alert(t.error, t.appleSignInFailed);
+                onError={(err) => {
+                  const detail = __DEV__ && err ? `\n\n(${err?.code || ''} ${err?.message || ''})` : '';
+                  Alert.alert(t.error, t.appleSignInFailed + detail);
                 }}
               />
             )}

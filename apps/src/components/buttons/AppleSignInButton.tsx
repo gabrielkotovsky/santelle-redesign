@@ -72,7 +72,9 @@ export default function AppleSignInButton({
       if (e.code === 'ERR_CANCELED') {
         return;
       }
-      
+      if (__DEV__) {
+        console.error('[AppleSignIn]', e?.code, e?.message, e);
+      }
       if (onError) {
         onError(e);
       } else {

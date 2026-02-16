@@ -1,0 +1,27 @@
+diff --git a/node_modules/expo-apple-authentication/ios/AppleAuthenticationRequest.swift b/node_modules/expo-apple-authentication/ios/AppleAuthenticationRequest.swift
+--- a/node_modules/expo-apple-authentication/ios/AppleAuthenticationRequest.swift
++++ b/node_modules/expo-apple-authentication/ios/AppleAuthenticationRequest.swift
+@@ -81,9 +81,20 @@
+   // MARK: - ASAuthorizationControllerPresentationContextProviding
+ 
+   func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+-    guard let window = UIApplication.shared.keyWindow else {
+-      fatalError("Unable to present authentication modal because UIApplication.shared.keyWindow is not available")
++    // Use connectedScenes for iOS 13+ (fixes iPad + iPhone compatibility mode on iPad)
++    // keyWindow is deprecated and can return nil on iPad
++    if #available(iOS 13.0, *) {
++      if let windowScene = UIApplication.shared.connectedScenes
++        .compactMap({ $0 as? UIWindowScene })
++        .first(where: { $0.activationState == .foregroundActive }),
++        let window = windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first {
++        return window
++      }
+     }
+-    return window
++    // Fallback for older iOS
++    if let window = UIApplication.shared.keyWindow {
++      return window
++    }
++    fatalError("Unable to present authentication modal because no window is available")
+   }
+ }

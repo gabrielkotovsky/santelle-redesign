@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "build:testflight": "eas build --platform ios --profile testflight --auto-submit",
-    "submit:testflight": "eas submit --platform ios --profile testflight --latest"
+    "submit:testflight": "eas submit --platform ios --profile testflight --latest",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
@@ -66,6 +67,7 @@
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "patch-package": "^8.0.1",
     "react-native-svg-transformer": "^1.5.2",
     "typescript": "~5.9.2"
   },
