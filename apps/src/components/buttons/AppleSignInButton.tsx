@@ -39,16 +39,22 @@ export default function AppleSignInButton({
         // Haptics may fail on some devices; don't block the main action
       }
       
-      // 1) Create raw nonce - Expo's SDK hashes it before sending to Apple
+      // 1) Create raw nonce and SHA256 hash it for Apple
       const rawNonce = Crypto.randomUUID();
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce,
+      );
 
-      // 2) Ask Apple for credential (pass raw nonce; SDK hashes it internally)
+      // 2) Ask Apple for credential — pass the SHA256 HASH to Apple.
+      //    Apple embeds it as-is in the identity token's nonce claim.
+      //    Supabase then hashes the raw nonce and compares against the token.
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
-        nonce: rawNonce,
+        nonce: hashedNonce,
       });
 
       if (!credential.identityToken) {
@@ -72,9 +78,7 @@ export default function AppleSignInButton({
       if (e.code === 'ERR_CANCELED') {
         return;
       }
-      if (__DEV__) {
-        console.error('[AppleSignIn]', e?.code, e?.message, e);
-      }
+      
       if (onError) {
         onError(e);
       } else {

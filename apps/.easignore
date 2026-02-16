@@ -1,3 +1,0 @@
-# Force EAS to run prebuild so withAppleAuthIpadFix plugin applies
-# (EAS skips prebuild when ios folder exists - but we need our fix)
-ios/

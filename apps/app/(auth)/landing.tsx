@@ -70,8 +70,8 @@ export default function Landing() {
                   }, 100);
                 }}
                 onError={(err) => {
-                  const detail = __DEV__ && err ? `\n\n(${err?.code || ''} ${err?.message || ''})` : '';
-                  Alert.alert(t.error, t.appleSignInFailed + detail);
+                  const msg = err?.message || err?.code || '';
+                  Alert.alert(t.error, t.appleSignInFailed + (msg ? `\n\n${msg}` : ''));
                 }}
               />
             )}
