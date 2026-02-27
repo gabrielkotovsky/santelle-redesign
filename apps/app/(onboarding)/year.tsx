@@ -46,7 +46,7 @@ export default function BirthDate() {
     }
   }, [daysInMonth.length]);
 
-  const handleContinue = async (skip: boolean = false) => {
+  const handleContinue = async () => {
     setLoading(true);
     try {
       const user = await getUser();
@@ -55,12 +55,23 @@ export default function BirthDate() {
         return;
       }
 
-      if (!skip && selectedYear && selectedMonth && selectedDay) {
-        const dateOfBirth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
-        await updateOnboardingResponse(user.id, {
-          date_of_birth: dateOfBirth
-        });
+      const dateOfBirth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
+      const dob = new Date(selectedYear, selectedMonth - 1, selectedDay);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
       }
+
+      if (age < 16) {
+        Alert.alert(t.ageRestrictionTitle, t.ageRestrictionMessage);
+        return;
+      }
+
+      await updateOnboardingResponse(user.id, {
+        date_of_birth: dateOfBirth
+      });
       
       router.push('/(onboarding)/country');
     } catch (error: any) {
@@ -104,7 +115,7 @@ export default function BirthDate() {
             {t.personalizeExperience}
           </Text>
           <Text style={styles.optionalText}>
-            {t.optionalSkip}
+            {t.ageRequirement}
           </Text>
 
           <View style={styles.pickersRow}>
@@ -166,28 +177,11 @@ export default function BirthDate() {
           <View style={styles.buttonContainer}>
             <Pressable
               style={({ pressed }) => [
-                styles.skipButton,
-                loading && styles.skipButtonDisabled,
-                pressed && { opacity: 0.8 }
-              ]}
-              onPress={() => handleContinue(true)}
-              disabled={loading}
-            >
-              <Text style={[
-                styles.skipButtonText,
-                loading && styles.skipButtonTextDisabled
-              ]}>
-                {t.skip}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
                 styles.continueButton,
                 loading && styles.continueButtonDisabled,
                 pressed && { opacity: 0.8 }
               ]}
-              onPress={() => handleContinue(false)}
+              onPress={handleContinue}
               disabled={loading}
             >
               <Text style={[
@@ -296,33 +290,8 @@ const styles = StyleSheet.create({
     bottom: 30,
     left: 30,
     right: 30,
-    flexDirection: 'row',
-    gap: 12,
-  },
-  skipButton: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    borderRadius: 30,
-    minHeight: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#721422',
-  },
-  skipButtonDisabled: {
-    borderColor: 'rgba(114, 20, 34, .5)',
-  },
-  skipButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Poppins-Medium',
-    color: '#721422',
-  },
-  skipButtonTextDisabled: {
-    color: 'rgba(114, 20, 34, .5)',
   },
   continueButton: {
-    flex: 1,
     backgroundColor: '#721422',
     borderRadius: 30,
     minHeight: 50,

@@ -26,10 +26,10 @@
         "NSUserNotificationUsageDescription": "We use notifications to remind you when your test results are ready.",
         "ITSAppUsesNonExemptEncryption": false,
         "BGTaskSchedulerPermittedIdentifiers": [
-          "com.gabrielkotovsky.SantelleApp.session-refresh"
+          "com.santelle.app.session-refresh"
         ]
       },
-      "bundleIdentifier": "com.gabrielkotovsky.SantelleApp"
+      "bundleIdentifier": "com.santelle.app"
     },
     "android": {
       "adaptiveIcon": {

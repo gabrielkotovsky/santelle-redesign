@@ -75,6 +75,9 @@ export const authOnboardingTranslations = {
     // Year (onboarding)
     whenBorn: 'When were you born?',
     personalizeExperience: 'This helps us personalize your experience',
+    ageRequirement: 'You must be 16 or older to use Santelle.',
+    ageRestrictionTitle: 'Age restriction',
+    ageRestrictionMessage: 'You must be at least 16 years old to use this app.',
     month: 'Month',
     day: 'Day',
     year: 'Year',
@@ -158,6 +161,9 @@ export const authOnboardingTranslations = {
     // Year (onboarding)
     whenBorn: 'QUAND ETES-VOUS NE(E)?',
     personalizeExperience: 'Cela nous aide à personnaliser votre expérience',
+    ageRequirement: 'Vous devez avoir au moins 16 ans pour utiliser Santelle.',
+    ageRestrictionTitle: 'Restriction d\'age',
+    ageRestrictionMessage: 'Vous devez avoir au moins 16 ans pour utiliser cette application.',
     month: 'Mois',
     day: 'Jour',
     year: 'Année',
