@@ -1,5 +1,5 @@
 // src/components/modals/test-result.tsx
-import { getArticleBySlug, listArticles } from '@/src/features/articles/articles.api';
+import { getArticleBySlug, listArticles, type Article } from '@/src/features/articles/articles.api';
 import { Colors } from '@/src/theme/colors';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -38,6 +38,65 @@ function groupSymptomLabels(labels: string[]) {
   return groups;
 }
 
+type SymptomSupport = {
+  yeast: number;
+  bv: number;
+  trich: number;
+  av: number;
+};
+
+function getSymptomSupport(labels: string[]): SymptomSupport {
+  const text = labels.join(' ').toLowerCase();
+  const countMatches = (terms: string[]) =>
+    terms.reduce((sum, term) => sum + (text.includes(term) ? 1 : 0), 0);
+
+  return {
+    yeast: countMatches([
+      'itch',
+      'itching',
+      'demange',
+      'mycose',
+      'yeast',
+      'thick',
+      'clumpy',
+      'cottage',
+      'white discharge',
+      'pertes blanches',
+    ]),
+    bv: countMatches([
+      'fishy',
+      'odor',
+      'odeur',
+      'grey',
+      'gray',
+      'thin discharge',
+      'vb',
+      'bv',
+      'vaginosis',
+    ]),
+    trich: countMatches([
+      'frothy',
+      'trich',
+      'trichomon',
+      'sti',
+      'ist',
+      'partner',
+      'new partner',
+    ]),
+    av: countMatches([
+      'burn',
+      'burning',
+      'brul',
+      'inflammation',
+      'redness',
+      'douleur',
+      'pain',
+      'yellow discharge',
+      'pertes jaunes',
+    ]),
+  };
+}
+
 type Props = {
   visible: boolean;
   onClose: () => void;
@@ -60,6 +119,220 @@ type PretestEntry = {
   selected_labels: string[];
   type: 'symptoms' | 'context';
 };
+
+type IndicativeCard = {
+  profileKey: 'bv' | 'av' | 'trich' | 'yeast' | 'possible' | 'balance';
+  title: string;
+  summary: string;
+  path: string;
+  bullets: string[];
+  color: string;
+};
+
+type RecommendedArticleLink = {
+  key: string;
+  title: string;
+  slugs: string[];
+};
+
+function getIndicativeCard(log: NonNullable<Props['log']>, isFr: boolean, symptomLabels: string[] = []): IndicativeCard {
+  const pH = typeof log.ph === 'number' ? log.ph : null;
+  const sna = (log.sna ?? '').replace('−', '-').trim();
+  const betaG = (log.beta_g ?? '').replace('−', '-').trim();
+  const nag = (log.nag ?? '').replace('−', '-').trim();
+  const le = (log.le ?? '').replace('−', '-').trim();
+  const h2o2 = (log.h2o2 ?? '').replace('−', '-').trim();
+
+  const highPH = typeof pH === 'number' && pH >= 4.8;
+  const healthyPH = typeof pH === 'number' && pH >= 3.8 && pH <= 4.4;
+  const leStrong = le === '+' || le === '++' || le === '+++';
+  const support = getSymptomSupport(symptomLabels);
+  const hasSymptomInput = symptomLabels.length > 0;
+
+  // Doctor-soon patterns
+  if (sna === '+' || betaG === '+' || (nag === '+' && highPH)) {
+    const likelyKey: 'bv' | 'av' | 'trich' =
+      sna === '+' ? 'bv' : betaG === '+' ? 'av' : 'trich';
+    const likelyTitle =
+      likelyKey === 'bv'
+        ? isFr
+          ? support.bv > 0 ? 'Infection probable: vaginose bactérienne (VB)' : 'Infection possible: vaginose bactérienne (VB)'
+          : support.bv > 0 ? 'Likely infection: bacterial vaginosis (BV)' : 'Possible infection: bacterial vaginosis (BV)'
+        : likelyKey === 'av'
+          ? isFr
+            ? support.av > 0 ? 'Infection probable: vaginite aérobie (VA)' : 'Infection possible: vaginite aérobie (VA)'
+            : support.av > 0 ? 'Likely infection: aerobic vaginitis (AV)' : 'Possible infection: aerobic vaginitis (AV)'
+          : isFr
+            ? support.trich > 0 ? 'Infection probable: trichomonase' : 'Infection possible: trichomonase'
+            : support.trich > 0 ? 'Likely infection: trichomoniasis' : 'Possible infection: trichomoniasis';
+
+    return {
+      profileKey: likelyKey,
+      title: likelyTitle,
+      summary: isFr
+        ? hasSymptomInput ? 'Vos biomarqueurs et symptomes vont dans le meme sens.' : 'Vos biomarqueurs suggerent une infection probable.'
+        : hasSymptomInput ? 'Your biomarkers and symptom pattern point in the same direction.' : 'Your biomarkers suggest a likely infection.',
+      path: isFr ? 'Action recommandée: consulter rapidement' : 'Recommended action: see a doctor soon',
+      bullets: isFr
+        ? [
+            'Prenez rendez-vous rapidement avec un professionnel de santé.',
+            'Notez vos symptômes pour faciliter la consultation.',
+            'Évitez les produits irritants en attendant.',
+          ]
+        : [
+            'Book a medical appointment soon.',
+            'Track symptoms to support the consultation.',
+            'Avoid irritant products in the meantime.',
+          ],
+      color: '#F44336',
+    };
+  }
+
+  // Pharmacy optional / moderate patterns
+  if (sna === '±' || betaG === '±' || nag === '±' || leStrong || (nag === '+' && typeof pH === 'number' && pH <= 4.6)) {
+    const moderateSignals = [
+      sna === '±' ? 'bv' : null,
+      betaG === '±' ? 'av' : null,
+      nag === '±'
+        ? typeof pH === 'number' && pH >= 4.8
+          ? 'trich'
+          : typeof pH === 'number' && pH <= 4.6
+            ? 'yeast'
+            : 'trich_or_yeast'
+        : null,
+      nag === '+' && typeof pH === 'number' && pH <= 4.6 ? 'yeast' : null,
+      leStrong && sna !== '±' && betaG !== '±' && nag !== '±' && !(nag === '+' && typeof pH === 'number' && pH <= 4.6) ? 'inflammation' : null,
+    ].filter(Boolean) as Array<'bv' | 'av' | 'trich' | 'yeast' | 'trich_or_yeast' | 'inflammation'>;
+
+    const uniqueModerateSignals = Array.from(new Set(moderateSignals));
+    const suggestsYeast =
+      uniqueModerateSignals.includes('yeast') || uniqueModerateSignals.includes('trich_or_yeast');
+    const moderateBullets = isFr
+      ? [
+          'Commencez par des mesures simples (hygiene douce, probiotiques).',
+          suggestsYeast
+            ? 'Si mycose probable, un antifongique OTC peut aider a court terme.'
+            : 'Demandez conseil en pharmacie si les symptomes persistent.',
+          'Refaites un test dans 5 a 7 jours.',
+        ]
+      : [
+          'Start with simple care (gentle hygiene, probiotics).',
+          suggestsYeast
+            ? 'If yeast is likely, OTC antifungal care can help short term.'
+            : 'Ask a pharmacist if symptoms persist.',
+          'Retest in 5 to 7 days.',
+        ];
+    const likelyModerateTitle =
+      uniqueModerateSignals.length > 1
+        ? isFr
+          ? 'Infection possible: profil mixte (à confirmer)'
+          : 'Possible infection: mixed profile (to confirm)'
+        : uniqueModerateSignals[0] === 'bv'
+          ? isFr
+            ? support.bv > 0 ? 'Infection probable: vaginose bactérienne (VB)' : 'Infection possible: vaginose bactérienne (VB)'
+            : support.bv > 0 ? 'Likely infection: bacterial vaginosis (BV)' : 'Possible infection: bacterial vaginosis (BV)'
+          : uniqueModerateSignals[0] === 'av'
+            ? isFr
+              ? support.av > 0 ? 'Infection probable: vaginite aérobie (VA)' : 'Infection possible: vaginite aérobie (VA)'
+              : support.av > 0 ? 'Likely infection: aerobic vaginitis (AV)' : 'Possible infection: aerobic vaginitis (AV)'
+            : uniqueModerateSignals[0] === 'trich'
+              ? isFr
+                ? support.trich > 0 ? 'Infection probable: trichomonase' : 'Infection possible: trichomonase'
+                : support.trich > 0 ? 'Likely infection: trichomoniasis' : 'Possible infection: trichomoniasis'
+              : uniqueModerateSignals[0] === 'yeast'
+                ? isFr
+                  ? support.yeast > 0 ? 'Infection probable: mycose' : 'Infection possible: mycose'
+                  : support.yeast > 0 ? 'Likely infection: yeast infection' : 'Possible infection: yeast infection'
+                : uniqueModerateSignals[0] === 'trich_or_yeast'
+                  ? isFr
+                    ? 'Infection possible: trichomonase ou mycose'
+                    : 'Possible infection: trichomoniasis or yeast'
+                  : uniqueModerateSignals[0] === 'inflammation'
+                    ? isFr
+                      ? 'Inflammation possible: à confirmer'
+                      : 'Possible inflammation: needs confirmation'
+                    : isFr
+                      ? 'Infection possible: à confirmer'
+                      : 'Possible infection: needs confirmation';
+    return {
+      profileKey: (nag === '+' && typeof pH === 'number' && pH <= 4.6) ? 'yeast' : 'possible',
+      title: likelyModerateTitle,
+      summary: isFr
+        ? hasSymptomInput ? 'Signal modere: a confirmer avec les symptomes et un nouveau test.' : 'Signal modere: a confirmer.'
+        : hasSymptomInput ? 'Moderate signal: confirm with symptoms and a retest.' : 'Moderate signal: needs confirmation.',
+      path: isFr ? 'Action recommandée: auto-soin + pharmacie si besoin' : 'Recommended action: self-care + pharmacy if needed',
+      bullets: moderateBullets,
+      color: '#FF9800',
+    };
+  }
+
+  // Maintenance path
+  return {
+    profileKey: 'balance',
+    title: (healthyPH && h2o2 === '-' && sna === '-' && betaG === '-' && nag === '-') ? (isFr ? 'Profil équilibre sain' : 'Healthy balance profile') : (isFr ? 'Profil stable / léger déséquilibre' : 'Stable / mild imbalance profile'),
+    summary: isFr
+      ? 'Aucun signal majeur detecte.'
+      : 'No major warning signals detected.',
+    path: isFr ? 'Action recommandée: maintenance' : 'Recommended action: maintenance',
+    bullets: isFr
+      ? [
+          'Continuez la routine de maintenance (hygiene douce, probiotiques).',
+          'Surveillez l evolution des symptomes.',
+          'Refaites un test en cas de nouveau symptome.',
+        ]
+      : [
+          'Continue your maintenance routine (gentle hygiene, probiotics).',
+          'Monitor how symptoms evolve.',
+          'Retest if new symptoms appear.',
+        ],
+    color: '#4CAF50',
+  };
+}
+
+function getRecommendedArticleLinks(profileKey: IndicativeCard['profileKey'], isFr: boolean): RecommendedArticleLink[] {
+  const balanceLinks: RecommendedArticleLink[] = [
+    {
+      key: 'otc-microbiome',
+      title: isFr
+        ? 'Produits OTC pouvant aider votre microbiome vaginal'
+        : 'OTC products that can help your vaginal microbiome',
+      slugs: ['otc_products_that_can_help_your_vaginal_microbiome'],
+    },
+  ];
+
+  const infectionLinks: RecommendedArticleLink[] = [
+    {
+      key: 'bv-yeast-trich',
+      title: isFr
+        ? 'VB, mycose et trichomonase: comment les distinguer'
+        : 'What is BV, yeast infections, and trichomoniasis?',
+      slugs: ['what_is_bv_yeast_infections_and_trichomoniasis'],
+    },
+    {
+      key: 'recurrent-infections',
+      title: isFr
+        ? 'Pourquoi les infections vaginales reviennent'
+        : 'Why vaginal infections keep coming back',
+      slugs: ['why_vaginal_infections_keep_coming_back'],
+    },
+  ];
+
+  if (profileKey === 'balance') return balanceLinks;
+  return infectionLinks;
+}
+
+async function getArticlesByKnownSlugs(slugs: string[], lang: string): Promise<Article[]> {
+  const picked: Article[] = [];
+  for (const slug of slugs) {
+    try {
+      const article = await getArticleBySlug(slug, lang);
+      if (article && !picked.some((a) => a.id === article.id)) picked.push(article);
+    } catch {
+      // Continue to next slug
+    }
+  }
+  return picked;
+}
 
 // Function to remove summary sentence with support for different markdown formats
 function removeSummary(text: string): string {
@@ -143,6 +416,17 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
   const groupedSymptoms = useMemo(
     () => groupSymptomLabels(symptomLabels),
     [symptomLabels]
+  );
+  const indicativeForRecommendations = useMemo(
+    () => (log ? getIndicativeCard(log, lang === 'fr', symptomLabels) : null),
+    [log, lang, symptomLabels]
+  );
+  const recommendedLinks = useMemo(
+    () =>
+      indicativeForRecommendations
+        ? getRecommendedArticleLinks(indicativeForRecommendations.profileKey, lang === 'fr')
+        : [],
+    [indicativeForRecommendations, lang]
   );
   const contextLabels = useMemo(
     () =>
@@ -266,6 +550,21 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
   // Early return AFTER all hooks
   if (!log) return null;
 
+  const handleRecommendedArticlePress = async (link: RecommendedArticleLink) => {
+    const article = (await getArticlesByKnownSlugs(link.slugs, lang))[0];
+    if (article) {
+      setSelectedArticle(article);
+      setArticleModalVisible(true);
+      return;
+    }
+    Alert.alert(
+      lang === 'fr' ? 'Article introuvable' : 'Article not found',
+      lang === 'fr'
+        ? "L'article recommandé n'est pas disponible pour le moment."
+        : 'The recommended article is not available right now.'
+    );
+  };
+
   // Handle medical term clicks
   const handleMedicalTermPress = (url: string) => {
     // Extract the term from the URL (medical://term)
@@ -329,6 +628,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
   const created = log.created_at ? new Date(log.created_at) : null;
   const date = created?.toLocaleDateString();
   const time = created?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const indicative = getIndicativeCard(log, lang === 'fr', symptomLabels);
 
   const biomarkers = [
     ['pH', log.ph?.toString()],
@@ -521,6 +821,45 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
 
           <View style={styles.divider} />
 
+          {/* Indicative Result */}
+          <View style={styles.indicativeCard}>
+            <View style={styles.indicativeHeader}>
+              <Text style={styles.indicativeTitle}>{lang === 'fr' ? 'Résultat indicatif' : 'Indicative result'}</Text>
+              <View style={[styles.indicativeDot, { backgroundColor: indicative.color }]} />
+            </View>
+            <Text style={styles.indicativeProfile}>{indicative.title}</Text>
+            <Text style={styles.indicativeSummary}>{indicative.summary}</Text>
+            <Text style={styles.indicativePath}>{indicative.path}</Text>
+            <View style={styles.indicativeList}>
+              {indicative.bullets.map((item, idx) => (
+                <View key={`${idx}-${item}`} style={styles.indicativeListRow}>
+                  <Text style={styles.indicativeBullet}>•</Text>
+                  <Text style={styles.indicativeItem}>{item}</Text>
+                </View>
+              ))}
+            </View>
+
+          <View style={styles.recommendedSection}>
+            <Text style={styles.recommendedTitle}>
+              {lang === 'fr' ? 'Articles recommandés' : 'Recommended articles'}
+            </Text>
+            {recommendedLinks.map((link) => (
+                <ShrinkableTouchable
+                  key={link.key}
+                  style={styles.recommendedItem}
+                  onPress={() => {
+                    void handleRecommendedArticlePress(link);
+                  }}
+                >
+                  <Text style={styles.recommendedItemText}>{link.title}</Text>
+                  <Text style={styles.recommendedChevron}>›</Text>
+                </ShrinkableTouchable>
+              ))}
+          </View>
+          </View>
+
+          <View style={styles.divider} />
+
           {/* Journal Entry */}
           {(log.test_session_id || log.id) && (
             <View style={styles.journalCard}>
@@ -674,15 +1013,15 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 20, paddingTop: 95, paddingBottom: 50 },
-  biomarkerBlock: { marginBottom: 5 },
+  scroll: { padding: 16, paddingTop: 84, paddingBottom: 44 },
+  biomarkerBlock: { marginBottom: 2 },
   biomarkerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
     borderWidth: 1,
   },
   biomarkerRowCollapsed: {
@@ -693,24 +1032,24 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
   },
-  leftSection: { 
+  leftSection: {
     flexDirection: 'row', 
     alignItems: 'center', 
-    gap: 8 
+    gap: 6
   },
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
-  biomarkerLabel: { fontFamily: 'Poppins-SemiBold', fontSize: 16, color: Colors.light.rush },
-  biomarkerValue: { fontFamily: 'Poppins-Bold', fontSize: 16, color: Colors.light.rush },
-  circle: { width: 12, height: 12, borderRadius: 6 },
+  biomarkerLabel: { fontFamily: 'Poppins-SemiBold', fontSize: 14, color: Colors.light.rush },
+  biomarkerValue: { fontFamily: 'Poppins-Bold', fontSize: 14, color: Colors.light.rush },
+  circle: { width: 8, height: 8, borderRadius: 4 },
   biomarkerExpandIcon: {
-    fontSize: 12,
+    fontSize: 10,
     color: Colors.light.rush,
     opacity: 0.8,
-    marginLeft: 6,
+    marginLeft: 2,
   },
 
   detailBox: { padding: 12, marginRight: 0 },
@@ -770,14 +1109,14 @@ const styles = StyleSheet.create({
 
   headerBubble: {
     position: 'absolute',
-    top: 15,
-    left: 15,
-    right: 15,
+    top: 10,
+    left: 12,
+    right: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 5,
+    paddingHorizontal: 16,
+    paddingVertical: 3,
     borderRadius: 99,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -799,7 +1138,7 @@ const styles = StyleSheet.create({
    dateText: {
      fontFamily: 'Poppins-SemiBold',
      color: Colors.light.rush,
-     fontSize: 14,
+    fontSize: 13,
    },
   // center absolute overlay so it's perfectly centered regardless of left/right widths
   timeWrapper: {
@@ -812,7 +1151,7 @@ const styles = StyleSheet.create({
   timeText: {
     fontFamily: 'Poppins-SemiBold',
     color: Colors.light.rush,
-    fontSize: 14,
+    fontSize: 13,
   },
   headerRight: {
     flex: 1,
@@ -820,15 +1159,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelButton: {
-    width: 40,
-    height: 40,
+    width: 34,
+    height: 34,
     borderRadius: 99,
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    marginRight: -15,
+    marginRight: -12,
   },
   cancelButtonText: {
     color: '#721422',
@@ -842,18 +1181,112 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 14, fontFamily: 'Poppins-SemiBold', color: '#D92D20' },
   learnMoreButton: {
     backgroundColor: 'rgba(114, 20, 34, 0.08)',
-    borderRadius: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: 'rgba(114, 20, 34, 0.15)',
     alignItems: 'center',
     marginTop: 0,
   },
   learnMoreButtonText: {
+    fontSize: 12,
+    fontFamily: 'Poppins-SemiBold',
+    color: Colors.light.rush,
+  },
+  indicativeCard: {
+    borderRadius: 24,
+    padding: 16,
+    backgroundColor: '#F5E5DA',
+    borderWidth: 1,
+    borderColor: 'rgba(114, 20, 34, 0.15)',
+    gap: 8,
+  },
+  indicativeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  indicativeTitle: {
     fontSize: 14,
     fontFamily: 'Poppins-SemiBold',
     color: Colors.light.rush,
+  },
+  indicativeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  indicativeProfile: {
+    fontSize: 17,
+    fontFamily: 'Poppins-SemiBold',
+    color: Colors.light.rush,
+  },
+  indicativeSummary: {
+    fontSize: 13,
+    fontFamily: 'Poppins-Regular',
+    color: Colors.light.rush,
+    lineHeight: 18,
+  },
+  indicativePath: {
+    fontSize: 13,
+    fontFamily: 'Poppins-SemiBold',
+    color: 'rgba(114, 20, 34, 0.9)',
+  },
+  indicativeList: {
+    gap: 6,
+    marginTop: 2,
+  },
+  indicativeListRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  indicativeBullet: {
+    fontSize: 14,
+    color: Colors.light.rush,
+    marginRight: 8,
+    marginTop: 1,
+  },
+  indicativeItem: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'Poppins-Regular',
+    color: Colors.light.rush,
+    lineHeight: 18,
+  },
+  recommendedSection: {
+    marginTop: 6,
+    gap: 8,
+  },
+  recommendedTitle: {
+    fontSize: 13,
+    fontFamily: 'Poppins-SemiBold',
+    color: 'rgba(114, 20, 34, 0.9)',
+  },
+  recommendedItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(114, 20, 34, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  recommendedItemText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'Poppins-SemiBold',
+    color: Colors.light.rush,
+    paddingRight: 8,
+  },
+  recommendedChevron: {
+    fontSize: 18,
+    lineHeight: 18,
+    color: Colors.light.rush,
+    opacity: 0.7,
+    marginTop: -1,
   },
 
   // Journal Entry styles
