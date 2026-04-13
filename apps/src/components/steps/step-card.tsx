@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     flex: 1,
     maxHeight: '100%',
-    overflow: 'scroll',
+    overflow: 'visible',
   },
   
   /**
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 10,
     flex: 1,
-    overflow: 'scroll',
+    overflow: 'visible',
   },
   
   /**

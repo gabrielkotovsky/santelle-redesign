@@ -267,6 +267,50 @@ function getIndicativeCard(log: NonNullable<Props['log']>, isFr: boolean, sympto
   }
 
   // Maintenance path
+  const allResultsNormal =
+    healthyPH &&
+    h2o2 === '-' &&
+    sna === '-' &&
+    betaG === '-' &&
+    nag === '-' &&
+    le === '-';
+
+  if (allResultsNormal && symptomLabels.length > 0) {
+    const yeastSymptomsPresent = support.yeast > 0;
+    return {
+      profileKey: yeastSymptomsPresent ? 'yeast' : 'possible',
+      title: yeastSymptomsPresent
+        ? isFr
+          ? 'Symptômes présents: irritation ou mycose possible'
+          : 'Symptoms present: irritation or possible yeast infection'
+        : isFr
+          ? 'Symptômes présents: irritation possible'
+          : 'Symptoms present: possible irritation',
+      summary: isFr
+        ? 'Vos biomarqueurs sont rassurants, mais vos symptômes meritent une prise en charge simple.'
+        : 'Your biomarkers look reassuring, but your symptoms still need simple care.',
+      path: isFr
+        ? 'Action recommandée: pharmacie + suivi'
+        : 'Recommended action: pharmacy care + follow-up',
+      bullets: isFr
+        ? [
+            yeastSymptomsPresent
+              ? 'Un antifongique OTC peut etre essaye si une mycose est suspectee.'
+              : 'Demandez conseil en pharmacie pour soulager l irritation.',
+            'Evitez les produits irritants et maintenez une hygiene douce.',
+            'Refaites un test dans 5 a 7 jours ou plus tot si aggravation.',
+          ]
+        : [
+            yeastSymptomsPresent
+              ? 'An OTC antifungal can be considered if yeast is suspected.'
+              : 'Ask a pharmacist for symptom-relief options.',
+            'Avoid irritants and keep gentle hygiene.',
+            'Retest in 5 to 7 days, or sooner if symptoms worsen.',
+          ],
+      color: '#FF9800',
+    };
+  }
+
   return {
     profileKey: 'balance',
     title: (healthyPH && h2o2 === '-' && sna === '-' && betaG === '-' && nag === '-') ? (isFr ? 'Profil équilibre sain' : 'Healthy balance profile') : (isFr ? 'Profil stable / léger déséquilibre' : 'Stable / mild imbalance profile'),

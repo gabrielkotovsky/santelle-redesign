@@ -319,11 +319,13 @@ export default function TestScreen() {
   return (
     <ScreenBackground>
       {/* Progress indicator */}
-      <ProgressCard
-        currentStep={currentStep}
-        totalSteps={totalSteps}
-        onCancel={handleCancelTest}
-      />
+      <View style={{ zIndex: 30, elevation: 30 }}>
+        <ProgressCard
+          currentStep={currentStep}
+          totalSteps={totalSteps}
+          onCancel={handleCancelTest}
+        />
+      </View>
 
       {/* Divider */}
       <View style={{height: 1, backgroundColor: "rgba(255,255,255,0.3)", marginVertical: 10}} />
@@ -339,7 +341,7 @@ export default function TestScreen() {
       )}
 
       {/* Swipeable test steps */}
-      <Animated.View layout={LinearTransition.duration(200)} style={{ flex: 1, position: 'relative' }}>
+      <Animated.View layout={LinearTransition.duration(200)} style={{ flex: 1, position: 'relative', zIndex: 1 }}>
         {/* Swipe hint overlay */}
         {showSwipeHint && currentStep === 1 && (
           <Animated.View

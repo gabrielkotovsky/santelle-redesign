@@ -15,6 +15,7 @@ import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
 import { usePretest, type PretestQuestion, type PretestChoice, type UUID, type PretestAnswer } from '@/src/features/pre-test';
 import { useTestSession } from '@/src/features/test-session/testSession.store';
 import { supabase } from '@/src/services/supabase';
+import { useAuthStore } from '@/src/features/auth/auth.store';
 
 // Helper function to get question by slug
 const getQuestionBySlug = (questions: PretestQuestion[], slug: string): PretestQuestion | undefined => {
@@ -76,6 +77,7 @@ export default function PreTestQuestions() {
   const [loadingExistingAnswers, setLoadingExistingAnswers] = useState(isEditMode);
   const { questions, answers, loading, canSubmit, setSingle, setMulti, toggleMulti, submit, saveAnswer } = usePretest(1);
   const { session: testSession, startSession } = useTestSession();
+  const appLang = useAuthStore((s) => s.signUpLanguage ?? 'en');
 
   // Load existing answers if in edit mode
   useEffect(() => {
@@ -162,6 +164,15 @@ export default function PreTestQuestions() {
 
   const handleToggleMulti = (questionId: UUID, choiceId: UUID) => {
     toggleMulti(questionId, choiceId);
+  };
+
+  const isNoneOfAboveQuestion = (question: PretestQuestion): boolean => {
+    const prompt = question.prompt.toLowerCase();
+    return (
+      prompt.includes('have any of these applied to you recently') ||
+      prompt.includes('ces situations se sont appliquees recemment') ||
+      prompt.includes('ces situations se sont appliquées récemment')
+    );
   };
 
   // Helper functions to check if answers exist for questions
@@ -315,6 +326,25 @@ export default function PreTestQuestions() {
               multiline={choice.label.length > 50}
             />
           ))}
+          {question.type === 'multi' && isNoneOfAboveQuestion(question) && (
+            <AnimatedOption
+              option={{
+                id: `none-${question.id}`,
+                question_id: question.id,
+                label: appLang === 'fr' ? 'Aucune des options' : 'None of the above',
+                value: 'none_of_the_above',
+                sort_order: 999,
+                active: true,
+                weight: null,
+              }}
+              isSelected={(() => {
+                const answer = answers.find(a => a.question_id === question.id);
+                return !!(answer && answer.type === 'multi' && answer.choice_ids.length === 0);
+              })()}
+              onPress={() => setMulti(question.id, [])}
+              multiline={false}
+            />
+          )}
         </View>
       </View>
     ));
