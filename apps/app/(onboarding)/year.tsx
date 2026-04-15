@@ -39,12 +39,30 @@ export default function BirthDate() {
     return Array.from({ length: days }, (_, i) => i + 1);
   }, [selectedYear, selectedMonth]);
 
-  // Adjust day if it exceeds days in month (use useEffect for side effects, not useMemo)
-  React.useEffect(() => {
-    if (selectedDay > daysInMonth.length) {
-      setSelectedDay(daysInMonth.length);
-    }
-  }, [daysInMonth.length]);
+  const clampDay = (year: number, month: number, day: number) => {
+    const maxDay = new Date(year, month, 0).getDate();
+    return Math.max(1, Math.min(day, maxDay));
+  };
+
+  const handleMonthChange = (itemValue: number | string) => {
+    const month = Number(itemValue);
+    if (!Number.isFinite(month)) return;
+    setSelectedMonth(month);
+    setSelectedDay((prevDay) => clampDay(selectedYear, month, prevDay));
+  };
+
+  const handleYearChange = (itemValue: number | string) => {
+    const year = Number(itemValue);
+    if (!Number.isFinite(year)) return;
+    setSelectedYear(year);
+    setSelectedDay((prevDay) => clampDay(year, selectedMonth, prevDay));
+  };
+
+  const handleDayChange = (itemValue: number | string) => {
+    const day = Number(itemValue);
+    if (!Number.isFinite(day)) return;
+    setSelectedDay(clampDay(selectedYear, selectedMonth, day));
+  };
 
   const handleContinue = async () => {
     setLoading(true);
@@ -55,8 +73,9 @@ export default function BirthDate() {
         return;
       }
 
-      const dateOfBirth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
-      const dob = new Date(selectedYear, selectedMonth - 1, selectedDay);
+      const safeDay = clampDay(selectedYear, selectedMonth, selectedDay);
+      const dateOfBirth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`;
+      const dob = new Date(selectedYear, selectedMonth - 1, safeDay);
       const today = new Date();
       let age = today.getFullYear() - dob.getFullYear();
       const monthDiff = today.getMonth() - dob.getMonth();
@@ -123,7 +142,7 @@ export default function BirthDate() {
               <Text style={styles.pickerLabel}>{t.month}</Text>
               <Picker
                 selectedValue={selectedMonth}
-                onValueChange={(itemValue) => setSelectedMonth(itemValue)}
+                onValueChange={handleMonthChange}
                 style={styles.picker}
                 itemStyle={styles.pickerItem}
               >
@@ -140,8 +159,8 @@ export default function BirthDate() {
             <View style={[styles.pickerContainer, styles.dayPicker]}>
               <Text style={styles.pickerLabel}>{t.day}</Text>
               <Picker
-                selectedValue={selectedDay}
-                onValueChange={(itemValue) => setSelectedDay(itemValue)}
+                selectedValue={clampDay(selectedYear, selectedMonth, selectedDay)}
+                onValueChange={handleDayChange}
                 style={styles.picker}
                 itemStyle={styles.pickerItem}
               >
@@ -159,7 +178,7 @@ export default function BirthDate() {
               <Text style={styles.pickerLabel}>{t.year}</Text>
               <Picker
                 selectedValue={selectedYear}
-                onValueChange={(itemValue) => setSelectedYear(itemValue)}
+                onValueChange={handleYearChange}
                 style={styles.picker}
                 itemStyle={styles.pickerItem}
               >

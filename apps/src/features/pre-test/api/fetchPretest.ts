@@ -9,6 +9,13 @@ import type { PretestChoice, PretestQuestion, UUID } from '../models';
   */
 export async function fetchPretest(version = 1, locale: AppLang = 'en'): Promise<PretestQuestion[]> {
   const isFrench = locale === 'fr';
+  const normalizeChoiceLabel = (label: string) => {
+    if (!isFrench) return label;
+    return label
+      .replace(/br[uû]lures?\s+lors\s+de\s+la\s+miction/gi, 'Brûlures en urinant')
+      .replace(/br[uû]lures?\s+lors\s+de\s+la\s+uriner/gi, 'Brûlures en urinant')
+      .replace(/douleurs?\s+lors\s+de\s+la\s+miction/gi, 'Douleur en urinant');
+  };
 
   // 1) questions (prompt_french used when locale is 'fr')
   const { data: q, error: qErr } = await supabase
@@ -39,7 +46,7 @@ export async function fetchPretest(version = 1, locale: AppLang = 'en'): Promise
     const raw = ch as any;
     const choice: PretestChoice = {
       ...raw,
-      label: isFrench && raw.label_french != null ? raw.label_french : raw.label,
+      label: normalizeChoiceLabel(isFrench && raw.label_french != null ? raw.label_french : raw.label),
     };
     (byQ[qid] ??= []).push(choice);
   });

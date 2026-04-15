@@ -5,6 +5,7 @@ import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 import { useTestSession } from '@/src/features/test-session/testSession.store';
 import { upsertLogResultsFlat } from '@/src/features/test-logs/testLogs.api';
 import { getLogBySession } from '@/src/features/test-logs/testLogs.api';
+import { useTranslations } from '@/src/i18n';
 
 
 interface PHResultSelectorProps {
@@ -13,6 +14,7 @@ interface PHResultSelectorProps {
 }
 
 export default function PHResultSelector({ title = "Log pH Results", SvgImage }: PHResultSelectorProps) {
+  const { t } = useTranslations();
   const [selectedPH, setSelectedPH] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const session = useTestSession(s => s.session);
@@ -92,7 +94,7 @@ export default function PHResultSelector({ title = "Log pH Results", SvgImage }:
       </Text>
       
       <Text style={[styles.instructionText, dynamicStyles.instructionText]}>
-        Refer to the color guide in the kit, and select the color that best matches your pH result:
+        {t.phResultGuideInstruction}
       </Text>
       
       <View style={styles.phOptionsContainer}>

@@ -1,14 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslations } from '@/src/i18n';
 
 interface SmallTimerCardProps {
   timeRemaining: number;
 }
 
 export default function SmallTimerCard({ timeRemaining }: SmallTimerCardProps) {
+  const { t } = useTranslations();
   return (
     <View style={styles.smallTimerCard}>
-      <Text style={styles.smallTimerTitle}>Results will be ready in...</Text>
+      <Text style={styles.smallTimerTitle}>{t.testStepResultsReadyIn}</Text>
       <Text style={styles.smallTimerText}>
         {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
       </Text>

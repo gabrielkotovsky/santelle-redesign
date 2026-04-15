@@ -166,12 +166,21 @@ export default function PreTestQuestions() {
     toggleMulti(questionId, choiceId);
   };
 
+  const normalize = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
   const isNoneOfAboveQuestion = (question: PretestQuestion): boolean => {
-    const prompt = question.prompt.toLowerCase();
+    const prompt = normalize(question.prompt);
+    const slug = normalize(question.slug ?? '');
     return (
       prompt.includes('have any of these applied to you recently') ||
-      prompt.includes('ces situations se sont appliquees recemment') ||
-      prompt.includes('ces situations se sont appliquées récemment')
+      prompt.includes('avez-vous ressenti') ||
+      prompt.includes('elements suivants recemment') ||
+      prompt.includes('elements recemment') ||
+      slug.includes('context')
     );
   };
 
@@ -331,7 +340,7 @@ export default function PreTestQuestions() {
               option={{
                 id: `none-${question.id}`,
                 question_id: question.id,
-                label: appLang === 'fr' ? 'Aucune des options' : 'None of the above',
+                label: appLang === 'fr' ? 'Aucune des réponses ci-dessus' : 'None of the above',
                 value: 'none_of_the_above',
                 sort_order: 999,
                 active: true,
@@ -458,10 +467,10 @@ export default function PreTestQuestions() {
               (!canContinue() || isSaving) && styles.continueButtonTextDisabled
             ]}>
               {isSaving 
-                ? 'Saving...' 
+                ? (appLang === 'fr' ? 'Enregistrement...' : 'Saving...') 
                 : (currentPage === questions.length - 1 
-                    ? (isEditMode ? 'Save Changes' : 'Start Test') 
-                    : 'Continue'
+                    ? (isEditMode ? (appLang === 'fr' ? 'Enregistrer les modifications' : 'Save Changes') : (appLang === 'fr' ? 'Démarrer le test' : 'Start Test')) 
+                    : (appLang === 'fr' ? 'Continuer' : 'Continue')
                   )
               }
             </Text>

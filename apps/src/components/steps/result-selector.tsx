@@ -6,6 +6,7 @@ import { upsertLogResultsFlat, type TestLog, analyzeLog, fetchLogById } from '@/
 import { router } from 'expo-router';
 import TestLogModal from '../modals/test-result';
 import { supabase } from '@/src/services/supabase';
+import { useTranslations } from '@/src/i18n';
 
 interface ResultSelectorProps {
   title?: string;
@@ -15,6 +16,7 @@ type BiomarkerKeyUI = 'H₂O₂' | 'LE' | 'SNA' | 'β-G' | 'NAG';
 type TestResultsState = Record<BiomarkerKeyUI, string>;
 
 export default function ResultSelector({ title = "Select your results" }: ResultSelectorProps) {
+  const { t } = useTranslations();
   const [selectedTestResults, setSelectedTestResults] = useState<TestResultsState>({
     'H₂O₂': '',
     'LE':   '',
@@ -170,7 +172,7 @@ export default function ResultSelector({ title = "Select your results" }: Result
       <View style={[styles.resultCard, dynamicStyles.resultCard]}>
         <Text style={[styles.resultCardTitle, dynamicStyles.resultCardTitle]}>{title}</Text>
         <Text style={[styles.instructionText, dynamicStyles.instructionText]}>
-        Refer to the color guide in the kit, and select the color that best matches each result:
+        {t.testResultGuideInstruction}
         </Text>
 
         <View style={styles.testResultsGrid}>
@@ -179,6 +181,14 @@ export default function ResultSelector({ title = "Select your results" }: Result
           {renderRow('SNA', ['+', '±', '-'])}
           {renderRow('β-G', ['+', '±', '-'])}
           {renderRow('NAG', ['+', '±', '-'])}
+          <View style={styles.calibrationRow}>
+            <View style={styles.calibrationInfoContainer}>
+              <Text style={styles.calibrationNote} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+                {t.calibrationMarkerNote}
+              </Text>
+            </View>
+            <Text style={styles.calibrationLabel}>CAL</Text>
+          </View>
         </View>
 
         <ShrinkableTouchable
@@ -189,7 +199,7 @@ export default function ResultSelector({ title = "Select your results" }: Result
           accessibilityLabel="Complete test"
         >
           <Text style={dynamicStyles.completeText}>
-            {saving ? 'Saving…' : 'Complete test'}
+            {saving ? t.savingResults : t.completeTest}
           </Text>
         </ShrinkableTouchable>
       </View>
@@ -238,13 +248,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#721422',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   testResultsGrid: { width: '100%', flex: 1, justifyContent: 'flex-start' },
-  testResultRow: { flexDirection: 'row', marginBottom: 20, paddingHorizontal: 0, justifyContent: 'space-between' },
+  testResultRow: { flexDirection: 'row', marginBottom: 14, paddingHorizontal: 0, justifyContent: 'space-between' },
   testResultLabel: { fontSize: 16, fontFamily: 'Poppins-SemiBold', color: '#721422', width: 60, textAlign: 'left', alignSelf: 'flex-start', marginTop: 15 },
   testResultOptions: { flexDirection: 'row', flex: 1, justifyContent: 'flex-end', marginRight: 15 },
   testResultOption: { alignItems: 'center', padding: 8, borderRadius: 12, borderWidth: 2, borderColor: 'transparent', marginLeft: 8 },
   testResultColor: { width: 30, height: 30, borderRadius: 6, marginBottom: 6, borderWidth: 0.3, borderColor: 'rgba(0, 0, 0, 1)' },
   testResultValue: { fontSize: 12, fontFamily: 'Poppins-SemiBold', color: '#721422', textAlign: 'center' },
+  calibrationRow: { flexDirection: 'row', marginBottom: 12, justifyContent: 'space-between', alignItems: 'center' },
+  calibrationInfoContainer: { flex: 1, marginRight: 15, alignItems: 'flex-end' },
+  calibrationLabel: { fontSize: 16, fontFamily: 'Poppins-SemiBold', color: '#721422', width: 60, textAlign: 'left', alignSelf: 'flex-start' },
+  calibrationNote: { fontSize: 11, lineHeight: 14, fontFamily: 'Poppins-Regular', color: '#721422', textAlign: 'right', opacity: 0.8 },
 });

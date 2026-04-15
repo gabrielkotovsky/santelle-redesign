@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslations } from '@/src/i18n';
 
 interface PHTimerCardProps {
   timeRemaining: number;
@@ -7,15 +8,16 @@ interface PHTimerCardProps {
 }
 
 export default function PHTimerCard({ timeRemaining, onSkip }: PHTimerCardProps) {
+  const { t } = useTranslations();
   return (
     <View style={styles.timerContainer}>
-      <Text style={styles.timerTitle}>Waiting for pH results...</Text>
+      <Text style={styles.timerTitle}>{t.testStepWaitingPHResults}</Text>
       <Text style={styles.timerText}>
         {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
       </Text>
-      <Text style={styles.timerSubtext}>Please wait before proceeding to step 6</Text>
+      <Text style={styles.timerSubtext}>{t.testStepPleaseWaitStep6}</Text>
       <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
-        <Text style={styles.skipButtonText}>Skip</Text>
+        <Text style={styles.skipButtonText}>{t.skip}</Text>
       </TouchableOpacity>
     </View>
   );

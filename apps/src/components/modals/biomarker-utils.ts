@@ -11,8 +11,8 @@ const GREY  = '#9E9E9E';
 
 const norm = (s?: string | null) => (s ?? '').replace('−', '-').trim();
 
-const USER_MANUAL_URL_EN = 'https://kvagkkkyashwuvbkegvo.supabase.co/storage/v1/object/public/manufacturer/SantelleUserManualEnglish.pdf';
-const USER_MANUAL_URL_FR = 'https://kvagkkkyashwuvbkegvo.supabase.co/storage/v1/object/public/manufacturer/SantelleUserManualFrench.pdf';
+const USER_MANUAL_URL_EN = 'https://kvagkkkyashwuvbkegvo.supabase.co/storage/v1/object/public/manufacturer/SantelleUserManualEnglish.pdf?download=SantelleUserManualEnglish.pdf';
+const USER_MANUAL_URL_FR = 'https://kvagkkkyashwuvbkegvo.supabase.co/storage/v1/object/public/manufacturer/SantelleUserManualFrench.pdf?download=SantelleUserManualFrench.pdf';
 
 function getDisclaimer(lang: BiomarkerLang): string {
   if (lang === 'fr') {
