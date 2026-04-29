@@ -132,6 +132,7 @@ export default function EducationScreen() {
         data={articles}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        style={styles.list}
         contentContainerStyle={styles.articlesContainer}
         refreshControl={
           <RefreshControl
@@ -163,6 +164,9 @@ export default function EducationScreen() {
 }
 
 const styles = StyleSheet.create({
+  list: {
+    backgroundColor: 'transparent',
+  },
   learnBubble: {
     position: 'absolute',
     top: 65,

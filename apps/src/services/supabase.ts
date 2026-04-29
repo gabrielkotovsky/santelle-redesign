@@ -30,6 +30,7 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
+      flowType: 'pkce',
       storage: AsyncStorage,
       // Reduce token refresh threshold to refresh earlier
       // This prevents the token from getting too close to expiration

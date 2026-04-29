@@ -2,7 +2,7 @@
   "expo": {
     "name": "Santelle",
     "slug": "santelle-remastered",
-    "version": "2.0.1",
+    "version": "2.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "santelleremastered",
@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": false,
       "usesAppleSignIn": true,
-      "buildNumber": "5",
+      "buildNumber": "14",
       "splash": {
         "image": "./assets/images/background-mobile.jpg",
         "resizeMode": "cover",
@@ -32,6 +32,7 @@
       "bundleIdentifier": "com.santelle.app"
     },
     "android": {
+      "package": "com.santelle.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/icon.png",
@@ -59,13 +60,18 @@
           }
         }
       ],
-      "expo-web-browser",
       [
         "@sentry/react-native/expo",
         {
           "url": "https://sentry.io/",
           "project": "santelle",
           "organization": "santelle"
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.205692260060-4gs5501dlgprhsjob64g3a2hm1aur1ej"
         }
       ]
     ],

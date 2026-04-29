@@ -219,7 +219,7 @@ export default function WelcomeCard({
         {/* Text Content */}
         <View style={styles.textContainer}>
           <Text style={dynamicStyles.greetingText}>
-            Hello {displayName || t.helloThere},
+            {t.greetingHello} {displayName || t.helloThere},
           </Text>
           <Text style={dynamicStyles.daysText}>{daysMessage}</Text>
         </View>

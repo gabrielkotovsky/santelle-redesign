@@ -1,5 +1,6 @@
 import React from 'react';
-import { Platform, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { Platform, StatusBar, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { XIcon } from '../icons/svg/XIcon';
 
 interface ProgressCardProps {
   currentStep: number;
@@ -26,7 +27,7 @@ export default function ProgressCard({
     },
     progressCard: {
       backgroundColor: 'rgba(255, 255, 255, 0.4)',
-      paddingTop: Platform.OS === 'android' ? 30 : 60,
+      paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) + 50 : 60,
     },
     step: {
       alignItems: 'center',
@@ -102,7 +103,7 @@ export default function ProgressCard({
                 onPress={onCancel}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={styles.cancelButtonText}>✕</Text>
+                <XIcon size={14} color="#FFFFFF" />
               </TouchableOpacity>
             )}
           </View>
@@ -137,18 +138,12 @@ const styles = StyleSheet.create({
     width: 25,
     height: 25,
     borderRadius: 99,
-    backgroundColor: 'rgba(255, 0, 0, 0.4)',
+    backgroundColor: '#D92D20',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 1)',
     marginLeft: -5,
     marginRight: 5,
-  },
-  cancelButtonText: {
-    color: 'rgba(255, 0, 0, 1)',
-    fontSize: 24,
-    fontFamily: 'Poppins-SemiBold',
-    textAlign: 'center',
   },
 });

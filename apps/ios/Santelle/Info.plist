@@ -25,7 +25,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>2.0.1</string>
+    <string>2.0.2</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -43,9 +43,15 @@
           <string>exp+santelle-remastered</string>
         </array>
       </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>com.googleusercontent.apps.205692260060-4gs5501dlgprhsjob64g3a2hm1aur1ej</string>
+        </array>
+      </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>5</string>
+    <string>13</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>LSMinimumSystemVersion</key>

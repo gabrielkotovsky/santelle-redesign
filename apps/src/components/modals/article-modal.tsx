@@ -79,13 +79,15 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
               </Text>
 
               {/* Article Content */}
-              <View style={{ paddingHorizontal: 30, marginRight: 20 }}>
+              <View style={styles.contentContainer}>
                 <Markdown
                   style={{
                     body: {
                       color: dynamicStyles.contentText.color,
                       flexWrap: 'wrap',
                       marginTop: 0,
+                      marginBottom: 0,
+                      width: '100%',
                     },
                     paragraph: {
                       fontSize: 15,
@@ -94,6 +96,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
                       color: dynamicStyles.contentText.color,
                       flexWrap: 'wrap',
                       marginTop: 0,
+                      width: '100%',
                     },
                     heading1: {
                       fontSize: 24,
@@ -101,6 +104,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
                       fontFamily: 'Poppins-SemiBold',
                       color: dynamicStyles.contentText.color,
                       flexWrap: 'wrap',
+                      width: '100%',
                     },
                     heading2: {
                       fontSize: 20,
@@ -110,6 +114,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
                       flexWrap: 'wrap',
                       marginTop: 20,
                       marginBottom: 10,
+                      width: '100%',
                     },
                     heading3: {
                       fontSize: 18,
@@ -119,6 +124,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
                       flexWrap: 'wrap',
                       marginTop: 20,
                       marginBottom: 10,
+                      width: '100%',
                     },
                     strong: {
                       fontFamily: 'Poppins-SemiBold',
@@ -140,17 +146,20 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
                       flexWrap: 'wrap',
                       flex: 1,
                       marginLeft: 0,
+                      marginBottom: 3,
+                      width: '100%',
                     },
                     bullet_list: {
-                      marginLeft: -5,
+                      marginLeft: 0,
                       marginBottom: 10,
                       marginTop: 0,
+                      width: '100%',
                     },
                     bullet_list_icon: {
-                      fontSize: 30,
+                      fontSize: 16,
                       color: dynamicStyles.contentText.color,
-                      marginTop: 7.5,
-                      marginRight: 4,
+                      marginTop: 1,
+                      marginRight: 6,
                     },
                     ordered_list: {
                     },
@@ -214,6 +223,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     paddingHorizontal: 30,
     marginBottom: 30,
+  },
+  contentContainer: {
+    paddingHorizontal: 30,
+    width: '100%',
   },
   content: {
     fontSize: 15,

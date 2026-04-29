@@ -3,16 +3,17 @@ import { Alert, Platform, StyleSheet, Text, View, Linking, Pressable } from 'rea
 import { router } from 'expo-router';
 import AppleSignInButton from '@/src/components/buttons/AppleSignInButton';
 import EmailSignInButton from '@/src/components/buttons/EmailSignInButton';
+import GoogleSignInButton from '@/src/components/buttons/GoogleSignInButton';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { useAuthStore } from '@/src/features/auth/auth.store';
 import { useAuthOnboardingTranslations } from '@/src/features/auth/useAuthOnboardingTranslations';
-import { 
+import {
   getUserNavigationRoute,
   getUser,
   getQuestionnaireEntry,
   createQuestionnaireEntry,
-  saveSignUpLanguageToOnboarding
+  saveSignUpLanguageToOnboarding,
 } from '@/src/features/auth/auth.api';
 
 const TERMS_URL_EN = 'https://santellehealth.com/terms-and-conditions';
@@ -23,10 +24,41 @@ const PRIVACY_URL_FR = 'https://santellehealth.com/politique-de-confidentialit%C
 export default function Landing() {
   const signUpLanguage = useAuthStore((s) => s.signUpLanguage);
   const setSignUpLanguage = useAuthStore((s) => s.setSignUpLanguage);
+  const appleSignInLoading = useAuthStore((s) => s.appleSignInLoading);
+  const googleSignInLoading = useAuthStore((s) => s.googleSignInLoading);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { t, lang } = useAuthOnboardingTranslations();
+  const isAuthBusy = appleSignInLoading || googleSignInLoading;
+  const [routingAfterAuth, setRoutingAfterAuth] = React.useState(false);
 
   const termsUrl = lang === 'fr' ? TERMS_URL_FR : TERMS_URL_EN;
   const privacyUrl = lang === 'fr' ? PRIVACY_URL_FR : PRIVACY_URL_EN;
+
+  const handleAuthSuccess = async () => {
+    if (routingAfterAuth) return;
+    setRoutingAfterAuth(true);
+    try {
+      const currentUser = await getUser();
+      if (currentUser) {
+        const questionnaireEntry = await getQuestionnaireEntry(currentUser.id);
+        if (!questionnaireEntry) {
+          await createQuestionnaireEntry(currentUser.id);
+        }
+        const storedLanguage = useAuthStore.getState().signUpLanguage;
+        await saveSignUpLanguageToOnboarding(currentUser.id, storedLanguage);
+      }
+    } catch {
+      // Continue navigating even if hydration fails; route resolver handles fallbacks.
+    }
+    const navigationRoute = await getUserNavigationRoute();
+    router.replace(navigationRoute as any);
+  };
+
+  React.useEffect(() => {
+    if (isAuthenticated && !routingAfterAuth) {
+      void handleAuthSuccess();
+    }
+  }, [isAuthenticated, routingAfterAuth]);
 
   return (
     <ScreenBackground>
@@ -41,34 +73,27 @@ export default function Landing() {
             <Text style={styles.subtitle}></Text>
             <EmailSignInButton
               label={t.continueWithEmail}
+              disabled={isAuthBusy}
               onPress={() => {
                 router.push('/(auth)/email');
+              }}
+            />
+            <GoogleSignInButton
+              label={t.continueWithGoogle}
+              loadingLabel={t.signingIn}
+              disabled={isAuthBusy}
+              onSuccess={handleAuthSuccess}
+              onError={(err) => {
+                const msg = err?.message || err?.code || '';
+                Alert.alert(t.error, t.googleSignInFailed + (msg ? `\n\n${msg}` : ''));
               }}
             />
             {Platform.OS === 'ios' && (
               <AppleSignInButton
                 label={t.continueWithApple}
                 loadingLabel={t.signingIn}
-                onSuccess={async () => {
-                  setTimeout(async () => {
-                    let currentUser = null;
-                    try {
-                      currentUser = await getUser();
-                      if (currentUser) {
-                        const questionnaireEntry = await getQuestionnaireEntry(currentUser.id);
-                        if (!questionnaireEntry) {
-                          await createQuestionnaireEntry(currentUser.id);
-                        }
-                        const storedLanguage = useAuthStore.getState().signUpLanguage;
-                        await saveSignUpLanguageToOnboarding(currentUser.id, storedLanguage);
-                      }
-                    } catch (error) {
-                      // Handle error but continue
-                    }
-                    const navigationRoute = await getUserNavigationRoute();
-                    router.replace(navigationRoute as any);
-                  }, 100);
-                }}
+                disabled={isAuthBusy}
+                onSuccess={handleAuthSuccess}
                 onError={(err) => {
                   const msg = err?.message || err?.code || '';
                   Alert.alert(t.error, t.appleSignInFailed + (msg ? `\n\n${msg}` : ''));

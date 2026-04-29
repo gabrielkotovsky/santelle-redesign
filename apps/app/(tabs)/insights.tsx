@@ -132,6 +132,7 @@ export default function InsightsScreen() {
       )}
       
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl
@@ -246,6 +247,9 @@ export default function InsightsScreen() {
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    backgroundColor: 'transparent',
+  },
   content: {
     paddingHorizontal: 20,
     paddingTop: 20,

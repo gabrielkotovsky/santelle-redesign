@@ -5,7 +5,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, Modal, Platform, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { router } from 'expo-router';
@@ -447,7 +447,21 @@ function getRecommendedArticleLinks(profileKey: IndicativeCard['profileKey'], is
   return infectionLinks;
 }
 
-async function getArticlesByKnownSlugs(slugs: string[], lang: string): Promise<Article[]> {
+function normalizeArticleText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function getArticlesByKnownSlugs(
+  slugs: string[],
+  lang: string,
+  fallbackTitle?: string
+): Promise<Article[]> {
   const picked: Article[] = [];
   for (const slug of slugs) {
     try {
@@ -457,6 +471,26 @@ async function getArticlesByKnownSlugs(slugs: string[], lang: string): Promise<A
       // Continue to next slug
     }
   }
+
+  // Fallback for title/slug drift in CMS content.
+  if (!picked.length && fallbackTitle) {
+    try {
+      const articles = await listArticles({ locale: lang, limit: 100 });
+      const normalizedTarget = normalizeArticleText(fallbackTitle);
+      const byTitle = articles.find((article) => {
+        const normalizedArticleTitle = normalizeArticleText(article.title ?? '');
+        return (
+          normalizedArticleTitle === normalizedTarget ||
+          normalizedArticleTitle.includes(normalizedTarget) ||
+          normalizedTarget.includes(normalizedArticleTitle)
+        );
+      });
+      if (byTitle && !picked.some((a) => a.id === byTitle.id)) picked.push(byTitle);
+    } catch {
+      // Keep empty result and show existing "not found" alert.
+    }
+  }
+
   return picked;
 }
 
@@ -686,7 +720,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
   if (!log) return null;
 
   const handleRecommendedArticlePress = async (link: RecommendedArticleLink) => {
-    const article = (await getArticlesByKnownSlugs(link.slugs, lang))[0];
+    const article = (await getArticlesByKnownSlugs(link.slugs, lang, link.title))[0];
     if (article) {
       setSelectedArticle(article);
       setArticleModalVisible(true);
@@ -992,7 +1026,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
               ))}
             <Text style={styles.recommendedDisclaimer}>
               {lang === 'fr'
-                ? "Ces informations sont une interpretation generale des instructions du kit et ne constituent pas un avis medical. Pour un avis medical, consultez un professionnel de sante."
+                ? "Ces informations sont une interprétation générale des instructions du kit et ne constituent pas un avis médical. Pour un avis médical, consultez un professionnel de santé."
                 : 'This info is a general interpretation from the kit instructions and is not medical advice. For medical guidance, consult a professional.'}
             </Text>
           </View>
@@ -1249,7 +1283,7 @@ const styles = StyleSheet.create({
 
   headerBubble: {
     position: 'absolute',
-    top: 10,
+    top: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) + 4 : 10,
     left: 12,
     right: 12,
     flexDirection: 'row',

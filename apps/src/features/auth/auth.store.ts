@@ -8,6 +8,7 @@ import {
     signOut as apiSignOut,
     requestEmailOtp,
     signInWithApple,
+    signInWithGoogle,
     verifyEmailOtp
 } from './auth.api';
 
@@ -74,11 +75,16 @@ export type AuthState = {
   appleSignInLoading: boolean;
   appleSignInError: string | null;
   
+  // Google Sign-In State
+  googleSignInLoading: boolean;
+  googleSignInError: string | null;
+  
   // Actions
   initialize: () => Promise<void>;
   requestEmailOtp: (email: string) => Promise<void>;
   verifyEmailOtp: (email: string, token: string) => Promise<void>;
   signInWithApple: (identityToken: string, nonce: string) => Promise<void>;
+  signInWithGoogle: (idToken: string, accessToken?: string) => Promise<void>;
   signOut: () => Promise<void>;
   clearError: () => void;
   clearEmailOtpState: () => void;
@@ -108,6 +114,8 @@ export const useAuthStore = create<AuthState>()(
       emailOtpError: null,
       appleSignInLoading: false,
       appleSignInError: null,
+      googleSignInLoading: false,
+      googleSignInError: null,
 
       // Initialize auth state
       initialize: async () => {
@@ -116,7 +124,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           // Get current session
           const session = await apiGetSession();
-          let user = null;
+          let user = session?.user ?? null;
           
           if (session?.user) {
             try {
@@ -133,7 +141,7 @@ export const useAuthStore = create<AuthState>()(
                 });
                 return;
               }
-              throw userError;
+              // Keep session.user fallback so auth state remains consistent if getUser() transiently fails.
             }
           }
           
@@ -153,7 +161,7 @@ export const useAuthStore = create<AuthState>()(
           // Set up auth state change listener
           const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, newSession) => {
-              let newUser = null;
+              let newUser = newSession?.user ?? null;
               
               if (newSession?.user) {
                 try {
@@ -170,7 +178,7 @@ export const useAuthStore = create<AuthState>()(
                     });
                     return;
                   }
-                }
+                } // Keep newSession.user fallback
               }
               
               set({
@@ -300,6 +308,37 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+      // Google Sign-In (native id token via OIDC)
+      signInWithGoogle: async (idToken: string, accessToken?: string) => {
+        set({ googleSignInLoading: true, googleSignInError: null });
+
+        try {
+          const result = await signInWithGoogle(idToken, accessToken);
+
+          if (result.success) {
+            const session = await apiGetSession();
+            const user = session?.user ?? null;
+
+            set({
+              session,
+              user,
+              isAuthenticated: !!session && !!user,
+              googleSignInLoading: false,
+              googleSignInError: null,
+              error: null,
+            });
+          } else {
+            throw new Error(result.message);
+          }
+        } catch (error: any) {
+          set({
+            googleSignInError: error.message || 'Failed to sign in with Google',
+            googleSignInLoading: false,
+          });
+          throw error;
+        }
+      },
+
       // Sign out
       signOut: async () => {
         set({ loading: true, error: null });
@@ -316,6 +355,7 @@ export const useAuthStore = create<AuthState>()(
             emailOtpSent: false,
             emailOtpError: null,
             appleSignInError: null,
+            googleSignInError: null,
           });
         } catch (error: any) {
           set({
@@ -330,7 +370,7 @@ export const useAuthStore = create<AuthState>()(
       refreshSession: async () => {
         try {
           const session = await apiGetSession();
-          let user = null;
+          let user = session?.user ?? null;
           
           if (session?.user) {
             try {
@@ -347,7 +387,7 @@ export const useAuthStore = create<AuthState>()(
                 });
                 return;
               }
-              throw userError;
+              // Keep session.user fallback so auth state remains consistent.
             }
           }
           
@@ -373,7 +413,7 @@ export const useAuthStore = create<AuthState>()(
           // Create a fresh listener
           const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, newSession) => {
-              let newUser = null;
+              let newUser = newSession?.user ?? null;
               
               if (newSession?.user) {
                 try {
@@ -389,7 +429,7 @@ export const useAuthStore = create<AuthState>()(
                     });
                     return;
                   }
-                }
+                } // Keep newSession.user fallback
               }
               
               set({
@@ -494,6 +534,15 @@ export const useAppleAuth = () => {
     appleSignInLoading: store.appleSignInLoading,
     appleSignInError: store.appleSignInError,
     signInWithApple: store.signInWithApple,
+  };
+};
+
+export const useGoogleAuth = () => {
+  const store = useAuthStore();
+  return {
+    googleSignInLoading: store.googleSignInLoading,
+    googleSignInError: store.googleSignInError,
+    signInWithGoogle: store.signInWithGoogle,
   };
 };
 

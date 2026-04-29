@@ -54,6 +54,36 @@ export async function signInWithApple(identityToken: string, nonce: string) {
     }
 }
 
+{/* SIGN IN / SIGN UP WITH GOOGLE (native ID token, OIDC) */}
+
+export async function signInWithGoogle(idToken: string, accessToken?: string) {
+    try {
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: idToken,
+        access_token: accessToken,
+      });
+
+      if (error) {
+        return {
+          success: false,
+          message: error.message || 'Failed to sign in with Google. Please try again.',
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Successfully signed in with Google!',
+        user: data.user,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error?.message || 'An unexpected error occurred during Google sign-in.',
+      };
+    }
+}
+
 {/* HELPERS */}
 
 export async function signOut() {
@@ -73,8 +103,23 @@ export async function getUser() {
     return data.user ?? null;
 }
 
+async function getCurrentUserSafe() {
+    try {
+        const user = await getUser();
+        if (user) return user;
+    } catch {
+        // Fall back to session user below.
+    }
+    try {
+        const session = await getSession();
+        return session?.user ?? null;
+    } catch {
+        return null;
+    }
+}
+
 export async function needsOnboarding(): Promise<boolean> {
-    const user = await getUser();
+    const user = await getCurrentUserSafe();
     if (!user) return false;
     
     // Check if user has completed onboarding by querying the onboarding_responses table
@@ -93,7 +138,7 @@ export async function needsOnboarding(): Promise<boolean> {
 }
 
 export async function needsQuestionnaire(): Promise<boolean> {
-    const user = await getUser();
+    const user = await getCurrentUserSafe();
     if (!user) return false;
     
     // Check if user has completed all questionnaire questions
@@ -103,7 +148,7 @@ export async function needsQuestionnaire(): Promise<boolean> {
 
 export async function getUserNavigationRoute(): Promise<string> {
     try {
-        const user = await getUser();
+        const user = await getCurrentUserSafe();
         if (!user) return '/(auth)/landing';
         
         // Check onboarding status
