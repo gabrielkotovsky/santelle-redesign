@@ -143,6 +143,8 @@ export default function BirthDate() {
               <Picker
                 selectedValue={selectedMonth}
                 onValueChange={handleMonthChange}
+                mode={Platform.OS === 'android' ? 'dropdown' : undefined}
+                dropdownIconColor="#721422"
                 style={styles.picker}
                 itemStyle={styles.pickerItem}
               >
@@ -161,6 +163,8 @@ export default function BirthDate() {
               <Picker
                 selectedValue={clampDay(selectedYear, selectedMonth, selectedDay)}
                 onValueChange={handleDayChange}
+                mode={Platform.OS === 'android' ? 'dropdown' : undefined}
+                dropdownIconColor="#721422"
                 style={styles.picker}
                 itemStyle={styles.pickerItem}
               >
@@ -179,6 +183,8 @@ export default function BirthDate() {
               <Picker
                 selectedValue={selectedYear}
                 onValueChange={handleYearChange}
+                mode={Platform.OS === 'android' ? 'dropdown' : undefined}
+                dropdownIconColor="#721422"
                 style={styles.picker}
                 itemStyle={styles.pickerItem}
               >
@@ -276,15 +282,15 @@ const styles = StyleSheet.create({
   },
   monthPicker: {
     flex: 2,
-    height: 180,
+    height: 84,
   },
   dayPicker: {
     flex: 1,
-    height: 180,
+    height: 84,
   },
   yearPicker: {
     flex: 1.5,
-    height: 180,
+    height: 84,
   },
   pickerLabel: {
     fontSize: 12,
@@ -296,12 +302,13 @@ const styles = StyleSheet.create({
   },
   picker: {
     width: '100%',
-    height: 150,
+    height: 52,
+    color: '#721422',
   },
   pickerItem: {
     fontSize: 16,
     fontFamily: 'Poppins-Medium',
-    height: 150,
+    height: 52,
     color: '#721422',
   },
   buttonContainer: {

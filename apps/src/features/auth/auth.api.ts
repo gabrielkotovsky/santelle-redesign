@@ -276,7 +276,8 @@ export async function getQuestionnaireEntry(userId: string) {
         .from('questionnaire')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .limit(1)
+        .maybeSingle();
     
     if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
         throw error;
@@ -291,16 +292,21 @@ export async function saveQuestionnaireAnswer(
     answerValue: number | number[]
 ) {
     const columnName = `q${questionNumber}`;
-    
+
+    // Ensure a questionnaire row exists before updating answers.
+    const existingEntry = await getQuestionnaireEntry(userId);
+    if (!existingEntry) {
+        await createQuestionnaireEntry(userId);
+    }
+
     const { data, error } = await supabase
         .from('questionnaire')
         .update({ [columnName]: answerValue })
         .eq('user_id', userId)
-        .select()
-        .single();
-    
+        .select();
+
     if (error) throw error;
-    return data;
+    return data?.[0] ?? null;
 }
 
 export async function markQuestionnaireComplete(userId: string) {
@@ -308,11 +314,10 @@ export async function markQuestionnaireComplete(userId: string) {
         .from('questionnaire')
         .update({ questionnaire_complete: true })
         .eq('user_id', userId)
-        .select()
-        .single();
+        .select();
     
     if (error) throw error;
-    return data;
+    return data?.[0] ?? null;
 }
 
 export async function hasCompletedQuestionnaire(userId: string): Promise<boolean> {

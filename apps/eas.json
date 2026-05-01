@@ -7,14 +7,22 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
+      "channel": "development"
     },
     "preview": {
       "developmentClient": false,
       "distribution": "internal",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "preview"
     },
     "testflight": {
       "extends": "production",
@@ -22,7 +30,8 @@
       "ios": {
         "simulator": false,
         "buildConfiguration": "Release"
-      }
+      },
+      "channel": "testflight"
     },
     "production": {
       "autoIncrement": true,
@@ -34,7 +43,8 @@
       },
       "android": {
         "buildType": "app-bundle"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {

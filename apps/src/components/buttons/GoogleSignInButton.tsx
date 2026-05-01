@@ -42,6 +42,7 @@ function configureGoogleSignIn() {
   if (configured) return;
   const mod = loadGoogleSigninModule();
   if (!mod) return;
+  if (!WEB_CLIENT_ID) return;
   mod.GoogleSignin.configure({
     iosClientId: IOS_CLIENT_ID,
     webClientId: WEB_CLIENT_ID,
@@ -57,6 +58,24 @@ function extractIdToken(signInResult: any): string | null {
   }
   if (signInResult.data?.idToken) return signInResult.data.idToken;
   return null;
+}
+
+async function resolveGoogleTokens(GoogleSignin: any, signInResult: any) {
+  let idToken = extractIdToken(signInResult);
+  let accessToken: string | undefined;
+
+  // Some Android builds return tokens only from getTokens(), not signIn().
+  if (!idToken) {
+    try {
+      const tokens = await GoogleSignin.getTokens();
+      idToken = tokens?.idToken ?? null;
+      accessToken = tokens?.accessToken;
+    } catch {
+      // Keep fallback behavior below; we'll raise a clearer configuration error.
+    }
+  }
+
+  return { idToken, accessToken };
 }
 
 export default function GoogleSignInButton({
@@ -94,6 +113,13 @@ export default function GoogleSignInButton({
       return;
     }
     const { GoogleSignin, statusCodes } = mod;
+    if (!WEB_CLIENT_ID) {
+      Alert.alert(
+        'Google Sign-In not configured',
+        'Missing EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in this build. Add it to EAS environment variables and rebuild.'
+      );
+      return;
+    }
 
     setLoading(true);
     try {
@@ -106,14 +132,14 @@ export default function GoogleSignInButton({
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const result = await GoogleSignin.signIn();
 
-      const idToken = extractIdToken(result);
+      const { idToken, accessToken } = await resolveGoogleTokens(GoogleSignin, result);
       if (!idToken) {
         throw new Error(
           'No idToken returned by Google. Verify Web Client ID is configured for the native sign-in.'
         );
       }
 
-      await authStoreSignInWithGoogle(idToken);
+      await authStoreSignInWithGoogle(idToken, accessToken);
 
       if (onSuccess) {
         const { user } = useAuthStore.getState();
