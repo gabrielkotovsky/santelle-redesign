@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": false,
       "usesAppleSignIn": true,
-      "buildNumber": "14",
+      "buildNumber": "16",
       "splash": {
         "image": "./assets/images/background-mobile.jpg",
         "resizeMode": "cover",
@@ -29,7 +29,8 @@
           "com.santelle.app.session-refresh"
         ]
       },
-      "bundleIdentifier": "com.santelle.app"
+      "bundleIdentifier": "com.santelle.app",
+      "runtimeVersion": "2.0.3"
     },
     "android": {
       "package": "com.santelle.app",
@@ -40,7 +41,11 @@
         "monochromeImage": "./assets/images/icon.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "runtimeVersion": {
+        "policy": "appVersion"
+      },
+      "versionCode": 4
     },
     "web": {
       "output": "static",
@@ -85,6 +90,9 @@
         "projectId": "e3fd9648-f76b-4760-b2f3-720ac4ac259e"
       }
     },
-    "owner": "gabrielkotovsky"
+    "owner": "gabrielkotovsky",
+    "updates": {
+      "url": "https://u.expo.dev/e3fd9648-f76b-4760-b2f3-720ac4ac259e"
+    }
   }
 }
