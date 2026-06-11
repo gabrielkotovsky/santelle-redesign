@@ -174,6 +174,9 @@ export default function ResultSelector({ title = "Select your results" }: Result
         <Text style={[styles.instructionText, dynamicStyles.instructionText]}>
         {t.testResultGuideInstruction}
         </Text>
+        <Text style={[styles.instructionTip, dynamicStyles.instructionText]}>
+          {t.kitColorCardTip}
+        </Text>
 
         <View style={styles.testResultsGrid}>
           {renderRow('H₂O₂', ['+', '±', '-'])}
@@ -249,6 +252,15 @@ const styles = StyleSheet.create({
     color: '#721422',
     textAlign: 'center',
     marginBottom: 12,
+  },
+  instructionTip: {
+    fontSize: 13,
+    fontFamily: 'Poppins-Regular',
+    color: '#721422',
+    textAlign: 'center',
+    marginTop: -6,
+    marginBottom: 12,
+    opacity: 0.85,
   },
   testResultsGrid: { width: '100%', flex: 1, justifyContent: 'flex-start' },
   testResultRow: { flexDirection: 'row', marginBottom: 14, paddingHorizontal: 0, justifyContent: 'space-between' },

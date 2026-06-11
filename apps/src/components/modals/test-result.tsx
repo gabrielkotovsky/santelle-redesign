@@ -18,6 +18,14 @@ import ChatbotModal from './chatbot-modal';
 import { getBiomarkerDescription, getBiomarkerStatus, getPHStatus } from './biomarker-utils';
 import { supabase } from '@/src/services/supabase';
 import { useTranslations } from '@/src/i18n/useTranslations';
+import {
+  biomarkersFromLog,
+  buildCard,
+  mapAnswersToQuestionnaire,
+  runDiagnostic,
+  type CardKey,
+  type RenderedCard,
+} from '@/src/features/diagnostics';
 
 const SYMPTOM_GROUPING_RULES = [
   { title: 'Pain & irritation', match: /(itch|burn|pain|irrit)/i },
@@ -36,82 +44,6 @@ function groupSymptomLabels(labels: string[]) {
     (groups[rule.title] ??= []).push(label);
   });
   return groups;
-}
-
-type SymptomSupport = {
-  yeast: number;
-  bv: number;
-  trich: number;
-  av: number;
-  irritation: number;
-};
-
-function getSymptomSupport(labels: string[]): SymptomSupport {
-  const text = labels.join(' ').toLowerCase();
-  const countMatches = (terms: string[]) =>
-    terms.reduce((sum, term) => sum + (text.includes(term) ? 1 : 0), 0);
-
-  return {
-    yeast: countMatches([
-      'itch',
-      'itching',
-      'demange',
-      'mycose',
-      'yeast',
-      'thick',
-      'clumpy',
-      'cottage',
-      'white discharge',
-      'pertes blanches',
-    ]),
-    bv: countMatches([
-      'fishy',
-      'odor',
-      'odeur',
-      'grey',
-      'gray',
-      'thin discharge',
-      'vb',
-      'bv',
-      'vaginosis',
-    ]),
-    trich: countMatches([
-      'frothy',
-      'trich',
-      'trichomon',
-      'sti',
-      'ist',
-      'partner',
-      'new partner',
-    ]),
-    av: countMatches([
-      'burn',
-      'burning',
-      'brul',
-      'inflammation',
-      'redness',
-      'douleur',
-      'pain',
-      'yellow discharge',
-      'pertes jaunes',
-    ]),
-    irritation: countMatches([
-      'irrit',
-      'burn',
-      'burning',
-      'brul',
-      'itch',
-      'itching',
-      'demange',
-      'soap',
-      'savon',
-      'douche',
-      'lingette',
-      'parfum',
-      'lubricant',
-      'lubrifiant',
-    ]),
-  };
 }
 
 type Props = {
@@ -133,17 +65,13 @@ type Props = {
 
 type PretestEntry = {
   question_prompt: string;
+  question_slug: string;
   selected_labels: string[];
+  /** Raw choice values (app_pretest_choices.value) used by the diagnostic engine. */
+  selected_values: string[];
+  /** Raw English labels used as fallback by the diagnostic engine. */
+  selected_labels_en: string[];
   type: 'symptoms' | 'context';
-};
-
-type IndicativeCard = {
-  profileKey: 'bv' | 'av' | 'trich' | 'yeast' | 'possible' | 'balance';
-  title: string;
-  summary: string;
-  path: string;
-  bullets: string[];
-  color: string;
 };
 
 type RecommendedArticleLink = {
@@ -152,270 +80,7 @@ type RecommendedArticleLink = {
   slugs: string[];
 };
 
-function getIndicativeCard(log: NonNullable<Props['log']>, isFr: boolean, symptomLabels: string[] = []): IndicativeCard {
-  const pH = typeof log.ph === 'number' ? log.ph : null;
-  const sna = (log.sna ?? '').replace('−', '-').trim();
-  const betaG = (log.beta_g ?? '').replace('−', '-').trim();
-  const nag = (log.nag ?? '').replace('−', '-').trim();
-  const le = (log.le ?? '').replace('−', '-').trim();
-  const h2o2 = (log.h2o2 ?? '').replace('−', '-').trim();
-
-  const highPH = typeof pH === 'number' && pH >= 4.8;
-  const healthyPH = typeof pH === 'number' && pH >= 3.8 && pH <= 4.4;
-  const leStrong = le === '+' || le === '++' || le === '+++';
-  const support = getSymptomSupport(symptomLabels);
-  const hasSymptomInput = symptomLabels.length > 0;
-  const symptomText = symptomLabels.join(' ').toLowerCase();
-  const hasAny = (terms: string[]) => terms.some((term) => symptomText.includes(term));
-  const escalationFlags =
-    hasAny(['severe', 'intense', 'worst', 'fever', 'fievre', 'fièvre']) ||
-    hasAny(['persistent', 'persist', 'continues', 'still', 'week', 'semaine']) ||
-    hasAny(['recurrent', 'again', 'returns', 'every month', 'revient', 'récurrent']) ||
-    hasAny(['pregnan', 'enceinte']) ||
-    hasAny(['no improvement', 'not improving', 'pas mieux', 'sans amélioration']);
-
-  const consultationOnlyPath = isFr
-    ? 'Action recommandée: consultation'
-    : 'Recommended action: consultation';
-  const pharmacyOrConsultPath = isFr
-    ? 'Action recommandée: pharmacie ou consultation'
-    : 'Recommended action: pharmacy care or consultation';
-
-  // Doctor-soon patterns
-  if (sna === '+' || betaG === '+' || (nag === '+' && highPH)) {
-    const likelyKey: 'bv' | 'av' | 'trich' =
-      sna === '+' ? 'bv' : betaG === '+' ? 'av' : 'trich';
-    const likelyStrength = likelyKey === 'bv' ? support.bv > 0 : likelyKey === 'av' ? support.av > 0 : support.trich > 0;
-    const likelyTitle =
-      likelyKey === 'bv'
-        ? isFr
-          ? likelyStrength ? 'Profil probable de vaginose bacterienne (VB)' : 'Profil possible de vaginose bacterienne (VB)'
-          : likelyStrength ? 'Likely bacterial vaginosis (BV) profile' : 'Possible bacterial vaginosis (BV) profile'
-        : likelyKey === 'av'
-          ? isFr
-            ? likelyStrength ? 'Profil probable de VA' : 'Profil possible de VA'
-            : likelyStrength ? 'Likely AV profile' : 'Possible AV profile'
-          : isFr
-            ? likelyStrength ? 'Profil probable de trichomonase' : 'Profil possible de trichomonase'
-            : likelyStrength ? 'Likely trichomoniasis profile' : 'Possible trichomoniasis profile';
-
-    const isConsultOnly = likelyKey === 'av' || likelyKey === 'trich';
-
-    return {
-      profileKey: likelyKey,
-      title: likelyTitle,
-      summary: isFr
-        ? hasSymptomInput ? 'Basé sur vos biomarqueurs et vos symptômes.' : 'Basé sur vos biomarqueurs.'
-        : hasSymptomInput ? 'Based on your test markers and reported symptoms.' : 'Based on your test markers.',
-      path: isConsultOnly ? consultationOnlyPath : pharmacyOrConsultPath,
-      bullets: isFr
-        ? isConsultOnly
-          ? [
-              'Prévoyez une consultation rapidement.',
-              'Notez vos symptômes clés pour la consultation.',
-              'Évitez les produits irritants en attendant.',
-            ]
-          : escalationFlags
-            ? [
-                'Une consultation est préférable dans votre situation.',
-                'La pharmacie peut aider en attendant si nécessaire.',
-                'Refaites un test si les symptômes évoluent.',
-              ]
-            : [
-                'Commencez par un conseil en pharmacie.',
-                'Consultez si les symptômes persistent ou s’aggravent.',
-                'Refaites un test dans quelques jours.',
-              ]
-        : isConsultOnly
-          ? [
-              'Schedule a consultation soon.',
-              'Track key symptoms for the consultation.',
-              'Avoid irritant products in the meantime.',
-            ]
-          : escalationFlags
-            ? [
-                'Consultation is preferred in your situation.',
-                'Pharmacy care can help while waiting, if needed.',
-                'Retest if symptoms change.',
-              ]
-            : [
-                'Start with pharmacy guidance.',
-                'Consult if symptoms persist or worsen.',
-                'Retest in a few days.',
-              ],
-      color: '#F44336',
-    };
-  }
-
-  // Pharmacy optional / moderate patterns
-  if (sna === '±' || betaG === '±' || nag === '±' || leStrong || (nag === '+' && typeof pH === 'number' && pH <= 4.6)) {
-    const scores = {
-      bv: (sna === '±' ? 3 : 0) + support.bv,
-      av: (betaG === '±' ? 3 : 0) + support.av,
-      trich:
-        (nag === '±' && typeof pH === 'number' && pH >= 4.8 ? 3 : 0) +
-        (nag === '±' && (typeof pH !== 'number' || (pH > 4.6 && pH < 4.8)) ? 1 : 0) +
-        support.trich,
-      yeast:
-        (nag === '±' && typeof pH === 'number' && pH <= 4.6 ? 3 : 0) +
-        (nag === '+' && typeof pH === 'number' && pH <= 4.6 ? 3 : 0) +
-        (nag === '±' && (typeof pH !== 'number' || (pH > 4.6 && pH < 4.8)) ? 1 : 0) +
-        support.yeast,
-      irritation: (leStrong ? 2 : 0) + support.irritation,
-    };
-
-    const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    const topScore = ranked[0]?.[1] ?? 0;
-    const topFamilies = ranked.filter(([, score]) => score === topScore).map(([family]) => family);
-    const isMixed = topFamilies.length > 1 || topScore <= 1;
-    const family = (isMixed ? 'possible' : topFamilies[0]) as 'bv' | 'av' | 'trich' | 'yeast' | 'irritation' | 'possible';
-
-    const likelyModerateTitle =
-      family === 'bv'
-        ? isFr
-          ? (support.bv > 0 ? 'Profil probable de vaginose bacterienne (VB)' : 'Profil possible de vaginose bacterienne (VB)')
-          : (support.bv > 0 ? 'Likely bacterial vaginosis (BV) profile' : 'Possible bacterial vaginosis (BV) profile')
-        : family === 'av'
-          ? isFr ? (support.av > 0 ? 'Profil probable de VA' : 'Profil possible de VA') : (support.av > 0 ? 'Likely AV profile' : 'Possible AV profile')
-          : family === 'trich'
-            ? isFr ? (support.trich > 0 ? 'Profil probable de trichomonase' : 'Profil possible de trichomonase') : (support.trich > 0 ? 'Likely trichomoniasis profile' : 'Possible trichomoniasis profile')
-            : family === 'yeast'
-              ? isFr ? (support.yeast > 0 ? 'Profil probable de mycose' : 'Profil possible de mycose') : (support.yeast > 0 ? 'Likely yeast profile' : 'Possible yeast profile')
-              : family === 'irritation'
-                ? isFr ? 'Profil possible d’irritation' : 'Possible irritation profile'
-                : isFr ? 'Profil possible mixte' : 'Possible mixed profile';
-
-    const isConsultOnly = family === 'av' || family === 'trich';
-    const moderateBullets = isFr
-      ? isConsultOnly
-        ? [
-            'Une consultation est recommandée.',
-            'Notez vos symptômes clés.',
-            'Refaites un test selon l’avis médical.',
-          ]
-        : family === 'yeast'
-          ? escalationFlags
-            ? [
-                'Une consultation est préférable dans votre situation.',
-                'Un antifongique OTC peut aider en attendant.',
-                'Refaites un test si les symptômes persistent.',
-              ]
-            : [
-                'Commencez par un antifongique OTC si besoin.',
-                'Demandez conseil en pharmacie.',
-                'Refaites un test dans 5 à 7 jours.',
-              ]
-          : [
-              'Commencez par des mesures simples (hygiène douce).',
-              'Demandez conseil en pharmacie.',
-              'Consultez si les symptômes persistent ou s’aggravent.',
-            ]
-      : isConsultOnly
-        ? [
-            'Consultation is recommended.',
-            'Track key symptoms.',
-            'Retest as advised by your clinician.',
-          ]
-        : family === 'yeast'
-          ? escalationFlags
-            ? [
-                'Consultation is preferred in your situation.',
-                'OTC antifungal care can help while waiting.',
-                'Retest if symptoms persist.',
-              ]
-            : [
-                'Start with OTC antifungal care if needed.',
-                'Ask for pharmacy guidance.',
-                'Retest in 5 to 7 days.',
-              ]
-          : [
-              'Start with simple care (gentle hygiene).',
-              'Use pharmacy guidance.',
-              'Consult if symptoms persist or worsen.',
-            ];
-    return {
-      profileKey: family === 'bv' || family === 'av' || family === 'trich' || family === 'yeast' ? family : 'possible',
-      title: likelyModerateTitle,
-      summary: isFr
-        ? hasSymptomInput ? 'Basé sur vos biomarqueurs et vos symptômes.' : 'Résultat à confirmer.'
-        : hasSymptomInput ? 'Based on your test markers and reported symptoms.' : 'Result needs confirmation.',
-      path: isConsultOnly ? consultationOnlyPath : pharmacyOrConsultPath,
-      bullets: moderateBullets,
-      color: '#FF9800',
-    };
-  }
-
-  // Maintenance path
-  const allResultsNormal =
-    healthyPH &&
-    h2o2 === '-' &&
-    sna === '-' &&
-    betaG === '-' &&
-    nag === '-' &&
-    le === '-';
-
-  if (allResultsNormal && symptomLabels.length > 0) {
-    const yeastSymptomsPresent = support.yeast > 0;
-    const irritationOnly = support.irritation > 0 && support.yeast === 0 && support.bv === 0 && support.trich === 0 && support.av === 0;
-    return {
-      profileKey: yeastSymptomsPresent ? 'yeast' : 'possible',
-      title: yeastSymptomsPresent
-        ? (isFr ? 'Profil probable de mycose' : 'Likely yeast profile')
-        : irritationOnly
-          ? (isFr ? 'Profil possible d’irritation' : 'Possible irritation profile')
-          : (isFr ? 'Profil possible avec symptômes' : 'Possible symptomatic profile'),
-      summary: isFr
-        ? 'Basé sur vos biomarqueurs et vos symptômes.'
-        : 'Based on your test markers and reported symptoms.',
-      path: isFr
-        ? (yeastSymptomsPresent ? 'Action recommandée: pharmacie ou consultation' : 'Action recommandée: auto-soins + suivi')
-        : (yeastSymptomsPresent ? 'Recommended action: pharmacy care or consultation' : 'Recommended action: self-care + follow-up'),
-      bullets: isFr
-        ? [
-            yeastSymptomsPresent
-              ? 'Un antifongique OTC peut être essayé en première intention.'
-              : 'Évitez les produits irritants et maintenez une hygiène douce.',
-            yeastSymptomsPresent
-              ? 'Demandez conseil en pharmacie si besoin.'
-              : 'Un avis en pharmacie peut aider si les symptômes persistent.',
-            'Refaites un test dans 5 à 7 jours, ou plus tôt en cas d’aggravation.',
-          ]
-        : [
-            yeastSymptomsPresent
-              ? 'An OTC antifungal can be used as first-line care.'
-              : 'Avoid irritant products and keep gentle hygiene.',
-            yeastSymptomsPresent
-              ? 'Use pharmacy guidance if needed.'
-              : 'Pharmacy guidance can help if symptoms persist.',
-            'Retest in 5 to 7 days, or sooner if symptoms worsen.',
-          ],
-      color: '#FF9800',
-    };
-  }
-
-  return {
-    profileKey: 'balance',
-    title: (healthyPH && h2o2 === '-' && sna === '-' && betaG === '-' && nag === '-') ? (isFr ? 'Profil d’équilibre sain' : 'Healthy balance profile') : (isFr ? 'Profil possible de léger déséquilibre' : 'Possible mild imbalance profile'),
-    summary: isFr
-      ? 'Aucun signal majeur détecté.'
-      : 'No major warning signals detected.',
-    path: isFr ? 'Action recommandée: maintenance' : 'Recommended action: maintenance',
-    bullets: isFr
-      ? [
-          'Continuez votre routine de maintenance (hygiène douce, probiotiques).',
-          'Aucun traitement n’est nécessaire en l’absence de symptômes.',
-          'Refaites un test en cas de nouveau symptôme.',
-        ]
-      : [
-          'Continue your maintenance routine (gentle hygiene, probiotics).',
-          'No treatment is needed if you have no symptoms.',
-          'Retest if new symptoms appear.',
-        ],
-    color: '#4CAF50',
-  };
-}
-
-function getRecommendedArticleLinks(profileKey: IndicativeCard['profileKey'], isFr: boolean): RecommendedArticleLink[] {
+function getRecommendedArticleLinks(profileKey: CardKey, isFr: boolean): RecommendedArticleLink[] {
   const balanceLinks: RecommendedArticleLink[] = [
     {
       key: 'otc-microbiome',
@@ -577,16 +242,24 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
     () => groupSymptomLabels(symptomLabels),
     [symptomLabels]
   );
-  const indicativeForRecommendations = useMemo(
-    () => (log ? getIndicativeCard(log, lang === 'fr', symptomLabels) : null),
-    [log, lang, symptomLabels]
-  );
+  // Master diagnostic logic v3: pretest answers -> Q1-Q8 -> 4-layer engine -> card.
+  const indicative = useMemo<RenderedCard | null>(() => {
+    if (!log) return null;
+    const answers = mapAnswersToQuestionnaire(
+      journalEntries.map((entry) => ({
+        questionSlug: entry.question_slug,
+        values: entry.selected_values ?? [],
+        labels: entry.selected_labels_en ?? [],
+      }))
+    );
+    return buildCard(runDiagnostic(biomarkersFromLog(log), answers), lang);
+  }, [log, journalEntries, lang]);
   const recommendedLinks = useMemo(
     () =>
-      indicativeForRecommendations
-        ? getRecommendedArticleLinks(indicativeForRecommendations.profileKey, lang === 'fr')
+      indicative
+        ? getRecommendedArticleLinks(indicative.profileKey, lang === 'fr')
         : [],
-    [indicativeForRecommendations, lang]
+    [indicative, lang]
   );
   const contextLabels = useMemo(
     () =>
@@ -632,9 +305,9 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
           supabase
             .from("app_pretest_responses")
             .select(`
-              app_pretest_questions!inner ( prompt, prompt_french, symptom_or_context ),
+              app_pretest_questions!inner ( slug, prompt, prompt_french, symptom_or_context ),
               app_pretest_response_choices (
-                app_pretest_choices!inner ( label, label_french )
+                app_pretest_choices!inner ( label, label_french, value )
               )
             `)
             .eq("test_session_id", testSessionId)
@@ -642,9 +315,9 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
           supabase
             .from("app_pretest_responses")
             .select(`
-              app_pretest_questions!inner ( prompt, prompt_french, symptom_or_context ),
+              app_pretest_questions!inner ( slug, prompt, prompt_french, symptom_or_context ),
               app_pretest_response_choices (
-                app_pretest_choices!inner ( label, label_french )
+                app_pretest_choices!inner ( label, label_french, value )
               )
             `)
             .eq("test_session_id", testSessionId)
@@ -668,17 +341,26 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
             .replace(/douleurs?\s+lors\s+de\s+la\s+miction/gi, 'Douleur en urinant');
         };
 
-        const symptoms: PretestEntry[] = (symptomsResult.data ?? []).map((r: any) => ({
+        const toEntry = (r: any, type: 'symptoms' | 'context'): PretestEntry => ({
           question_prompt: pickPrompt(r),
+          question_slug: r.app_pretest_questions?.slug ?? '',
           selected_labels: (r.app_pretest_response_choices ?? []).map((c: any) => pickLabel(c)),
-          type: 'symptoms' as const,
-        }));
+          selected_values: (r.app_pretest_response_choices ?? []).map(
+            (c: any) => c.app_pretest_choices?.value ?? ''
+          ),
+          selected_labels_en: (r.app_pretest_response_choices ?? []).map(
+            (c: any) => c.app_pretest_choices?.label ?? ''
+          ),
+          type,
+        });
 
-        const context: PretestEntry[] = (contextResult.data ?? []).map((r: any) => ({
-          question_prompt: pickPrompt(r),
-          selected_labels: (r.app_pretest_response_choices ?? []).map((c: any) => pickLabel(c)),
-          type: 'context' as const,
-        }));
+        const symptoms: PretestEntry[] = (symptomsResult.data ?? []).map((r: any) =>
+          toEntry(r, 'symptoms')
+        );
+
+        const context: PretestEntry[] = (contextResult.data ?? []).map((r: any) =>
+          toEntry(r, 'context')
+        );
 
         if (mounted) {
           setJournalEntries([...symptoms, ...context]);
@@ -717,7 +399,7 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
   }, [articleModalVisible, lang]);
 
   // Early return AFTER all hooks
-  if (!log) return null;
+  if (!log || !indicative) return null;
 
   const handleRecommendedArticlePress = async (link: RecommendedArticleLink) => {
     const article = (await getArticlesByKnownSlugs(link.slugs, lang, link.title))[0];
@@ -797,7 +479,6 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
   const created = log.created_at ? new Date(log.created_at) : null;
   const date = created?.toLocaleDateString();
   const time = created?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const indicative = getIndicativeCard(log, lang === 'fr', symptomLabels);
 
   const biomarkers = [
     ['pH', log.ph?.toString()],
@@ -1007,6 +688,17 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
                 </View>
               ))}
             </View>
+
+            {indicative.notes.length > 0 && (
+              <View style={styles.indicativeNotes}>
+                {indicative.notes.map((note, idx) => (
+                  <View key={`note-${idx}`} style={styles.indicativeListRow}>
+                    <Text style={styles.indicativeNoteBullet}>›</Text>
+                    <Text style={styles.indicativeNoteText}>{note}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
           <View style={styles.recommendedSection}>
             <Text style={styles.recommendedTitle}>
@@ -1427,6 +1119,27 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: Colors.light.rush,
     lineHeight: 18,
+  },
+  indicativeNotes: {
+    gap: 4,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(114, 20, 34, 0.25)',
+  },
+  indicativeNoteBullet: {
+    fontSize: 13,
+    color: 'rgba(114, 20, 34, 0.7)',
+    marginRight: 8,
+    marginTop: 1,
+  },
+  indicativeNoteText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: 'Poppins-Regular',
+    fontStyle: 'italic',
+    color: 'rgba(114, 20, 34, 0.75)',
+    lineHeight: 17,
   },
   recommendedSection: {
     marginTop: 6,

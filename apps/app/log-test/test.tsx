@@ -266,10 +266,10 @@ export default function TestScreen() {
     const checkPH = async () => {
       try {
         const log = await getLogBySession(session.id);
+        // Only ever confirm selection — a stale read returning null must not
+        // revoke a selection the user just made (the save may still be in flight).
         if (!cancelled && log?.ph != null) {
           setPhSelected(true);
-        } else if (!cancelled) {
-          setPhSelected(false);
         }
       } catch (e) {
         // Silently handle pH check error
@@ -464,9 +464,10 @@ export default function TestScreen() {
                     }}
                   />
                 ) : (
-                  <PHResultSelector 
+                  <PHResultSelector
                     title={t.step5Title}
                     SvgImage={Step4Svg}
+                    onSelectionChange={() => setPhSelected(true)}
                   />
                 )
               ) : index === 5 ? (

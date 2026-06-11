@@ -11,9 +11,11 @@ import { useTranslations } from '@/src/i18n';
 interface PHResultSelectorProps {
   title?: string;
   SvgImage?: React.FC<SvgProps>;
+  /** Called synchronously whenever a pH value is selected (or found on load). */
+  onSelectionChange?: (ph: number) => void;
 }
 
-export default function PHResultSelector({ title = "Log pH Results", SvgImage }: PHResultSelectorProps) {
+export default function PHResultSelector({ title = "Log pH Results", SvgImage, onSelectionChange }: PHResultSelectorProps) {
   const { t } = useTranslations();
   const [selectedPH, setSelectedPH] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -33,6 +35,7 @@ export default function PHResultSelector({ title = "Log pH Results", SvgImage }:
           const log = await getLogBySession(session.id);
           if (!cancelled && log?.ph != null) {
             setSelectedPH(log.ph);
+            onSelectionChange?.(log.ph);
           }
         } catch (e) {
           // Silently handle load error
@@ -46,6 +49,8 @@ export default function PHResultSelector({ title = "Log pH Results", SvgImage }:
   async function setSelectedPHWithSave(pH: number) {
     if (!session || saving) return;
     setSelectedPH(pH);
+    // Notify the parent immediately so swipe validation doesn't race the DB write.
+    onSelectionChange?.(pH);
     try {
       setSaving(true);
       await upsertLogResultsFlat(session.id, { ph: pH });
@@ -95,6 +100,9 @@ export default function PHResultSelector({ title = "Log pH Results", SvgImage }:
       
       <Text style={[styles.instructionText, dynamicStyles.instructionText]}>
         {t.phResultGuideInstruction}
+      </Text>
+      <Text style={[styles.instructionTip, dynamicStyles.instructionText]}>
+        {t.kitColorCardTip}
       </Text>
       
       <View style={styles.phOptionsContainer}>
@@ -169,6 +177,15 @@ const styles = StyleSheet.create({
     color: '#721422',
     textAlign: 'center',
     marginBottom: 20,
+  },
+  instructionTip: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+    color: '#721422',
+    textAlign: 'center',
+    marginTop: -12,
+    marginBottom: 20,
+    opacity: 0.85,
   },
   
   /**
