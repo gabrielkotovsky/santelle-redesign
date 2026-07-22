@@ -1,11 +1,12 @@
 import React from 'react';
-import { Alert, Platform, StyleSheet, Text, View, Linking, Pressable } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, View, Linking } from 'react-native';
 import { router } from 'expo-router';
 import AppleSignInButton from '@/src/components/buttons/AppleSignInButton';
 import EmailSignInButton from '@/src/components/buttons/EmailSignInButton';
 import GoogleSignInButton from '@/src/components/buttons/GoogleSignInButton';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
+import { LanguageDropdown } from '@/src/components/inputs/LanguageDropdown';
 import { useAuthStore } from '@/src/features/auth/auth.store';
 import { useAuthOnboardingTranslations } from '@/src/features/auth/useAuthOnboardingTranslations';
 import {
@@ -104,24 +105,7 @@ export default function Landing() {
         </View>
 
         <View style={styles.languageToggleSection}>
-          <View style={styles.languageToggleGlass}>
-            <Pressable
-              style={[styles.languageOption, signUpLanguage === 'en' && styles.languageOptionActive]}
-              onPress={() => setSignUpLanguage('en')}
-            >
-              <Text style={[styles.languageOptionText, signUpLanguage === 'en' && styles.languageOptionTextActive]}>
-                English
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[styles.languageOption, signUpLanguage === 'fr' && styles.languageOptionActive]}
-              onPress={() => setSignUpLanguage('fr')}
-            >
-              <Text style={[styles.languageOptionText, signUpLanguage === 'fr' && styles.languageOptionTextActive]}>
-                Français
-              </Text>
-            </Pressable>
-          </View>
+          <LanguageDropdown value={signUpLanguage} onChange={setSignUpLanguage} />
         </View>
 
         <View style={styles.disclaimerSection}>
@@ -170,36 +154,6 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     paddingTop: 8,
     alignItems: 'center',
-  },
-  languageToggleGlass: {
-    flexDirection: 'row',
-    paddingVertical: 6,
-    paddingHorizontal: 6,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.13)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(114, 20, 34, 0.25)',
-    minHeight: 52,
-  },
-  languageOption: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  languageOptionActive: {
-    backgroundColor: 'rgba(114, 20, 34, 0.18)',
-  },
-  languageOptionText: {
-    fontSize: 15,
-    fontFamily: 'Poppins-Medium',
-    color: '#721422',
-  },
-  languageOptionTextActive: {
-    color: '#721422',
-    fontFamily: 'Poppins-SemiBold',
   },
   disclaimerSection: {
     paddingHorizontal: 24,

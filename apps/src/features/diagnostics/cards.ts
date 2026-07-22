@@ -2,6 +2,7 @@
 // English copy is verbatim from the spec; French is a careful translation.
 
 import type { CardKey, CardVariantId, DiagnosticResult, ModifierId } from './types';
+import { GERMAN_CARDS, GERMAN_MODIFIER_TEXTS } from './cards.de';
 
 export type CardContent = {
   title: string;
@@ -1051,16 +1052,17 @@ export const MODIFIER_TEXTS: Record<ModifierId, { en: string; fr: string }> = {
 
 export function buildCard(result: DiagnosticResult, lang: string): RenderedCard {
   const def = CARDS[result.variant];
-  const content = lang === 'fr' ? def.fr : def.en;
+  const content = lang === 'de' ? GERMAN_CARDS[result.variant] : lang === 'fr' ? def.fr : def.en;
 
   const bullets =
     result.variant === 'YEAST-POSSIBLE' && !result.symptomatic && content.bulletsAsymptomatic
       ? content.bulletsAsymptomatic
       : content.bullets;
 
-  const notes = result.modifiers.map((id) =>
-    lang === 'fr' ? MODIFIER_TEXTS[id].fr : MODIFIER_TEXTS[id].en
-  );
+  const notes = result.modifiers.map((id) => {
+    if (lang === 'de') return GERMAN_MODIFIER_TEXTS[id];
+    return lang === 'fr' ? MODIFIER_TEXTS[id].fr : MODIFIER_TEXTS[id].en;
+  });
 
   return {
     profileKey: result.card,

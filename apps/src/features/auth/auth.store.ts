@@ -53,7 +53,7 @@ export type Session = {
   user: User;
 };
 
-export type SignUpLanguage = 'en' | 'fr';
+export type SignUpLanguage = 'en' | 'fr' | 'de' | 'it';
 
 export type AuthState = {
   // State

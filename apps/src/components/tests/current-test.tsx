@@ -9,6 +9,7 @@ import Animated, {
   withTiming
 } from 'react-native-reanimated';
 import { Colors } from '../../theme/colors';
+import { useTranslations } from '@/src/i18n';
 import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 import { SLogoIcon } from '../icons/svg/SLogoIcon';
 
@@ -27,6 +28,7 @@ export default function CurrentTest({
   onResumeTest,
   dataReady
 }: CurrentTestProps) {
+  const { t } = useTranslations();
   // Animation values
   const cardTranslateY = useSharedValue(-200);
   const cardOpacity = useSharedValue(0);
@@ -161,7 +163,7 @@ export default function CurrentTest({
       <BlurView intensity={30} tint="light" style={[styles.glassmorphismCard, dynamicStyles.glassmorphismCard]}>
 
         <Text style={dynamicStyles.stepText}>
-            Step {currentStep} of {totalSteps}
+            {t.stepProgress(currentStep, totalSteps)}
         </Text>
 
         <View style={styles.progressContainer}> 
@@ -183,7 +185,7 @@ export default function CurrentTest({
                 size={20} 
                 color="#FFFFFF" 
             />
-            <Text style={dynamicStyles.buttonText}>Resume Test</Text>
+            <Text style={dynamicStyles.buttonText}>{t.resumeTest}</Text>
         </ShrinkableTouchable>
 
       </BlurView>

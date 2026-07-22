@@ -78,6 +78,19 @@ export default function PreTestQuestions() {
   const { questions, answers, loading, canSubmit, setSingle, setMulti, toggleMulti, submit, saveAnswer } = usePretest(1);
   const { session: testSession, startSession } = useTestSession();
   const appLang = useAuthStore((s) => s.signUpLanguage ?? 'en');
+  const skipText = appLang === 'de' ? 'Uberspringen' : appLang === 'fr' ? 'Passer' : 'Skip';
+  const continueText = appLang === 'de' ? 'Weiter' : appLang === 'fr' ? 'Continuer' : 'Continue';
+  const cancelText = appLang === 'de' ? 'Abbrechen' : appLang === 'fr' ? 'Annuler' : 'Cancel';
+  const skipTitle = appLang === 'de'
+    ? 'Fragen uberspringen?'
+    : appLang === 'fr'
+      ? 'Passer les questions?'
+      : 'Skip Questions?';
+  const skipMessage = appLang === 'de'
+    ? 'Mochten Sie die Fragen vor dem Test wirklich uberspringen? Sie konnen sie spater beantworten.'
+    : appLang === 'fr'
+      ? 'Voulez-vous vraiment passer les questions avant le test? Vous pourrez y répondre plus tard.'
+      : 'Are you sure you want to skip the pretest questions? You can always answer them later.';
 
   // Load existing answers if in edit mode
   useEffect(() => {
@@ -314,8 +327,18 @@ export default function PreTestQuestions() {
           <LogoCrossIcon size={60} color="#721422" />
           <Text style={styles.title}>{question.prompt}</Text>
           <Text style={styles.subtitle}>
-            Page {currentPage + 1} of {questions.length}
-            {question.type === 'multi' ? ' • Select all that apply' : ''}
+            {appLang === 'de'
+              ? `Seite ${currentPage + 1} von ${questions.length}`
+              : appLang === 'fr'
+                ? `Page ${currentPage + 1} sur ${questions.length}`
+                : `Page ${currentPage + 1} of ${questions.length}`}
+            {question.type === 'multi'
+              ? appLang === 'de'
+                ? ' • Wahlen Sie alle zutreffenden Antworten aus'
+                : appLang === 'fr'
+                  ? ' • Sélectionnez toutes les réponses applicables'
+                  : ' • Select all that apply'
+              : ''}
           </Text>
         </View>
 
@@ -340,7 +363,11 @@ export default function PreTestQuestions() {
               option={{
                 id: `none-${question.id}`,
                 question_id: question.id,
-                label: appLang === 'fr' ? 'Aucune des réponses ci-dessus' : 'None of the above',
+                label: appLang === 'de'
+                  ? 'Keine der oben genannten Antworten'
+                  : appLang === 'fr'
+                    ? 'Aucune des réponses ci-dessus'
+                    : 'None of the above',
                 value: 'none_of_the_above',
                 sort_order: 999,
                 active: true,
@@ -379,12 +406,12 @@ export default function PreTestQuestions() {
                 style={({ pressed }) => [styles.skipButtonPressable, pressed && { opacity: 0.7 }]}
                 onPress={() => {
                   Alert.alert(
-                    'Skip Questions?',
-                    'Are you sure you want to skip the pretest questions? You can always answer them later.',
+                    skipTitle,
+                    skipMessage,
                     [
-                      { text: 'Cancel', style: 'cancel' },
+                      { text: cancelText, style: 'cancel' },
                       { 
-                        text: 'Skip', 
+                        text: skipText,
                         style: 'destructive',
                         onPress: () => router.replace('/log-test/test')
                       }
@@ -392,7 +419,7 @@ export default function PreTestQuestions() {
                   );
                 }}
               >
-                <Text style={styles.skipButtonText}>Skip</Text>
+                <Text style={styles.skipButtonText}>{skipText}</Text>
               </Pressable>
             </View>
           )}
@@ -426,12 +453,12 @@ export default function PreTestQuestions() {
               style={({ pressed }) => [styles.skipButtonPressable, pressed && { opacity: 0.7 }]}
               onPress={() => {
                 Alert.alert(
-                  'Skip Questions?',
-                  'Are you sure you want to skip the pretest questions? You can always answer them later.',
+                  skipTitle,
+                  skipMessage,
                   [
-                    { text: 'Cancel', style: 'cancel' },
+                    { text: cancelText, style: 'cancel' },
                     { 
-                      text: 'Skip', 
+                      text: skipText,
                       style: 'destructive',
                       onPress: () => router.replace('/log-test/test')
                     }
@@ -439,7 +466,7 @@ export default function PreTestQuestions() {
                 );
               }}
             >
-              <Text style={styles.skipButtonText}>Skip</Text>
+              <Text style={styles.skipButtonText}>{skipText}</Text>
             </Pressable>
           </View>
         )}
@@ -467,10 +494,12 @@ export default function PreTestQuestions() {
               (!canContinue() || isSaving) && styles.continueButtonTextDisabled
             ]}>
               {isSaving 
-                ? (appLang === 'fr' ? 'Enregistrement...' : 'Saving...') 
+                ? (appLang === 'de' ? 'Wird gespeichert...' : appLang === 'fr' ? 'Enregistrement...' : 'Saving...')
                 : (currentPage === questions.length - 1 
-                    ? (isEditMode ? (appLang === 'fr' ? 'Enregistrer les modifications' : 'Save Changes') : (appLang === 'fr' ? 'Démarrer le test' : 'Start Test')) 
-                    : (appLang === 'fr' ? 'Continuer' : 'Continue')
+                    ? (isEditMode
+                        ? (appLang === 'de' ? 'Änderungen speichern' : appLang === 'fr' ? 'Enregistrer les modifications' : 'Save Changes')
+                        : (appLang === 'de' ? 'Test starten' : appLang === 'fr' ? 'Démarrer le test' : 'Start Test'))
+                    : continueText
                   )
               }
             </Text>

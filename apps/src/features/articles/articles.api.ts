@@ -1,4 +1,5 @@
 import { supabase } from '@/src/services/supabase';
+import { GERMAN_ARTICLES } from './german';
 
 export type Article = {
   id: string;
@@ -27,9 +28,32 @@ type ListOpts = {
   locale?: string;
 };
 
-function mapRowToArticle(row: Record<string, unknown>, useFrench: boolean): Article {
+function mapRowToArticle(row: Record<string, unknown>, locale: string): Article {
   const r = row as Record<string, unknown> & Article;
-  if (useFrench && r.title_french != null) {
+  const slug = String(r.slug ?? '');
+
+  if (locale === 'de') {
+    const german = GERMAN_ARTICLES[slug];
+    if (german) {
+      return {
+        ...r,
+        title: german.title,
+        subtitle: german.subtitle,
+        content_md: german.content_md,
+      };
+    }
+    // Optional DB columns once migrated in Supabase.
+    if (r.title_german != null) {
+      return {
+        ...r,
+        title: (r.title_german as string) ?? r.title,
+        subtitle: (r.subtitle_german != null ? r.subtitle_german : r.subtitle) as string | null,
+        content_md: (r.content_md_german as string) ?? r.content_md,
+      };
+    }
+  }
+
+  if (locale === 'fr' && r.title_french != null) {
     return {
       ...r,
       title: (r.title_french as string) ?? r.title,
@@ -37,15 +61,15 @@ function mapRowToArticle(row: Record<string, unknown>, useFrench: boolean): Arti
       content_md: (r.content_md_french as string) ?? r.content_md,
     };
   }
+
   return r as Article;
 }
 
 export async function listArticles(opts: ListOpts = {}): Promise<Article[]> {
   const { limit = 20, offset = 0, category, search, locale = 'en' } = opts;
-  const useFrench = locale === 'fr';
-  // When displaying French, we still fetch rows by canonical locale ('en'); French text
-  // lives in title_french, subtitle_french, content_md_french on those rows.
-  const queryLocale = useFrench ? 'en' : locale;
+  // Localized fields live on canonical English rows (French DB columns /
+  // German app overlay). Always query locale = 'en' for fr/de.
+  const queryLocale = locale === 'fr' || locale === 'de' ? 'en' : locale;
 
   let q = supabase
     .from('articles')
@@ -62,7 +86,7 @@ export async function listArticles(opts: ListOpts = {}): Promise<Article[]> {
   const { data, error } = await q;
   if (error) throw error;
   const rows = (data ?? []) as Record<string, unknown>[];
-  return rows.map((row) => mapRowToArticle(row, useFrench));
+  return rows.map((row) => mapRowToArticle(row, locale));
 }
 
 export async function getArticleBySlug(slug: string, locale: string = 'en'): Promise<Article | null> {
@@ -75,5 +99,5 @@ export async function getArticleBySlug(slug: string, locale: string = 'en'): Pro
 
   if (error) throw error;
   if (!data) return null;
-  return mapRowToArticle(data as Record<string, unknown>, locale === 'fr');
+  return mapRowToArticle(data as Record<string, unknown>, locale);
 }

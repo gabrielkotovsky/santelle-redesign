@@ -7,6 +7,7 @@ import type { PretestAnswer, PretestQuestion, UUID } from '../models';
 
 export function usePretest(version = 1) {
   const locale = useAuthStore((s) => s.signUpLanguage ?? 'en');
+  const contentLocale = locale === 'it' ? 'en' : locale;
   const [questions, setQuestions] = useState<PretestQuestion[]>([]);
   const [answers, setAnswers] = useState<PretestAnswer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +26,7 @@ export function usePretest(version = 1) {
         }
 
         // Fetch fresh questions (uses prompt_french / label_french when locale is 'fr')
-        const fresh = await fetchPretest(version, locale);
+        const fresh = await fetchPretest(version, contentLocale);
         if (mounted) {
           setQuestions(fresh);
           await AsyncStorage.setItem(key, JSON.stringify(fresh));
@@ -39,7 +40,7 @@ export function usePretest(version = 1) {
       }
     })();
     return () => { mounted = false; };
-  }, [version, locale]);
+  }, [version, locale, contentLocale]);
 
   const setSingle = (qId: UUID, choiceId: UUID) =>
     setAnswers(prev => {

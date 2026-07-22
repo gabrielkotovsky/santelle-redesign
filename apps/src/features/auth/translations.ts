@@ -1,8 +1,8 @@
 /**
  * Translations for auth and onboarding screens only.
- * Keyed by signUpLanguage ('en' | 'fr').
+ * Keyed by signUpLanguage.
  */
-export type AuthOnboardingLang = 'en' | 'fr';
+export type AuthOnboardingLang = 'en' | 'fr' | 'de';
 
 export const authOnboardingTranslations = {
   en: {
@@ -180,6 +180,94 @@ export const authOnboardingTranslations = {
     searchCountryPlaceholder: 'Rechercher ou taper un pays...',
     finishing: 'Finalisation...',
     failedToCompleteOnboarding: 'Échec de la finalisation. Veuillez réessayer.',
+  },
+  de: {
+    // Landing
+    welcomeTitle: 'Willkommen bei Santelle',
+    continueWithEmail: 'Mit E-Mail fortfahren',
+    continueWithGoogle: 'Mit Google fortfahren',
+    continueWithApple: 'Mit Apple fortfahren',
+    signingIn: 'Anmeldung...',
+    signInFailed: 'Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.',
+    appleSignInFailed: 'Apple-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.',
+    googleSignInFailed: 'Google-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.',
+    disclaimerBySigning: 'Mit der Registrierung in der Santelle-App stimmen Sie unseren ',
+    termsAndConditions: 'Allgemeinen Geschäftsbedingungen',
+    and: ' und unserer ',
+    privacyPolicy: 'Datenschutzerklärung',
+    disclaimerFrLine: 'Mit der Registrierung in der Santelle-App stimmen Sie unseren ',
+    conditionsGenerales: 'Allgemeinen Geschäftsbedingungen',
+    etNotre: ' und unserer ',
+    politiqueConfidentialite: 'Datenschutzerklärung',
+
+    // Email
+    enterYourEmail: 'Geben Sie Ihre E-Mail-Adresse ein',
+    weWillSendCode: 'Wir senden Ihnen einen Bestätigungscode',
+    emailPlaceholder: 'E-Mail-Adresse',
+    continue: 'Weiter',
+    sending: 'Wird gesendet...',
+    error: 'Fehler',
+    pleaseEnterEmail: 'Bitte geben Sie Ihre E-Mail-Adresse ein',
+    pleaseEnterValidEmail: 'Bitte geben Sie eine gültige E-Mail-Adresse ein',
+    checkYourEmail: 'Prüfen Sie Ihre E-Mails',
+    verificationCodeSent: 'Wir haben Ihnen einen Bestätigungscode gesendet. Bitte prüfen Sie Ihren Posteingang.',
+    ok: 'OK',
+    failedToSendCode: 'Der Bestätigungscode konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
+
+    // OTP
+    enterVerificationCode: 'Bestätigungscode eingeben',
+    weSentCodeToEmail: 'Wir haben einen 6-stelligen Code an Ihre E-Mail-Adresse gesendet',
+    verifying: 'Wird überprüft...',
+    resendPrompt: 'Code nicht erhalten? Erneut senden',
+    success: 'Erfolgreich!',
+    successfullyVerified: 'Sie wurden erfolgreich verifiziert.',
+    pleaseEnterCode: 'Bitte geben Sie den Bestätigungscode ein',
+    pleaseEnterCompleteCode: 'Bitte geben Sie den vollständigen 6-stelligen Code ein',
+    emailNotFound: 'E-Mail-Adresse nicht gefunden. Bitte versuchen Sie es erneut.',
+    invalidCode: 'Ungültiger Bestätigungscode. Bitte versuchen Sie es erneut.',
+    codeExpired: 'Der Bestätigungscode ist abgelaufen. Bitte fordern Sie einen neuen an.',
+    invalidCodeCheck: 'Ungültiger Bestätigungscode. Bitte prüfen Sie ihn und versuchen Sie es erneut.',
+    codeSent: 'Code gesendet',
+    newCodeSent: 'Ein neuer Bestätigungscode wurde an Ihre E-Mail-Adresse gesendet.',
+    failedToResend: 'Der Code konnte nicht erneut gesendet werden. Bitte versuchen Sie es erneut.',
+
+    // Subscription
+    subscriptionRequired: 'Abonnement erforderlich',
+    subscriptionSubtitle: 'Sie benötigen ein aktives Abonnement oder eine Testphase, um Santelle zu nutzen.',
+    subscriptionDescription: 'Abonnieren Sie Santelle, um alle Funktionen freizuschalten und Ihren Gesundheitsverlauf zu verfolgen.',
+    subscribeNow: 'Jetzt abonnieren',
+    signOut: 'Abmelden',
+    unableToOpenSubscription: 'Die Abonnementseite konnte nicht geöffnet werden.',
+    failedToSignOut: 'Abmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.',
+
+    // Name (onboarding)
+    whatShouldWeCallYou: 'Wie dürfen wir Sie nennen?',
+    howYouAppear: 'So werden Sie in der App angezeigt',
+    optionalSkip: '(Optional – Sie können diesen Schritt überspringen)',
+    displayNamePlaceholder: 'Anzeigename',
+    skip: 'Überspringen',
+    saving: 'Wird gespeichert...',
+    userNotFound: 'Benutzerin nicht gefunden. Bitte versuchen Sie es erneut.',
+    failedToSaveName: 'Ihr Name konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+
+    // Year (onboarding)
+    whenBorn: 'Wann wurden Sie geboren?',
+    personalizeExperience: 'Damit können wir Ihre Erfahrung personalisieren',
+    ageRequirement: 'Sie müssen mindestens 16 Jahre alt sein, um Santelle zu nutzen.',
+    ageRestrictionTitle: 'Altersbeschränkung',
+    ageRestrictionMessage: 'Sie müssen mindestens 16 Jahre alt sein, um diese App zu nutzen.',
+    month: 'Monat',
+    day: 'Tag',
+    year: 'Jahr',
+    months: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+    failedToSaveDob: 'Ihr Geburtsdatum konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+
+    // Country (onboarding)
+    whereBased: 'Wo leben Sie?',
+    selectCountry: 'Wählen Sie Ihr Land',
+    searchCountryPlaceholder: 'Land suchen oder eingeben...',
+    finishing: 'Wird abgeschlossen...',
+    failedToCompleteOnboarding: 'Das Onboarding konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.',
   },
 } as const;
 

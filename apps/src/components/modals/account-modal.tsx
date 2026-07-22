@@ -12,8 +12,9 @@ import * as Haptics from 'expo-haptics';
 import { Colors } from '../../theme/colors';
 import { LogoCrossIcon } from '../icons/svg/LogoCrossIcon';
 import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
+import { LanguageDropdown } from '../inputs/LanguageDropdown';
 import { useAuth } from '../../features/auth/auth.store';
-import { useAuthStore } from '../../features/auth/auth.store';
+import { useAuthStore, type SignUpLanguage } from '../../features/auth/auth.store';
 import { saveSignUpLanguageToOnboarding } from '../../features/auth/auth.api';
 import { useTranslations } from '@/src/i18n/useTranslations';
 
@@ -28,7 +29,7 @@ export default function AccountModal({ visible, onClose }: AccountModalProps) {
   const signUpLanguage = useAuthStore((s) => s.signUpLanguage);
   const setSignUpLanguage = useAuthStore((s) => s.setSignUpLanguage);
 
-  const handleLanguageSelect = async (newLang: 'en' | 'fr') => {
+  const handleLanguageSelect = async (newLang: SignUpLanguage) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSignUpLanguage(newLang);
     if (user?.id) {
@@ -104,40 +105,7 @@ export default function AccountModal({ visible, onClose }: AccountModalProps) {
           {/* Language selector */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t.languageLabel}</Text>
-            <View style={styles.languageToggleGlass}>
-              <Pressable
-                style={[
-                  styles.languageOption,
-                  signUpLanguage === 'en' && styles.languageOptionActive,
-                ]}
-                onPress={() => handleLanguageSelect('en')}
-              >
-                <Text
-                  style={[
-                    styles.languageOptionText,
-                    signUpLanguage === 'en' && styles.languageOptionTextActive,
-                  ]}
-                >
-                  {t.languageEnglish}
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.languageOption,
-                  signUpLanguage === 'fr' && styles.languageOptionActive,
-                ]}
-                onPress={() => handleLanguageSelect('fr')}
-              >
-                <Text
-                  style={[
-                    styles.languageOptionText,
-                    signUpLanguage === 'fr' && styles.languageOptionTextActive,
-                  ]}
-                >
-                  {t.languageFrench}
-                </Text>
-              </Pressable>
-            </View>
+            <LanguageDropdown value={signUpLanguage} onChange={handleLanguageSelect} />
           </View>
 
           {/* Sign Out Button */}
@@ -218,36 +186,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     color: Colors.light.rush,
     marginBottom: 12,
-  },
-  languageToggleGlass: {
-    flexDirection: 'row',
-    paddingVertical: 6,
-    paddingHorizontal: 6,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.13)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(114, 20, 34, 0.25)',
-    minHeight: 52,
-  },
-  languageOption: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  languageOptionActive: {
-    backgroundColor: 'rgba(114, 20, 34, 0.18)',
-  },
-  languageOptionText: {
-    fontSize: 15,
-    fontFamily: 'Poppins-Medium',
-    color: Colors.light.rush,
-  },
-  languageOptionTextActive: {
-    color: Colors.light.rush,
-    fontFamily: 'Poppins-SemiBold',
   },
   signOutSection: {
     paddingTop: 24,
