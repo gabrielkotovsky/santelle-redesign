@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": false,
       "usesAppleSignIn": true,
-      "buildNumber": "20",
+      "buildNumber": "22",
       "splash": {
         "image": "./assets/images/background-mobile.jpg",
         "resizeMode": "cover",
