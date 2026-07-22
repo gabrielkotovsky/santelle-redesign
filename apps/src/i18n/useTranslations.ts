@@ -8,7 +8,7 @@ import { getAppT, type AppT, type AppLang } from './translations';
  */
 export function useTranslations(): { t: AppT; lang: AppLang } {
   const signUpLanguage = useAuthStore((s) => s.signUpLanguage);
-  const contentLanguage: AppLang = signUpLanguage === 'it' ? 'en' : signUpLanguage;
+  const contentLanguage: AppLang = signUpLanguage;
 
   return useMemo(
     () => ({ t: getAppT(contentLanguage), lang: contentLanguage }),

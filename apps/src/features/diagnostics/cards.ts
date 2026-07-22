@@ -3,6 +3,7 @@
 
 import type { CardKey, CardVariantId, DiagnosticResult, ModifierId } from './types';
 import { GERMAN_CARDS, GERMAN_MODIFIER_TEXTS } from './cards.de';
+import { ITALIAN_CARDS, ITALIAN_MODIFIER_TEXTS } from './cards.it';
 
 export type CardContent = {
   title: string;
@@ -1052,7 +1053,14 @@ export const MODIFIER_TEXTS: Record<ModifierId, { en: string; fr: string }> = {
 
 export function buildCard(result: DiagnosticResult, lang: string): RenderedCard {
   const def = CARDS[result.variant];
-  const content = lang === 'de' ? GERMAN_CARDS[result.variant] : lang === 'fr' ? def.fr : def.en;
+  const content =
+    lang === 'de'
+      ? GERMAN_CARDS[result.variant]
+      : lang === 'it'
+        ? ITALIAN_CARDS[result.variant]
+        : lang === 'fr'
+          ? def.fr
+          : def.en;
 
   const bullets =
     result.variant === 'YEAST-POSSIBLE' && !result.symptomatic && content.bulletsAsymptomatic
@@ -1061,6 +1069,7 @@ export function buildCard(result: DiagnosticResult, lang: string): RenderedCard 
 
   const notes = result.modifiers.map((id) => {
     if (lang === 'de') return GERMAN_MODIFIER_TEXTS[id];
+    if (lang === 'it') return ITALIAN_MODIFIER_TEXTS[id];
     return lang === 'fr' ? MODIFIER_TEXTS[id].fr : MODIFIER_TEXTS[id].en;
   });
 

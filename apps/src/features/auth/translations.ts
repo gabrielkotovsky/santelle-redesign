@@ -2,7 +2,7 @@
  * Translations for auth and onboarding screens only.
  * Keyed by signUpLanguage.
  */
-export type AuthOnboardingLang = 'en' | 'fr' | 'de';
+export type AuthOnboardingLang = 'en' | 'fr' | 'de' | 'it';
 
 export const authOnboardingTranslations = {
   en: {
@@ -268,6 +268,94 @@ export const authOnboardingTranslations = {
     searchCountryPlaceholder: 'Land suchen oder eingeben...',
     finishing: 'Wird abgeschlossen...',
     failedToCompleteOnboarding: 'Das Onboarding konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.',
+  },
+  it: {
+    // Landing
+    welcomeTitle: 'Benvenuta su Santelle',
+    continueWithEmail: 'Continua con Email',
+    continueWithGoogle: 'Continua con Google',
+    continueWithApple: 'Continua con Apple',
+    signingIn: 'Accesso in corso...',
+    signInFailed: 'Accesso non riuscito. Riprova.',
+    appleSignInFailed: 'Accesso con Apple non riuscito. Riprova.',
+    googleSignInFailed: 'Accesso con Google non riuscito. Riprova.',
+    disclaimerBySigning: "Registrandosi all'app Santelle, accetta i nostri ",
+    termsAndConditions: 'Termini e Condizioni',
+    and: ' e la ',
+    privacyPolicy: 'Informativa sulla Privacy',
+    disclaimerFrLine: "Registrandosi all'app Santelle, accetta i nostri ",
+    conditionsGenerales: 'Termini e Condizioni',
+    etNotre: ' e la ',
+    politiqueConfidentialite: 'Informativa sulla Privacy',
+
+    // Email
+    enterYourEmail: 'Inserisca la sua email',
+    weWillSendCode: 'Le invieremo un codice di verifica',
+    emailPlaceholder: 'email',
+    continue: 'Continua',
+    sending: 'Invio in corso...',
+    error: 'Errore',
+    pleaseEnterEmail: 'Inserisca il suo indirizzo email',
+    pleaseEnterValidEmail: 'Inserisca un indirizzo email valido',
+    checkYourEmail: 'Controlli la sua email',
+    verificationCodeSent: 'Le abbiamo inviato un codice di verifica. Controlli la sua casella di posta.',
+    ok: 'OK',
+    failedToSendCode: 'Invio del codice di verifica non riuscito. Riprova.',
+
+    // OTP
+    enterVerificationCode: 'Inserisca il codice di verifica',
+    weSentCodeToEmail: 'Le abbiamo inviato un codice a 6 cifre alla sua email',
+    verifying: 'Verifica in corso...',
+    resendPrompt: 'Non ha ricevuto il codice? Invia di nuovo',
+    success: 'Operazione riuscita!',
+    successfullyVerified: 'È stata verificata con successo.',
+    pleaseEnterCode: 'Inserisca il codice di verifica',
+    pleaseEnterCompleteCode: 'Inserisca il codice completo a 6 cifre',
+    emailNotFound: 'Email non trovata. Riprova.',
+    invalidCode: 'Codice di verifica non valido. Riprova.',
+    codeExpired: 'Il codice di verifica è scaduto. Ne richieda uno nuovo.',
+    invalidCodeCheck: 'Codice di verifica non valido. Controlli e riprovi.',
+    codeSent: 'Codice inviato',
+    newCodeSent: 'Un nuovo codice di verifica è stato inviato alla sua email.',
+    failedToResend: 'Impossibile inviare di nuovo il codice. Riprova.',
+
+    // Subscription
+    subscriptionRequired: 'Abbonamento richiesto',
+    subscriptionSubtitle: 'È necessario un abbonamento attivo o una prova per accedere a Santelle.',
+    subscriptionDescription: 'Si abboni per sbloccare tutte le funzionalità e iniziare a monitorare il suo percorso di salute.',
+    subscribeNow: 'Si abboni ora',
+    signOut: 'Esci',
+    unableToOpenSubscription: 'Impossibile aprire la pagina di abbonamento.',
+    failedToSignOut: 'Uscita non riuscita. Riprova.',
+
+    // Name (onboarding)
+    whatShouldWeCallYou: 'Come possiamo chiamarLa?',
+    howYouAppear: "Così apparirà nell'app",
+    optionalSkip: '(Opzionale - può saltare questo passaggio)',
+    displayNamePlaceholder: 'nome visualizzato',
+    skip: 'Salta',
+    saving: 'Salvataggio in corso...',
+    userNotFound: 'Utente non trovato. Riprova.',
+    failedToSaveName: 'Impossibile salvare il suo nome. Riprova.',
+
+    // Year (onboarding)
+    whenBorn: 'Quando è nata?',
+    personalizeExperience: 'Questo ci aiuta a personalizzare la sua esperienza',
+    ageRequirement: 'Deve avere almeno 16 anni per utilizzare Santelle.',
+    ageRestrictionTitle: 'Limite di età',
+    ageRestrictionMessage: 'Deve avere almeno 16 anni per utilizzare questa app.',
+    month: 'Mese',
+    day: 'Giorno',
+    year: 'Anno',
+    months: ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'],
+    failedToSaveDob: 'Impossibile salvare la sua data di nascita. Riprova.',
+
+    // Country (onboarding)
+    whereBased: 'Dove si trova?',
+    selectCountry: 'Selezioni il suo paese',
+    searchCountryPlaceholder: 'Cerca o digita un paese...',
+    finishing: 'Completamento in corso...',
+    failedToCompleteOnboarding: "Impossibile completare l'onboarding. Riprova.",
   },
 } as const;
 

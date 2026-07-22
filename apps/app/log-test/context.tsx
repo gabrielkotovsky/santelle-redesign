@@ -78,19 +78,23 @@ export default function PreTestQuestions() {
   const { questions, answers, loading, canSubmit, setSingle, setMulti, toggleMulti, submit, saveAnswer } = usePretest(1);
   const { session: testSession, startSession } = useTestSession();
   const appLang = useAuthStore((s) => s.signUpLanguage ?? 'en');
-  const skipText = appLang === 'de' ? 'Uberspringen' : appLang === 'fr' ? 'Passer' : 'Skip';
-  const continueText = appLang === 'de' ? 'Weiter' : appLang === 'fr' ? 'Continuer' : 'Continue';
-  const cancelText = appLang === 'de' ? 'Abbrechen' : appLang === 'fr' ? 'Annuler' : 'Cancel';
+  const skipText = appLang === 'de' ? 'Uberspringen' : appLang === 'fr' ? 'Passer' : appLang === 'it' ? 'Salta' : 'Skip';
+  const continueText = appLang === 'de' ? 'Weiter' : appLang === 'fr' ? 'Continuer' : appLang === 'it' ? 'Continua' : 'Continue';
+  const cancelText = appLang === 'de' ? 'Abbrechen' : appLang === 'fr' ? 'Annuler' : appLang === 'it' ? 'Annulla' : 'Cancel';
   const skipTitle = appLang === 'de'
     ? 'Fragen uberspringen?'
     : appLang === 'fr'
       ? 'Passer les questions?'
-      : 'Skip Questions?';
+      : appLang === 'it'
+        ? 'Saltare le domande?'
+        : 'Skip Questions?';
   const skipMessage = appLang === 'de'
     ? 'Mochten Sie die Fragen vor dem Test wirklich uberspringen? Sie konnen sie spater beantworten.'
     : appLang === 'fr'
       ? 'Voulez-vous vraiment passer les questions avant le test? Vous pourrez y répondre plus tard.'
-      : 'Are you sure you want to skip the pretest questions? You can always answer them later.';
+      : appLang === 'it'
+        ? 'Sei sicura di voler saltare le domande prima del test? Potrai sempre risponderle più tardi.'
+        : 'Are you sure you want to skip the pretest questions? You can always answer them later.';
 
   // Load existing answers if in edit mode
   useEffect(() => {
@@ -331,13 +335,17 @@ export default function PreTestQuestions() {
               ? `Seite ${currentPage + 1} von ${questions.length}`
               : appLang === 'fr'
                 ? `Page ${currentPage + 1} sur ${questions.length}`
-                : `Page ${currentPage + 1} of ${questions.length}`}
+                : appLang === 'it'
+                  ? `Pagina ${currentPage + 1} di ${questions.length}`
+                  : `Page ${currentPage + 1} of ${questions.length}`}
             {question.type === 'multi'
               ? appLang === 'de'
                 ? ' • Wahlen Sie alle zutreffenden Antworten aus'
                 : appLang === 'fr'
                   ? ' • Sélectionnez toutes les réponses applicables'
-                  : ' • Select all that apply'
+                  : appLang === 'it'
+                    ? ' • Seleziona tutte le risposte pertinenti'
+                    : ' • Select all that apply'
               : ''}
           </Text>
         </View>
@@ -367,7 +375,9 @@ export default function PreTestQuestions() {
                   ? 'Keine der oben genannten Antworten'
                   : appLang === 'fr'
                     ? 'Aucune des réponses ci-dessus'
-                    : 'None of the above',
+                    : appLang === 'it'
+                      ? 'Nessuna delle risposte sopra'
+                      : 'None of the above',
                 value: 'none_of_the_above',
                 sort_order: 999,
                 active: true,
@@ -494,11 +504,11 @@ export default function PreTestQuestions() {
               (!canContinue() || isSaving) && styles.continueButtonTextDisabled
             ]}>
               {isSaving 
-                ? (appLang === 'de' ? 'Wird gespeichert...' : appLang === 'fr' ? 'Enregistrement...' : 'Saving...')
+                ? (appLang === 'de' ? 'Wird gespeichert...' : appLang === 'fr' ? 'Enregistrement...' : appLang === 'it' ? 'Salvataggio...' : 'Saving...')
                 : (currentPage === questions.length - 1 
                     ? (isEditMode
-                        ? (appLang === 'de' ? 'Änderungen speichern' : appLang === 'fr' ? 'Enregistrer les modifications' : 'Save Changes')
-                        : (appLang === 'de' ? 'Test starten' : appLang === 'fr' ? 'Démarrer le test' : 'Start Test'))
+                        ? (appLang === 'de' ? 'Änderungen speichern' : appLang === 'fr' ? 'Enregistrer les modifications' : appLang === 'it' ? 'Salva modifiche' : 'Save Changes')
+                        : (appLang === 'de' ? 'Test starten' : appLang === 'fr' ? 'Démarrer le test' : appLang === 'it' ? 'Inizia il test' : 'Start Test'))
                     : continueText
                   )
               }

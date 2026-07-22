@@ -1,7 +1,7 @@
 // src/components/modals/biomarker-utils.ts
 // Localized terminology follows the approved Santelle user manuals.
 
-export type BiomarkerLang = 'en' | 'fr' | 'de';
+export type BiomarkerLang = 'en' | 'fr' | 'de' | 'it';
 
 const RUSH  = '#721422';
 const GREEN = '#4CAF50';
@@ -14,6 +14,7 @@ const norm = (s?: string | null) => (s ?? '').replace('−', '-').trim();
 const USER_MANUAL_URL_EN = 'https://kvagkkkyashwuvbkegvo.supabase.co/storage/v1/object/public/manufacturer/SantelleUserManualEnglish.pdf?download=SantelleUserManualEnglish.pdf';
 const USER_MANUAL_URL_FR = 'https://kvagkkkyashwuvbkegvo.supabase.co/storage/v1/object/public/manufacturer/SantelleUserManualFrench.pdf?download=SantelleUserManualFrench.pdf';
 const USER_MANUAL_URL_DE = 'https://kvagkkkyashwuvbkegvo.supabase.co/storage/v1/object/public/manufacturer/SantelleUserManualGerman.pdf?download=SantelleUserManualGerman.pdf';
+const USER_MANUAL_URL_IT = 'https://kvagkkkyashwuvbkegvo.supabase.co/storage/v1/object/public/manufacturer/SantelleUserManualItalian.pdf?download=SantelleUserManualItalian.pdf';
 
 function getDisclaimer(lang: BiomarkerLang): string {
   if (lang === 'de') {
@@ -22,14 +23,17 @@ function getDisclaimer(lang: BiomarkerLang): string {
   if (lang === 'fr') {
     return `\n\n---\n\n⚠️ Ces informations sont une interprétation générale des instructions du kit et ne constituent pas un avis médical. Pour un avis médical, consultez un professionnel de santé.\n\n📖 [Voir le guide utilisateur complet](${USER_MANUAL_URL_FR})`;
   }
+  if (lang === 'it') {
+    return `\n\n---\n\n⚠️ Queste informazioni sono un'interpretazione generale delle istruzioni del kit e non costituiscono un parere medico. Per un consiglio medico, consulta un professionista sanitario.\n\n📖 [Visualizza la guida utente completa](${USER_MANUAL_URL_IT})`;
+  }
   return `\n\n---\n\n⚠️ This info is a general interpretation from the kit instructions and is not medical advice. For medical guidance, consult a clinician.\n\n📖 [View Full User Guide](${USER_MANUAL_URL_EN})`;
 }
 
 export function getPHStatus(pH?: number | null, lang: BiomarkerLang = 'en') {
-  if (typeof pH !== 'number') return { color: GREY, tag: lang === 'de' ? 'Unbekannt' : lang === 'fr' ? 'Inconnu' : 'Unknown' };
-  if (pH >= 3.8 && pH <= 4.4) return { color: GREEN, tag: lang === 'de' ? 'Gesund' : lang === 'fr' ? 'Sain' : 'Healthy' };
-  if (pH >= 4.6) return { color: RED, tag: lang === 'de' ? 'Erhöht' : lang === 'fr' ? 'Élevé' : 'High' };
-  return { color: GREY, tag: lang === 'de' ? 'Außerhalb des Bereichs' : lang === 'fr' ? 'Hors plage' : 'Outside Range' };
+  if (typeof pH !== 'number') return { color: GREY, tag: lang === 'de' ? 'Unbekannt' : lang === 'fr' ? 'Inconnu' : lang === 'it' ? 'Sconosciuto' : 'Unknown' };
+  if (pH >= 3.8 && pH <= 4.4) return { color: GREEN, tag: lang === 'de' ? 'Gesund' : lang === 'fr' ? 'Sain' : lang === 'it' ? 'Sano' : 'Healthy' };
+  if (pH >= 4.6) return { color: RED, tag: lang === 'de' ? 'Erhöht' : lang === 'fr' ? 'Élevé' : lang === 'it' ? 'Elevato' : 'High' };
+  return { color: GREY, tag: lang === 'de' ? 'Außerhalb des Bereichs' : lang === 'fr' ? 'Hors plage' : lang === 'it' ? 'Fuori intervallo' : 'Outside Range' };
 }
 
 export function getPHDetail(pH?: number | null, lang: BiomarkerLang = 'en') {
@@ -43,6 +47,10 @@ Die gesunde „Säurezone“ der Vagina (ähnlich wie milder Essig). Sie schütz
     if (lang === 'fr') {
       return `**Parfait**
 La zone acide saine de votre vagin (comme le vinaigre doux). C'est la façon naturelle de bloquer les mauvais germes et de protéger les bonnes bactéries.${disclaimer}`;
+    }
+    if (lang === 'it') {
+      return `**Perfetto**
+La sana "zona acida" della tua vagina (simile a un aceto leggero). È il modo naturale per bloccare i germi cattivi e proteggere i batteri buoni.${disclaimer}`;
     }
     return `**Perfect**
 Your vagina's healthy "sour zone" (like mild vinegar). It's nature's way to block bad germs and protect good bacteria.${disclaimer}`;
@@ -58,6 +66,11 @@ Leichtes Risiko: Keime wachsen leichter. Achten Sie auf Geruch, ungewöhnlichen 
 Causes fréquentes : fluides sexuels, fin des règles, changements corporels normaux ou douches vaginales. Votre corps peut souvent corriger cela !
 Risque léger : les germes se développent plus facilement. Surveillez : odeur, pertes inhabituelles, démangeaisons.${disclaimer}`;
     }
+    if (lang === 'it') {
+      return `**Leggermente elevato**
+Cause comuni: liquido seminale, fine delle mestruazioni, normali cambiamenti del corpo o lavande vaginali. Il corpo spesso riesce a correggerlo da solo.
+Rischio lieve: i germi crescono più facilmente. Presta attenzione a: odore, perdite inusuali, prurito.${disclaimer}`;
+    }
     return `**Mildly High**
 Common causes: Sex fluids, period ending, normal body changes, or douching. Your body can often fix this!
 Slight risk: Germs grow easier. Watch for: Odor, unusual discharge, itch.${disclaimer}`;
@@ -71,6 +84,10 @@ Häufige Ursache: bakterielle Vaginose (BV). Weitere mögliche Ursachen: sexuell
       return `**Modérément élevé**
 Cause fréquente : vaginose bactérienne (VB). Autres : IST (comme la trichomonase), douches vaginales, changements hormonaux.${disclaimer}`;
     }
+    if (lang === 'it') {
+      return `**Moderatamente elevato**
+Causa frequente: vaginosi batterica (VB). Altre possibili cause: infezioni sessualmente trasmissibili come la tricomoniasi, lavande vaginali o cambiamenti hormonali.${disclaimer}`;
+    }
     return `**Moderately High**
 Frequent cause: Bacterial Vaginosis (BV). Other: STIs (like Trich), douching, hormone changes.${disclaimer}`;
   }
@@ -82,6 +99,10 @@ Weist typischerweise auf aktive BV oder Trichomoniasis hin. Seltener können nie
     if (lang === 'fr') {
       return `**Beaucoup plus élevé**
 Indique généralement : VB ou trichomonase active. (Moins fréquent : baisse des hormones après la ménopause).${disclaimer}`;
+    }
+    if (lang === 'it') {
+      return `**Molto più elevato**
+Indica tipicamente: VB o tricomoniasi attiva. (Meno comune: bassi livelli hormonali dopo la menopausa).${disclaimer}`;
     }
     return `**Much Higher**
 Typically indicates: Active BV or Trich. (Less common: Low hormones after menopause).${disclaimer}`;
@@ -95,41 +116,41 @@ export function getBiomarkerStatus(
   lang: BiomarkerLang = 'en'
 ) {
   const value = norm(rawValue);
-  const unk = lang === 'de' ? 'Unbekannt' : lang === 'fr' ? 'Inconnu' : 'Unknown';
+  const unk = lang === 'de' ? 'Unbekannt' : lang === 'fr' ? 'Inconnu' : lang === 'it' ? 'Sconosciuto' : 'Unknown';
 
   switch (biomarker) {
     case 'H₂O₂':
-      if (value === '-') return { color: GREEN, tag: lang === 'de' ? 'Viele gute Bakterien' : lang === 'fr' ? 'Bonne flore protectrice' : 'Good protective flora' };
-      if (value === '±') return { color: AMBER, tag: lang === 'de' ? 'Mäßige Menge guter Bakterien' : lang === 'fr' ? 'Protection limite' : 'Borderline protection' };
-      if (value === '+') return { color: RED, tag: lang === 'de' ? 'Geringe Menge guter Bakterien' : lang === 'fr' ? 'Faible flore protectrice' : 'Low protective flora' };
+      if (value === '-') return { color: GREEN, tag: lang === 'de' ? 'Viele gute Bakterien' : lang === 'fr' ? 'Bonne flore protectrice' : lang === 'it' ? 'Buona flora protettiva' : 'Good protective flora' };
+      if (value === '±') return { color: AMBER, tag: lang === 'de' ? 'Mäßige Menge guter Bakterien' : lang === 'fr' ? 'Protection limite' : lang === 'it' ? 'Protezione limite' : 'Borderline protection' };
+      if (value === '+') return { color: RED, tag: lang === 'de' ? 'Geringe Menge guter Bakterien' : lang === 'fr' ? 'Faible flore protectrice' : lang === 'it' ? 'Scarsa flora protettiva' : 'Low protective flora' };
       return { color: GREY, tag: unk };
 
     case 'LE':
-      if (value === '-' || value === '±') return { color: GREEN, tag: lang === 'de' ? 'Keine Entzündungszeichen' : lang === 'fr' ? 'Faible inflammation' : 'Low inflammation' };
-      if (value === '+' || value === '++' || value === '+++') return { color: RED, tag: lang === 'de' ? 'Entzündung nachgewiesen' : lang === 'fr' ? 'Inflammation présente' : 'Inflammation present' };
+      if (value === '-' || value === '±') return { color: GREEN, tag: lang === 'de' ? 'Keine Entzündungszeichen' : lang === 'fr' ? 'Faible inflammation' : lang === 'it' ? 'Infiammazione bassa' : 'Low inflammation' };
+      if (value === '+' || value === '++' || value === '+++') return { color: RED, tag: lang === 'de' ? 'Entzündung nachgewiesen' : lang === 'fr' ? 'Inflammation présente' : lang === 'it' ? 'Infiammazione presente' : 'Inflammation present' };
       return { color: GREY, tag: unk };
 
     case 'SNA':
-      if (value === '-') return { color: GREEN, tag: lang === 'de' ? 'Negativ' : lang === 'fr' ? 'Négatif' : 'Negative' };
-      if (value === '±') return { color: AMBER, tag: lang === 'de' ? 'Grenzwertig' : lang === 'fr' ? 'Limite' : 'Borderline' };
-      if (value === '+') return { color: RED, tag: lang === 'de' ? 'Positiv' : lang === 'fr' ? 'Positif' : 'Positive' };
+      if (value === '-') return { color: GREEN, tag: lang === 'de' ? 'Negativ' : lang === 'fr' ? 'Négatif' : lang === 'it' ? 'Negativo' : 'Negative' };
+      if (value === '±') return { color: AMBER, tag: lang === 'de' ? 'Grenzwertig' : lang === 'fr' ? 'Limite' : lang === 'it' ? 'Limite' : 'Borderline' };
+      if (value === '+') return { color: RED, tag: lang === 'de' ? 'Positiv' : lang === 'fr' ? 'Positif' : lang === 'it' ? 'Positivo' : 'Positive' };
       return { color: GREY, tag: unk };
 
     case 'β-G':
-      if (value === '-') return { color: GREEN, tag: lang === 'de' ? 'Negativ' : lang === 'fr' ? 'Négatif' : 'Negative' };
-      if (value === '±') return { color: AMBER, tag: lang === 'de' ? 'Grenzwertig' : lang === 'fr' ? 'Limite' : 'Borderline' };
-      if (value === '+') return { color: RED, tag: lang === 'de' ? 'Positiv' : lang === 'fr' ? 'Positif' : 'Positive' };
+      if (value === '-') return { color: GREEN, tag: lang === 'de' ? 'Negativ' : lang === 'fr' ? 'Négatif' : lang === 'it' ? 'Negativo' : 'Negative' };
+      if (value === '±') return { color: AMBER, tag: lang === 'de' ? 'Grenzwertig' : lang === 'fr' ? 'Limite' : lang === 'it' ? 'Limite' : 'Borderline' };
+      if (value === '+') return { color: RED, tag: lang === 'de' ? 'Positiv' : lang === 'fr' ? 'Positif' : lang === 'it' ? 'Positivo' : 'Positive' };
       return { color: GREY, tag: unk };
 
     case 'NAG':
-      if (value === '-') return { color: GREEN, tag: lang === 'de' ? 'Negativ' : lang === 'fr' ? 'Négatif' : 'Negative' };
-      if (value === '±') return { color: AMBER, tag: lang === 'de' ? 'Grenzwertig' : lang === 'fr' ? 'Limite' : 'Borderline' };
+      if (value === '-') return { color: GREEN, tag: lang === 'de' ? 'Negativ' : lang === 'fr' ? 'Négatif' : lang === 'it' ? 'Negativo' : 'Negative' };
+      if (value === '±') return { color: AMBER, tag: lang === 'de' ? 'Grenzwertig' : lang === 'fr' ? 'Limite' : lang === 'it' ? 'Limite' : 'Borderline' };
       if (value === '+') {
         if (typeof pH === 'number') {
-          if (pH >= 4.8) return { color: RED, tag: lang === 'de' ? 'Positiv (Trich bei hohem pH wahrscheinlicher)' : lang === 'fr' ? 'Positif (trichomonase plus probable avec pH élevé)' : 'Positive (Trich more likely with high pH)' };
-          if (pH <= 4.6) return { color: RED, tag: lang === 'de' ? 'Positiv (Hefepilz bei niedrigem pH wahrscheinlicher)' : lang === 'fr' ? 'Positif (mycose plus probable avec pH bas)' : 'Positive (Yeast more likely with low pH)' };
+          if (pH >= 4.8) return { color: RED, tag: lang === 'de' ? 'Positiv (Trich bei hohem pH wahrscheinlicher)' : lang === 'fr' ? 'Positif (trichomonase plus probable avec pH élevé)' : lang === 'it' ? 'Positivo (tricomoniasi più probabile con pH elevato)' : 'Positive (Trich more likely with high pH)' };
+          if (pH <= 4.6) return { color: RED, tag: lang === 'de' ? 'Positiv (Hefepilz bei niedrigem pH wahrscheinlicher)' : lang === 'fr' ? 'Positif (mycose plus probable avec pH bas)' : lang === 'it' ? 'Positivo (candidosi più probabile con pH basso)' : 'Positive (Yeast more likely with low pH)' };
         }
-        return { color: RED, tag: lang === 'de' ? 'Positiv' : lang === 'fr' ? 'Positif' : 'Positive' };
+        return { color: RED, tag: lang === 'de' ? 'Positiv' : lang === 'fr' ? 'Positif' : lang === 'it' ? 'Positivo' : 'Positive' };
       }
       return { color: GREY, tag: unk };
   }
@@ -147,6 +168,10 @@ Das ist ein GUTES Ergebnis. Es bedeutet, dass viele gute Bakterien (Laktobazille
       return `**Négatif**
 C'est un BON résultat. Vous avez suffisamment de bonnes bactéries (lactobacilles) qui protègent votre vagin. Ces bonnes bactéries produisent naturellement du peroxyde d'hydrogène (H₂O₂), qui agit comme un agent nettoyant. Cela aide à protéger contre les germes et à prévenir les infections.${disclaimer}`;
     }
+    if (lang === 'it') {
+      return `**Negativo**
+Questo è un BUON risultato. Significa che hai molti batteri buoni (lattobacilli) che lavorano per proteggere la tua vagina. Questi batteri buoni producono naturalmente perossido di idrogeno (H₂O₂), che agisce come un agente pulente. Aiuta a proteggere dai germi e a prevenire le infezioni.${disclaimer}`;
+    }
     return `**Negative** 
 This is a GOOD result. It means you have plenty of good bacteria (lactobacilli) working to protect your vagina. These good bacteria naturally make hydrogen peroxide (H₂O₂), which acts like a cleaning agent. It helps protect against germs and prevent infections.${disclaimer}`;
   }
@@ -159,6 +184,10 @@ Einige gute Bakterien produzieren kleine Mengen Wasserstoffperoxid (H₂O₂), a
       return `**Modéré**
 Vous avez quelques bonnes bactéries qui produisent de petites quantités d'agents nettoyants (H₂O₂), mais pas assez pour une protection complète. Votre vagin pourrait avoir besoin de soins supplémentaires pour rester équilibré et éviter les infections.${disclaimer}`;
     }
+    if (lang === 'it') {
+      return `**Moderato**
+Significa che hai alcuni batteri buoni che producono piccole quantità di agenti pulenti (H₂O₂), ma non abbastanza per una protezione completa. La tua vagina potrebbe avere bisogno di cure extra per rimanere in equilibrio ed evitare infezioni.${disclaimer}`;
+    }
     return `**Moderate**
 This means you have some good bacteria making small amounts of cleaning agents (H₂O₂), but not enough for full protection. Your vagina might need extra care to stay balanced and avoid infections.${disclaimer}`;
   }
@@ -170,6 +199,10 @@ Es sind nicht genügend gute Bakterien vorhanden, um Keime natürlich zu bekämp
     if (lang === 'fr') {
       return `**Positif**
 Votre vagin manque de bonnes bactéries qui luttent naturellement contre les germes. Sans assez de ces protecteurs, votre vagin est moins protégé. Vous êtes plus susceptible d'avoir des infections comme la VB (vaginose bactérienne). Avoir suffisamment de ces bonnes bactéries réduit votre risque de VB.${disclaimer}`;
+    }
+    if (lang === 'it') {
+      return `**Positivo**
+Significa che la tua vagina non ha abbastanza batteri buoni che combattono naturalmente i germi. Senza sufficienti di questi protettori, la tua vagina è meno protetta. Questo aumenta la probabilità di infezioni come la VB (vaginosi batterica). Avere una quantità sufficiente di questi batteri buoni riduce il rischio di VB.${disclaimer}`;
     }
     return `**Positive**
 This means your vagina lacks enough good bacteria that naturally fight germs. Without enough of these protectors, your vagina becomes less protected. This makes you more likely to get infections like BV (bacterial vaginosis). Having plenty of these good bacteria lowers your BV risk.${disclaimer}`;
@@ -187,6 +220,10 @@ Keine Anzeichen einer Entzündung festgestellt.${disclaimer}`;
     if (lang === 'fr') {
       return `**Normal**
 TOUT VA BIEN !${disclaimer}`;
+    }
+    if (lang === 'it') {
+      return `**Normale**
+Nessun segno di infiammazione rilevato.${disclaimer}`;
     }
     return `**Normal**
 YOU ARE GOOD!.${disclaimer}`;
@@ -226,6 +263,20 @@ Comme tous vos autres tests sont négatifs, cette inflammation peut signifier :
 * Évitez les irritants : savons parfumés ou douches vaginales.
 * Envisagez des contrôles réguliers à domicile pour voir l'évolution de votre inflammation.${disclaimer}`;
       }
+      if (lang === 'it') {
+        return `**LE positivo con tutti gli altri test negativi**
+Poiché tutti gli altri test sono negativi, questa infiammazione potrebbe significare:
+* Un'infezione molto precoce, in cui i livelli di germi sono ancora troppo bassi per essere rilevati dagli altri test (la LE reagisce prima).
+* Un'irritazione non infettiva (da saponi, prodotti per lavande, lubrificanti, preservativi).
+* Cambiamenti hormonali come la menopausa o l'allattamento.
+* Attrito (da rapporti sessuali o assorbenti interni).
+* Oppure altri problemi non trattati come IST (clamidia/gonorrea, non trattate qui) o una proliferazione batterica generale (non VB/VA).
+
+**Cosa fare ora per il tuo risultato di infiammazione isolata?**
+* Monitora sintomi come perdite inusuali, prurito/bruciore o dolore/odore.
+* Evita gli irritanti come saponi profumati o lavande vaginali.
+* Valuta controlli regolari a casa per osservare come cambia la tua infiammazione nel tempo.${disclaimer}`;
+      }
       return `**Positive LE with all other tests negative**
 Since all your other tests are negative, this inflammation could mean:
 * A very early infection where germ levels are too low for other tests to detect yet (LE reacts first).
@@ -257,6 +308,15 @@ Votre inflammation confirme fortement que vous avez besoin d'un traitement pour 
 * Surveillez les symptômes et évitez les irritants.
 * Envisagez un nouveau test après traitement pour confirmer la guérison.${disclaimer}`;
     }
+    if (lang === 'it') {
+      return `**LE positivo con altri test positivi**
+La tua infiammazione conferma fortemente che hai bisogno di un trattamento per l'infezione/i rilevata/e. La LE agisce come una "spia di avviso" che qualcosa non va e, combinata con gli altri risultati positivi, conferma la diagnosi.
+
+**Cosa fare ora per il tuo risultato di infezione confermata?**
+* Segui le indicazioni specifiche per l'infezione/i rilevata/e.
+* Monitora i sintomi ed evita gli irritanti.
+* Valuta di ripetere il test dopo il trattamento per confermare la risoluzione.${disclaimer}`;
+    }
     return `**Positive LE with other positive tests**
 Your inflammation strongly confirms you need treatment for the detected infection(s). LE acts like a "warning light" that something is wrong, and combined with your other positive results, this confirms the diagnosis.
 
@@ -279,6 +339,10 @@ Keine bakterielle Vaginose (BV) festgestellt.${disclaimer}`;
       return `**Négatif**
 TOUT VA BIEN !${disclaimer}`;
     }
+    if (lang === 'it') {
+      return `**Negativo**
+Nessuna vaginosi batterica (VB) rilevata.${disclaimer}`;
+    }
     return `**Negative**
 YOU ARE GOOD!${disclaimer}`;
   }
@@ -296,6 +360,13 @@ Votre test est limite — ni clairement normal ni clairement VB. Cela peut arriv
 * Vous pourriez être en **phase précoce ou de guérison de la VB**, les niveaux bactériens changent.
 * Vos bactéries vaginales sont dans un **état mixte** (bonnes et mauvaises).
 * Des **activités récentes** (rapports, douche vaginale, cycle) ont temporairement affecté le résultat.${disclaimer}`;
+    }
+    if (lang === 'it') {
+      return `**Possibile VB**
+Il tuo test è limite – non chiaramente normale, ma nemmeno chiaramente VB. Può succedere perché:
+* Potresti trovarti in una **fase precoce o di guarigione della VB**, in cui i livelli batterici stanno cambiando.
+* La tua flora vaginale è in uno **stato misto** (alcuni batteri buoni, alcuni dannosi).
+* **Attività recenti** come rapporti sessuali, lavande vaginali o il tuo ciclo mestruale hanno temporaneamente influenzato il risultato.${disclaimer}`;
     }
     return `**Possible BV**
 Means your test was borderline—not clearly normal but not definitely BV. This can happen because:
@@ -328,6 +399,18 @@ Indique fortement une vaginose bactérienne (VB), le test détecte des substance
 * Refaites un test entre les règles pour de meilleurs résultats.
 * Évitez rapports et lubrifiants 2 jours avant le nouveau test.${disclaimer}`;
     }
+    if (lang === 'it') {
+      return `**Positivo**
+Indica fortemente la presenza di vaginosi batterica (VB): il test rileva sostanze chimiche specifiche prodotte dai batteri che causano la VB, come Gardnerella e Prevotella.
+
+**Cosa fare ora per il tuo possibile risultato di VB?**
+* Presta attenzione a odore di pesce o perdite grigie sottili — indicano tipicamente la VB.
+* Nota eventuali nuovi disagi durante o dopo i rapporti sessuali o le mestruazioni.
+* Evita le lavande vaginali — danneggiano la protezione naturale della vagina.
+* Attendi una settimana dopo la fine degli antibiotici o delle mestruazioni.
+* Ripeti il test tra un ciclo e l'altro per risultati migliori.
+* Evita rapporti sessuali e lubrificanti per 2 giorni prima di ripetere il test.${disclaimer}`;
+    }
     return `**Positive**
 Strongly means you have BV (bacterial vaginosis), as the test detects specific chemicals produced by BV-causing bacteria like Gardnerella and Prevotella.
 
@@ -353,6 +436,10 @@ Keine aerobe Vaginitis (AV) festgestellt.${disclaimer}`;
       return `**Négatif**
 TOUT VA BIEN !${disclaimer}`;
     }
+    if (lang === 'it') {
+      return `**Negativo**
+Nessuna vaginite aerobica (VA) rilevata.${disclaimer}`;
+    }
     return `**Negative**
 YOU ARE GOOD!${disclaimer}`;
   }
@@ -365,6 +452,10 @@ Der Test zeigt leicht erhöhte Werte chemischer Substanzen, die von aeroben Bakt
       return `**VA possible**
 Le test a détecté des niveaux limites de signaux chimiques produits par les bactéries aérobies (VA) — au-dessus de la normale mais pas clairement positifs. Cela peut survenir en phase précoce d'infection, de guérison, ou à cause du prélèvement, d'antibiotiques récents ou du cycle.${disclaimer}`;
     }
+    if (lang === 'it') {
+      return `**Possibile VA**
+Il test ha rilevato livelli limite di segnali chimici prodotti dai batteri aerobici (VA) — sopra la norma ma non chiaramente positivi. Questo risultato può verificarsi durante un'infezione precoce, la fase di guarigione, o per problemi nella raccolta del campione, un uso recente di antibiotici o la vicinanza al ciclo mestruale.${disclaimer}`;
+    }
     return `**Possible AV**
 Means that the test detected borderline elevated levels of chemical signs produced by aerobic bacteria (AV)—above normal but not clearly positive. This outcome may occur during early infection, recovery, or due to sample collection issues, recent antibiotic use, or timing related to your period.${disclaimer}`;
   }
@@ -376,6 +467,10 @@ Das Ergebnis weist auf aerobe Vaginitis (AV) hin, eine Infektion durch schädlic
     if (lang === 'fr') {
       return `**Positif**
 Indique une vaginite aérobie (VA), infection causée par des bactéries nocives. La VA et la VB (vaginose bactérienne) provoquent toutes deux démangeaisons/brûlures et peuvent coexister. La VA se manifeste souvent par des pertes jaunes avec rougeur/gonflement vaginal, alors que la VB par des pertes gris-blanc fines et une odeur de poisson sans rougeur. Certaines femmes — surtout enceintes — n'ont pas de symptômes de VA ; un dépistage précoce est important car une VA non traitée peut favoriser un accouchement prématuré.${disclaimer}`;
+    }
+    if (lang === 'it') {
+      return `**Positivo**
+Indica una vaginite aerobica (VA), un'infezione causata da batteri dannosi. VA e vaginosi batterica (VB) possono entrambe causare prurito o bruciore e possono coesistere. La VA si manifesta spesso con perdite gialle e arrossamento/gonfiore vaginale, mentre la VB presenta tipicamente perdite grigio-bianche sottili con odore di pesce ma senza arrossamento. È importante notare che alcune donne — soprattutto in gravidanza — non presentano sintomi di VA; un test precoce è fondamentale perché una VA non trattata può favorire un parto prematuro.${disclaimer}`;
     }
     return `**Positive**
 Means Aerobic Vaginitis (AV), an infection caused by harmful bacteria. While AV and Bacterial Vaginosis (BV) both cause itching/burning and may occur together, AV usually shows yellow discharge with vaginal redness/swelling, whereas BV features thin gray-white discharge with fishy odor but no redness/swelling. Importantly, some women—especially during pregnancy—have no AV symptoms; early testing is vital since untreated AV may cause early birth.${disclaimer}`;
@@ -394,6 +489,10 @@ Keine Infektion festgestellt.${disclaimer}`;
       return `**Négatif**
 TOUT VA BIEN !${disclaimer}`;
     }
+    if (lang === 'it') {
+      return `**Negativo**
+Nessuna infezione rilevata.${disclaimer}`;
+    }
     return `**Negative**
 YOU ARE GOOD!${disclaimer}`;
   }
@@ -411,6 +510,13 @@ Votre test montre des signes d'infection limites — pas assez faibles pour êtr
 
 **Que faire pour un résultat « trichomonase ou mycose possible » ?**
 Refaites un test dans 5 à 7 jours — évitez rapports, douches ou crèmes vaginales 24 h avant, et attendez au moins 3 jours après la fin des règles.${disclaimer}`;
+    }
+    if (lang === 'it') {
+      return `**Possibile tricomoniasi o candidosi**
+Il tuo test mostra segni di infezione limite — non abbastanza debole da essere negativo, ma non abbastanza forte per un risultato chiaramente positivo. Questo potrebbe indicare un'infezione molto lieve, iniziale o in fase di guarigione. Sangue, rapporti sessuali, lavande vaginali, spray o lubrificanti possono influenzare temporaneamente il pH e il risultato.
+
+**Cosa fare ora?**
+Ripeti il test dopo 5–7 giorni. Evita rapporti sessuali, lavande vaginali e creme vaginali nelle 24 ore precedenti al test e attendi almeno 3 giorni dopo la fine delle mestruazioni.${disclaimer}`;
     }
     return `**Possible Trich or Yeast**
 Means your test shows borderline infection signs—not weak enough to be negative but not strong enough for a clear positive—with your vagina's sourness (acidity) in the middle zone. This could mean a very mild infection starting or healing. Sometimes sex fluids, or recent douching affect the test; normal events like your period, recent sex, or using sprays/lubes can also change sourness (acidity) temporarily—watch for changes but don't worry yet.
@@ -435,6 +541,13 @@ Avec un pH de ${pH} (≥ 4,8), il s'agit plus probablement d'une **trichomonase*
 **Que faire pour un résultat trichomonase ?**
 Refaites un test dans 5 à 7 jours — évitez rapports, douches ou crèmes vaginales 24 h avant, et attendez au moins 3 jours après la fin des règles.${disclaimer}`;
         }
+        if (lang === 'it') {
+          return `**NAG positivo con pH ${pH}**
+Con un pH di ${pH} (≥ 4,8), è più probabile che si tratti di **tricomoniasi**.
+
+**Cosa fare ora per il tuo risultato di tricomoniasi?**
+Ripeti il test dopo 5–7 giorni. Evita rapporti sessuali, lavande vaginali e creme vaginali nelle 24 ore precedenti al test e attendi almeno 3 giorni dopo la fine delle mestruazioni.${disclaimer}`;
+        }
         return `**Positive NAG with pH ${pH}**
 Based on your pH of ${pH} (≥ 4.8), this is more likely to be **trichomoniasis**.
 
@@ -455,6 +568,13 @@ Avec un pH de ${pH} (≤ 4,6), il s'agit plus probablement d'une **mycose**.
 
 **Que faire pour un résultat d'une mycose ?**
 Refaites un test dans 5 à 7 jours — évitez rapports, douches ou crèmes vaginales 24 h avant, et attendez au moins 3 jours après la fin des règles.${disclaimer}`;
+        }
+        if (lang === 'it') {
+          return `**NAG positivo con pH ${pH}**
+Con un pH di ${pH} (≤ 4,6), è più probabile che si tratti di una **candidosi**.
+
+**Cosa fare ora per il tuo risultato di candidosi?**
+Ripeti il test dopo 5–7 giorni. Evita rapporti sessuali, lavande vaginali e creme vaginali nelle 24 ore precedenti al test e attendi almeno 3 giorni dopo la fine delle mestruazioni.${disclaimer}`;
         }
         return `**Positive NAG with pH ${pH}**
 Based on your pH of ${pH} (≤ 4.6), this is more likely to be a **yeast infection**.
@@ -481,6 +601,15 @@ Wiederholen Sie den Test nach 5–7 Tagen. Vermeiden Sie Geschlechtsverkehr, Vag
 **Que faire pour un résultat « trichomonase ou mycoses possible » ?**
 Refaites un test dans 5 à 7 jours — évitez rapports, douches ou crèmes vaginales 24 h avant, et attendez au moins 3 jours après la fin des règles.${disclaimer}`;
     }
+    if (lang === 'it') {
+      return `**Positivo**
+**Il NAG è un marcatore comune a tricomoniasi e candidosi, quindi da solo non permette di distinguerle — ma combinato con il pH vaginale, aiuta a capire quale sia più probabile:**
+* Positivo ("+") e pH alto (4,8 o superiore) → più probabilmente **tricomoniasi**. (La tricomoniasi aumenta il pH.)
+* Positivo ("+") e pH basso (4,6 o inferiore) → più probabilmente **candidosi**.
+
+**Cosa fare ora per il tuo risultato di "possibile tricomoniasi o candidosi"?**
+Ripeti il test dopo 5–7 giorni. Evita rapporti sessuali, lavande vaginali e creme vaginali nelle 24 ore precedenti al test e attendi almeno 3 giorni dopo la fine delle mestruazioni.${disclaimer}`;
+    }
     return `**Positive**
 **(NAG) is a marker both trich and yeast share, so it can't tell them apart alone—but combined with your vaginal pH, it helps figure out whether you have trich or a yeast infection:**
 * Positive ("+") and pH is high (4.8 or above) → more likely to be **trich**. (Trich makes your pH higher).
@@ -506,5 +635,5 @@ export function getBiomarkerDescription(
     const pHVal = Number(all?.find(b => b.name === 'pH')?.value);
     return nagDetail(value, Number.isFinite(pHVal) ? pHVal : undefined, lang);
   }
-  return lang === 'de' ? 'Biomarker' : lang === 'fr' ? 'Biomarqueur' : 'Biomarker';
+  return lang === 'de' ? 'Biomarker' : lang === 'fr' ? 'Biomarqueur' : lang === 'it' ? 'Biomarcatore' : 'Biomarker';
 }

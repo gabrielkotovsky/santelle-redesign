@@ -2,16 +2,23 @@ import { supabase } from '@/src/services/supabase';
 import type { AppLang } from '@/src/i18n/translations';
 import type { PretestChoice, PretestQuestion, UUID } from '../models';
 import { GERMAN_PRETEST_CHOICES, GERMAN_PRETEST_QUESTIONS } from '../german';
+import { ITALIAN_PRETEST_CHOICES, ITALIAN_PRETEST_QUESTIONS } from '../italian';
+
+/** Locale accepted by the pretest fetcher. Italian isn't part of AppT (app-wide
+ * translations) yet, but the pretest questionnaire has its own approved Italian
+ * overlay, the same way it does for German. */
+export type PretestLocale = AppLang;
 
 /** Prefer a view that returns questions + JSON choices in one call:
   * view name suggestion: app_pretest_v1_json
   * If you don't have it yet, this stitches client-side.
-  * French uses translated DB columns. German uses stable question slugs and
-  * choice values with approved local copy.
+  * French uses translated DB columns. German and Italian use stable question
+  * slugs and choice values with approved local copy.
   */
-export async function fetchPretest(version = 1, locale: AppLang = 'en'): Promise<PretestQuestion[]> {
+export async function fetchPretest(version = 1, locale: PretestLocale = 'en'): Promise<PretestQuestion[]> {
   const isFrench = locale === 'fr';
   const isGerman = locale === 'de';
+  const isItalian = locale === 'it';
   const normalizeChoiceLabel = (label: string) => {
     if (!isFrench) return label;
     return label
@@ -52,11 +59,14 @@ export async function fetchPretest(version = 1, locale: AppLang = 'en'): Promise
     const raw = ch as any;
     const questionSlug = slugByQuestionId.get(qid) ?? '';
     const germanLabel = GERMAN_PRETEST_CHOICES[questionSlug]?.[String(raw.value ?? '')];
+    const italianLabel = ITALIAN_PRETEST_CHOICES[questionSlug]?.[String(raw.value ?? '')];
     const choice: PretestChoice = {
       ...raw,
       label: isGerman && germanLabel
         ? germanLabel
-        : normalizeChoiceLabel(isFrench && raw.label_french != null ? raw.label_french : raw.label),
+        : isItalian && italianLabel
+          ? italianLabel
+          : normalizeChoiceLabel(isFrench && raw.label_french != null ? raw.label_french : raw.label),
     };
     (byQ[qid] ??= []).push(choice);
   });
@@ -64,11 +74,14 @@ export async function fetchPretest(version = 1, locale: AppLang = 'en'): Promise
   const result = (q ?? []).map(row => {
     const raw = row as any;
     const germanPrompt = GERMAN_PRETEST_QUESTIONS[String(raw.slug ?? '')];
+    const italianPrompt = ITALIAN_PRETEST_QUESTIONS[String(raw.slug ?? '')];
     const prompt = isGerman && germanPrompt
       ? germanPrompt
-      : isFrench && raw.prompt_french != null
-        ? raw.prompt_french
-        : raw.prompt;
+      : isItalian && italianPrompt
+        ? italianPrompt
+        : isFrench && raw.prompt_french != null
+          ? raw.prompt_french
+          : raw.prompt;
     return {
       ...raw,
       prompt,

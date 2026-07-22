@@ -6,8 +6,9 @@ import { submitPretestAnswers, saveIndividualAnswer } from '../api/submitPretest
 import type { PretestAnswer, PretestQuestion, UUID } from '../models';
 
 export function usePretest(version = 1) {
+  // Italian has its own approved pretest overlay (see ../italian.ts), so it is
+  // fetched directly instead of falling back to English.
   const locale = useAuthStore((s) => s.signUpLanguage ?? 'en');
-  const contentLocale = locale === 'it' ? 'en' : locale;
   const [questions, setQuestions] = useState<PretestQuestion[]>([]);
   const [answers, setAnswers] = useState<PretestAnswer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,8 +26,9 @@ export function usePretest(version = 1) {
           setQuestions(JSON.parse(cached));
         }
 
-        // Fetch fresh questions (uses prompt_french / label_french when locale is 'fr')
-        const fresh = await fetchPretest(version, contentLocale);
+        // Fetch fresh questions (uses prompt_french / label_french when locale is 'fr';
+        // German and Italian use their local overlays keyed by stable slugs/values).
+        const fresh = await fetchPretest(version, locale);
         if (mounted) {
           setQuestions(fresh);
           await AsyncStorage.setItem(key, JSON.stringify(fresh));
@@ -40,7 +42,7 @@ export function usePretest(version = 1) {
       }
     })();
     return () => { mounted = false; };
-  }, [version, locale, contentLocale]);
+  }, [version, locale]);
 
   const setSingle = (qId: UUID, choiceId: UUID) =>
     setAnswers(prev => {

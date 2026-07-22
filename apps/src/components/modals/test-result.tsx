@@ -15,7 +15,7 @@ import { ScreenBackground } from '../layout/ScreenBackground';
 import { ArticleModal } from './article-modal';
 import AskSantelleModal from './ask-santelle-modal';
 import ChatbotModal from './chatbot-modal';
-import { getBiomarkerDescription, getBiomarkerStatus, getPHStatus } from './biomarker-utils';
+import { getBiomarkerDescription, getBiomarkerStatus, getPHStatus, type BiomarkerLang } from './biomarker-utils';
 import { supabase } from '@/src/services/supabase';
 import { useTranslations } from '@/src/i18n/useTranslations';
 import { useTestSession } from '@/src/features/test-session/testSession.store';
@@ -31,12 +31,16 @@ import {
   GERMAN_PRETEST_CHOICES,
   GERMAN_PRETEST_QUESTIONS,
 } from '@/src/features/pre-test/german';
+import {
+  ITALIAN_PRETEST_CHOICES,
+  ITALIAN_PRETEST_QUESTIONS,
+} from '@/src/features/pre-test/italian';
 
 const SYMPTOM_GROUPING_RULES = [
-  { key: 'pain', match: /(itch|burn|pain|irrit|juck|brenn|schmerz|reiz)/i },
-  { key: 'timeline', match: /(day|week|month|ago|today|yesterday|tag|woche|monat|heute|gestern)/i },
-  { key: 'discharge', match: /discharge|fluid|ausfluss|sekret/i },
-  { key: 'smell', match: /smell|odor|geruch/i },
+  { key: 'pain', match: /(itch|burn|pain|irrit|juck|brenn|schmerz|reiz|prurit|brucior|dolor)/i },
+  { key: 'timeline', match: /(day|week|month|ago|today|yesterday|tag|woche|monat|heute|gestern|giorn|settiman|mese|oggi|ieri)/i },
+  { key: 'discharge', match: /discharge|fluid|ausfluss|sekret|perdit/i },
+  { key: 'smell', match: /smell|odor|geruch|odore/i },
   { key: 'other', match: /.*/ },
 ] as const;
 
@@ -46,7 +50,9 @@ function groupSymptomLabels(labels: string[], lang: string) {
     ? { pain: 'Schmerzen und Reizung', timeline: 'Zeitlicher Verlauf', discharge: 'Ausfluss', smell: 'Geruch', other: 'Sonstiges' }
     : lang === 'fr'
       ? { pain: 'Douleur et irritation', timeline: 'Chronologie', discharge: 'Pertes', smell: 'Odeur', other: 'Autre' }
-      : { pain: 'Pain & irritation', timeline: 'Timeline', discharge: 'Discharge', smell: 'Smell', other: 'Other' };
+      : lang === 'it'
+        ? { pain: 'Dolore e irritazione', timeline: 'Cronologia', discharge: 'Perdite', smell: 'Odore', other: 'Altro' }
+        : { pain: 'Pain & irritation', timeline: 'Timeline', discharge: 'Discharge', smell: 'Smell', other: 'Other' };
   labels.forEach((label) => {
     const rule =
       SYMPTOM_GROUPING_RULES.find((r) => r.match.test(label)) ??
@@ -113,7 +119,9 @@ function getRecommendedArticleLinks(profileKey: CardKey, lang: string): Recommen
         ? 'Rezeptfreie Produkte, die Ihr vaginales Mikrobiom unterstützen können'
         : lang === 'fr'
           ? 'Produits OTC pouvant aider votre microbiome vaginal'
-          : 'OTC products that can help your vaginal microbiome',
+          : lang === 'it'
+            ? 'Prodotti da banco che possono aiutare il tuo microbioma vaginale'
+            : 'OTC products that can help your vaginal microbiome',
       slugs: ['otc_products_that_can_help_your_vaginal_microbiome'],
     },
   ];
@@ -125,7 +133,9 @@ function getRecommendedArticleLinks(profileKey: CardKey, lang: string): Recommen
         ? 'BV, Hefepilzinfektionen und Trichomoniasis: Was ist der Unterschied?'
         : lang === 'fr'
           ? 'VB, mycose et trichomonase: comment les distinguer'
-          : 'What is BV, yeast infections, and trichomoniasis?',
+          : lang === 'it'
+            ? 'VB, candidosi e tricomoniasi: qual è la differenza?'
+            : 'What is BV, yeast infections, and trichomoniasis?',
       slugs: ['what_is_bv_yeast_infections_and_trichomoniasis'],
     },
     {
@@ -134,7 +144,9 @@ function getRecommendedArticleLinks(profileKey: CardKey, lang: string): Recommen
         ? 'Warum vaginale Infektionen immer wiederkehren'
         : lang === 'fr'
           ? 'Pourquoi les infections vaginales reviennent'
-          : 'Why vaginal infections keep coming back',
+          : lang === 'it'
+            ? 'Perché le infezioni vaginali continuano a tornare'
+            : 'Why vaginal infections keep coming back',
       slugs: ['why_vaginal_infections_keep_coming_back'],
     },
   ];
@@ -255,6 +267,10 @@ export default function TestLogModal({
   onEditResults,
 }: Props) {
   const { t, lang } = useTranslations();
+  // biomarker-utils.ts now has full EN/FR/DE/IT medical content, so we can
+  // pass `lang` straight through (AppLang and BiomarkerLang share the same
+  // 'en' | 'fr' | 'de' | 'it' union).
+  const biomarkerLang: BiomarkerLang = lang;
   const loadSessionForEdit = useTestSession((s) => s.loadSessionForEdit);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [articleModalVisible, setArticleModalVisible] = useState(false);
@@ -374,7 +390,8 @@ export default function TestLogModal({
 
         const useFrench = lang === 'fr';
         const useGerman = lang === 'de';
-        // Fetch canonical values; local German copy is keyed by stable slugs/values.
+        const useItalian = lang === 'it';
+        // Fetch canonical values; local German/Italian copy is keyed by stable slugs/values.
         const [symptomsResult, contextResult] = await Promise.all([
           supabase
             .from("app_pretest_responses")
@@ -406,7 +423,9 @@ export default function TestLogModal({
         const pickPrompt = (r: any) => {
           const question = r.app_pretest_questions;
           const germanPrompt = GERMAN_PRETEST_QUESTIONS[String(question?.slug ?? '')];
+          const italianPrompt = ITALIAN_PRETEST_QUESTIONS[String(question?.slug ?? '')];
           if (useGerman && germanPrompt) return germanPrompt;
+          if (useItalian && italianPrompt) return italianPrompt;
           return useFrench && question?.prompt_french != null
             ? question.prompt_french
             : question?.prompt;
@@ -431,6 +450,10 @@ export default function TestLogModal({
             const choiceValue = String(c.app_pretest_choices?.value ?? '');
             if (useGerman) {
               return GERMAN_PRETEST_CHOICES[questionSlug]?.[choiceValue]
+                ?? c.app_pretest_choices?.label;
+            }
+            if (useItalian) {
+              return ITALIAN_PRETEST_CHOICES[questionSlug]?.[choiceValue]
                 ?? c.app_pretest_choices?.label;
             }
             return pickLabel(c);
@@ -499,12 +522,14 @@ export default function TestLogModal({
       return;
     }
     Alert.alert(
-      lang === 'de' ? 'Artikel nicht gefunden' : lang === 'fr' ? 'Article introuvable' : 'Article not found',
+      lang === 'de' ? 'Artikel nicht gefunden' : lang === 'fr' ? 'Article introuvable' : lang === 'it' ? 'Articolo non trovato' : 'Article not found',
       lang === 'de'
         ? 'Der empfohlene Artikel ist derzeit nicht verfügbar.'
         : lang === 'fr'
           ? "L'article recommandé n'est pas disponible pour le moment."
-          : 'The recommended article is not available right now.'
+          : lang === 'it'
+            ? "L'articolo consigliato non è disponibile al momento."
+            : 'The recommended article is not available right now.'
     );
   };
 
@@ -610,8 +635,8 @@ export default function TestLogModal({
           {/* Biomarker Grid */}
           {biomarkers.filter(([_, v]) => v).map(([name, value]) => {
             const status = name === 'pH'
-              ? getPHStatus(Number(value), lang)
-              : getBiomarkerStatus(value!, name, log.ph ?? undefined, lang);
+              ? getPHStatus(Number(value), biomarkerLang)
+              : getBiomarkerStatus(value!, name, log.ph ?? undefined, biomarkerLang);
             const isExpanded = expanded.has(name);
             const bgColor = (status?.color ?? '#000') + '30';
             const biomarkerRowStyle = [
@@ -651,7 +676,7 @@ export default function TestLogModal({
                         name as any,
                         String(value),
                         biomarkers.map(([n, v]) => ({ name: n, value: v || '' })),
-                        lang
+                        biomarkerLang
                       );
                       const parts = description?.split('\n\n---\n\n') || [];
                       const mainContent = parts[0];
@@ -789,7 +814,13 @@ export default function TestLogModal({
           <View style={styles.indicativeCard}>
             <View style={styles.indicativeHeader}>
               <Text style={styles.indicativeTitle}>
-                {lang === 'de' ? 'Orientierendes Ergebnis' : lang === 'fr' ? 'Résultat indicatif' : 'Indicative result'}
+                {lang === 'de'
+                  ? 'Orientierendes Ergebnis'
+                  : lang === 'fr'
+                    ? 'Résultat indicatif'
+                    : lang === 'it'
+                      ? 'Risultato indicativo'
+                      : 'Indicative result'}
               </Text>
               <View style={[styles.indicativeDot, { backgroundColor: indicative.color }]} />
             </View>
@@ -818,7 +849,7 @@ export default function TestLogModal({
 
           <View style={styles.recommendedSection}>
             <Text style={styles.recommendedTitle}>
-              {lang === 'de' ? 'Empfohlene Artikel' : lang === 'fr' ? 'Articles recommandés' : 'Recommended articles'}
+              {lang === 'de' ? 'Empfohlene Artikel' : lang === 'fr' ? 'Articles recommandés' : lang === 'it' ? 'Articoli consigliati' : 'Recommended articles'}
             </Text>
             {recommendedLinks.map((link) => (
                 <ShrinkableTouchable
@@ -837,7 +868,9 @@ export default function TestLogModal({
                 ? 'Diese Informationen sind eine allgemeine Interpretation der Gebrauchsanweisung des Kits und stellen keine medizinische Beratung dar. Wenden Sie sich für medizinische Beratung an medizinisches Fachpersonal.'
                 : lang === 'fr'
                   ? "Ces informations sont une interprétation générale des instructions du kit et ne constituent pas un avis médical. Pour un avis médical, consultez un professionnel de santé."
-                  : 'This info is a general interpretation from the kit instructions and is not medical advice. For medical guidance, consult a professional.'}
+                  : lang === 'it'
+                    ? 'Queste informazioni sono un’interpretazione generale delle istruzioni del kit e non costituiscono un parere medico. Per un parere medico, consulti un professionista sanitario.'
+                    : 'This info is a general interpretation from the kit instructions and is not medical advice. For medical guidance, consult a professional.'}
             </Text>
           </View>
           </View>

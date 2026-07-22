@@ -1,5 +1,6 @@
 import { supabase } from '@/src/services/supabase';
 import { GERMAN_ARTICLES } from './german';
+import { ITALIAN_ARTICLES } from './italian';
 
 export type Article = {
   id: string;
@@ -62,14 +63,35 @@ function mapRowToArticle(row: Record<string, unknown>, locale: string): Article 
     };
   }
 
+  if (locale === 'it') {
+    const italian = ITALIAN_ARTICLES[slug];
+    if (italian) {
+      return {
+        ...r,
+        title: italian.title,
+        subtitle: italian.subtitle,
+        content_md: italian.content_md,
+      };
+    }
+    // Optional DB columns once migrated in Supabase.
+    if (r.title_italian != null) {
+      return {
+        ...r,
+        title: (r.title_italian as string) ?? r.title,
+        subtitle: (r.subtitle_italian != null ? r.subtitle_italian : r.subtitle) as string | null,
+        content_md: (r.content_md_italian as string) ?? r.content_md,
+      };
+    }
+  }
+
   return r as Article;
 }
 
 export async function listArticles(opts: ListOpts = {}): Promise<Article[]> {
   const { limit = 20, offset = 0, category, search, locale = 'en' } = opts;
   // Localized fields live on canonical English rows (French DB columns /
-  // German app overlay). Always query locale = 'en' for fr/de.
-  const queryLocale = locale === 'fr' || locale === 'de' ? 'en' : locale;
+  // German + Italian app overlays). Always query locale = 'en' for fr/de/it.
+  const queryLocale = locale === 'fr' || locale === 'de' || locale === 'it' ? 'en' : locale;
 
   let q = supabase
     .from('articles')
