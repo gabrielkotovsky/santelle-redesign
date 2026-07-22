@@ -3,7 +3,7 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { View, FlatList, Dimensions, NativeScrollEvent, NativeSyntheticEvent, Text, TouchableOpacity, Alert } from "react-native";
 import Animated, { FadeIn, FadeInUp, FadeOut, FadeOutUp, LinearTransition } from "react-native-reanimated";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 
 // Component imports
 import { ScreenBackground } from "@/src/components/layout/ScreenBackground";
@@ -45,6 +45,8 @@ type Step = {
 
 export default function TestScreen() {
   const { t } = useTranslations();
+  const { editResults } = useLocalSearchParams<{ editResults?: string }>();
+  const isEditingResults = editResults === '1' || editResults === 'true';
   const TEST_STEPS: Step[] = useMemo(() => [
     { title: t.step1Title, SvgImage: Step0Svg, description: [t.step1Desc1, t.step1Desc2, t.step1Desc3] },
     { title: t.step2Title, SvgImage: Step1Svg, description: [t.step2Desc1, t.step2Desc2, t.step2Desc3, t.step2Desc4] },
@@ -63,6 +65,7 @@ export default function TestScreen() {
   const storeSetPhResults = useTestSession(s => s.setPhResultsReadyAt);
   const abortSession = useTestSession(s => s.abort);
   const hydrate = useTestSession(s => s.hydrateFromServer);
+  const resetLocal = useTestSession(s => s.resetLocal);
 
   // ===============================
   // Component state
@@ -229,12 +232,34 @@ export default function TestScreen() {
     }
   }, [resultsRemaining, resultsNotifId]);
 
-  // Hydrate session on mount
+  // Hydrate session on mount (skip when re-entering to edit a completed log)
   useEffect(() => {
     (async () => {
+      if (isEditingResults) return;
       if (!session) await hydrate();
     })();
   }, []);
+
+  // History → Edit results: jump straight to pH / markers with timers expired.
+  useEffect(() => {
+    if (!isEditingResults || !session?.id) return;
+
+    setStep3Confirmed(true);
+    setPhSelected(true);
+    setMinAllowedStep(5);
+    setCurrentStep(5);
+    const past = new Date(Date.now() - 1000).toISOString();
+    setPhEndsAt(session.ph_result_ready_at ?? past);
+    setResultsEndsAt(session.results_ready_at ?? past);
+
+    programmaticScroll.current = true;
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToIndex({ index: 4, animated: false });
+      setTimeout(() => {
+        programmaticScroll.current = false;
+      }, 50);
+    });
+  }, [isEditingResults, session?.id]);
 
   // Sync with server session data
   useEffect(() => {
@@ -309,8 +334,28 @@ export default function TestScreen() {
       await cancelNotification(resultsNotifId);
       setResultsNotifId(undefined);
     }
+    // Editing a completed log from history — never delete the session.
+    if (isEditingResults || session?.status === 'completed') {
+      resetLocal();
+      router.replace('/(tabs)/tests');
+      return;
+    }
     await abortSession();
     router.replace('/(tabs)/tests');
+  };
+
+  /** Re-open pH then markers after post-complete "Edit results" — stay on the test screen. */
+  const handleRequestEditResults = () => {
+    // Allow swiping between steps 5–6 even if session is already completed.
+    setMinAllowedStep(5);
+    setCurrentStep(5);
+    programmaticScroll.current = true;
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToIndex({ index: 4, animated: true });
+      setTimeout(() => {
+        programmaticScroll.current = false;
+      }, 50);
+    });
   };
 
   // ===============================
@@ -478,8 +523,9 @@ export default function TestScreen() {
                     onSkip={() => setResultsEndsAt(new Date().toISOString())}
                   />
                 ) : (
-                  <ResultSelector 
+                  <ResultSelector
                     title={t.step6Title}
+                    onRequestEditResults={handleRequestEditResults}
                   />
                 )
               ) : (

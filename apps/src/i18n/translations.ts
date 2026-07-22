@@ -36,6 +36,9 @@ const appTranslationsEn = {
   symptoms: 'Symptoms',
   context: 'Context',
   editAnswers: 'Edit Answers',
+  editResults: 'Edit results',
+  recheckResultsHint:
+    'These readings look mixed or hard to read. Double-check your strip colors against the kit card, then edit if needed.',
   // Tests tab
   history: 'HISTORY',
   // Questionnaire common
@@ -278,6 +281,9 @@ const appTranslationsFr = {
   symptoms: 'Symptômes',
   context: 'Contexte',
   editAnswers: 'Modifier les réponses',
+  editResults: 'Modifier les résultats',
+  recheckResultsHint:
+    'Ces lectures semblent mixtes ou difficiles à lire. Vérifiez à nouveau les couleurs de la bandelette avec la carte du kit, puis modifiez si besoin.',
   history: 'HISTORIQUE',
   pleaseSelectOne: 'Veuillez sélectionner au moins une option',
   pleaseSelectOption: 'Veuillez sélectionner une option',
@@ -510,6 +516,9 @@ const appTranslationsDe = {
   symptoms: 'Symptome',
   context: 'Kontext',
   editAnswers: 'Antworten bearbeiten',
+  editResults: 'Ergebnisse bearbeiten',
+  recheckResultsHint:
+    'Diese Ablesungen wirken gemischt oder schwer zu lesen. Prüfen Sie die Streifenfarben nochmals mit der Kit-Karte und bearbeiten Sie sie bei Bedarf.',
   // Tests tab
   history: 'VERLAUF',
   // Questionnaire common

@@ -41,6 +41,21 @@ export async function fetchOpenSession(): Promise<TestSession | null> {
   if (error) throw error;
   return data;
 }
+
+/** Load any session by id (including completed) — used to re-edit results within the edit window. */
+export async function fetchSessionById(sessionId: string): Promise<TestSession | null> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return null;
+
+  const { data, error } = await supabase
+    .from("test_sessions")
+    .select("*")
+    .eq("id", sessionId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
 export async function createSession(): Promise<TestSession> {
   // Get the current authenticated user
   const { data: { user }, error: authError } = await supabase.auth.getUser();

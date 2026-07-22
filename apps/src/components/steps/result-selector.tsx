@@ -2,7 +2,13 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ShrinkableTouchable } from '../animations/ShrinkableTouchable';
 import { useTestSession } from '@/src/features/test-session/testSession.store';
-import { upsertLogResultsFlat, type TestLog, analyzeLog, fetchLogById } from '@/src/features/test-logs/testLogs.api';
+import {
+  upsertLogResultsFlat,
+  getLogBySession,
+  type TestLog,
+  analyzeLog,
+  fetchLogById,
+} from '@/src/features/test-logs/testLogs.api';
 import { router } from 'expo-router';
 import TestLogModal from '../modals/test-result';
 import { supabase } from '@/src/services/supabase';
@@ -10,20 +16,27 @@ import { useTranslations } from '@/src/i18n';
 
 interface ResultSelectorProps {
   title?: string;
+  /** Close the result modal and jump back to pH/markers without leaving the test flow. */
+  onRequestEditResults?: () => void;
 }
 
 type BiomarkerKeyUI = 'H₂O₂' | 'LE' | 'SNA' | 'β-G' | 'NAG';
 type TestResultsState = Record<BiomarkerKeyUI, string>;
 
-export default function ResultSelector({ title = "Select your results" }: ResultSelectorProps) {
+const emptyResults = (): TestResultsState => ({
+  'H₂O₂': '',
+  'LE': '',
+  'SNA': '',
+  'β-G': '',
+  'NAG': '',
+});
+
+export default function ResultSelector({
+  title = 'Select your results',
+  onRequestEditResults,
+}: ResultSelectorProps) {
   const { t } = useTranslations();
-  const [selectedTestResults, setSelectedTestResults] = useState<TestResultsState>({
-    'H₂O₂': '',
-    'LE':   '',
-    'SNA':  '',
-    'β-G':  '',
-    'NAG':  ''
-  });
+  const [selectedTestResults, setSelectedTestResults] = useState<TestResultsState>(emptyResults);
   const [saving, setSaving] = useState(false);
 
   const session  = useTestSession(s => s.session);
@@ -54,6 +67,30 @@ export default function ResultSelector({ title = "Select your results" }: Result
     return colors[testType]?.[intensity] ?? '#FFFFFF';
   };
 
+  // Prefill chips from an existing log (supports re-edit after completion).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!session?.id) return;
+      try {
+        const log = await getLogBySession(session.id);
+        if (cancelled || !log) return;
+        setSelectedTestResults((prev) => ({
+          'H₂O₂': log.h2o2 || prev['H₂O₂'],
+          'LE': log.le || prev['LE'],
+          'SNA': log.sna || prev['SNA'],
+          'β-G': log.beta_g || prev['β-G'],
+          'NAG': log.nag || prev['NAG'],
+        }));
+      } catch {
+        // Silently handle load error
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.id]);
+
   useEffect(() => {
     if (!completedLog?.id) return;
 
@@ -79,7 +116,7 @@ export default function ResultSelector({ title = "Select your results" }: Result
     if (!session || saving || !allSelected) return;
     setSaving(true);
     try {
-      // 1) Save final results
+      // 1) Save final results (upsert overwrites by session — works after completed too)
       const saved = await upsertLogResultsFlat(session.id, {
         h2o2:   selectedTestResults['H₂O₂'],
         le:     selectedTestResults['LE'],
@@ -88,7 +125,7 @@ export default function ResultSelector({ title = "Select your results" }: Result
         nag:    selectedTestResults['NAG'],
       });
 
-      // 2) Mark session complete
+      // 2) Mark session complete (idempotent if already completed)
       await complete();
 
       // 3) Show modal with this completed log (so user sees what they just saved)
@@ -211,6 +248,10 @@ export default function ResultSelector({ title = "Select your results" }: Result
       <TestLogModal
         visible={showResultModal}
         log={completedLog ?? undefined}
+        onEditResults={() => {
+          setShowResultModal(false);
+          onRequestEditResults?.();
+        }}
         onClose={() => {
           setShowResultModal(false);
           // after user closes the modal, go back to the Tests tab

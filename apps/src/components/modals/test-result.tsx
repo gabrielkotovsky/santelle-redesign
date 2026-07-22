@@ -18,6 +18,7 @@ import ChatbotModal from './chatbot-modal';
 import { getBiomarkerDescription, getBiomarkerStatus, getPHStatus } from './biomarker-utils';
 import { supabase } from '@/src/services/supabase';
 import { useTranslations } from '@/src/i18n/useTranslations';
+import { useTestSession } from '@/src/features/test-session/testSession.store';
 import {
   biomarkersFromLog,
   buildCard,
@@ -58,6 +59,11 @@ function groupSymptomLabels(labels: string[], lang: string) {
 type Props = {
   visible: boolean;
   onClose: () => void;
+  /**
+   * Optional override for the in-flow post-complete modal.
+   * When omitted, Edit navigates back into the test selectors (history path).
+   */
+  onEditResults?: () => void;
   log?: {
     id: string;
     test_session_id?: string;
@@ -71,6 +77,16 @@ type Props = {
     analysis?: string | null;
   } | null;
 };
+
+/** Results may be corrected within this window after the log was created. */
+const EDIT_RESULTS_WINDOW_MS = 10 * 60 * 1000;
+
+function isWithinEditWindow(createdAt: string | undefined, nowMs: number): boolean {
+  if (!createdAt) return false;
+  const t = new Date(createdAt).getTime();
+  if (Number.isNaN(t)) return false;
+  return nowMs - t < EDIT_RESULTS_WINDOW_MS;
+}
 
 type PretestEntry = {
   question_prompt: string;
@@ -232,8 +248,14 @@ function highlightMedicalTerms(text: string): string {
   return result;
 }
 
-export default function TestLogModal({ visible, onClose, log }: Props) {
+export default function TestLogModal({
+  visible,
+  onClose,
+  log,
+  onEditResults,
+}: Props) {
   const { t, lang } = useTranslations();
+  const loadSessionForEdit = useTestSession((s) => s.loadSessionForEdit);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [articleModalVisible, setArticleModalVisible] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<any>(null);
@@ -242,6 +264,8 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
   const [journalExpanded, setJournalExpanded] = useState(false);
   const [journalEntries, setJournalEntries] = useState<PretestEntry[]>([]);
   const [journalLoading, setJournalLoading] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [editingResults, setEditingResults] = useState(false);
   const totalInsights = journalEntries.reduce(
     (sum, entry) => sum + (entry.selected_labels?.length || 0),
     0
@@ -283,6 +307,40 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
         .flatMap((entry) => entry.selected_labels ?? []),
     [journalEntries]
   );
+
+  const withinEditWindow = isWithinEditWindow(log?.created_at, nowMs);
+
+  // Tick while the edit window is still open so the button disappears on expiry.
+  useEffect(() => {
+    if (!visible || !log?.created_at) return;
+    if (!isWithinEditWindow(log.created_at, Date.now())) return;
+    setNowMs(Date.now());
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [visible, log?.created_at]);
+
+  const handleEditResultsPress = async () => {
+    if (!withinEditWindow || editingResults) return;
+    if (onEditResults) {
+      onEditResults();
+      return;
+    }
+    const sessionId = log?.test_session_id;
+    if (!sessionId) {
+      Alert.alert(t.failedToSave, 'Missing test session for this log.');
+      return;
+    }
+    setEditingResults(true);
+    try {
+      await loadSessionForEdit(sessionId);
+      onClose();
+      router.push({ pathname: '/log-test/test', params: { editResults: '1' } });
+    } catch {
+      Alert.alert(t.failedToSave);
+    } finally {
+      setEditingResults(false);
+    }
+  };
 
   // Load pretest data when modal opens (similar to how biomarkers are loaded)
   useEffect(() => {
@@ -523,6 +581,9 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
     ['NAG', log.nag],
   ] as const;
 
+  const needsRecheck =
+    indicative.variant === 'URGENT-5' || indicative.variant.startsWith('MIXED-');
+
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -702,6 +763,25 @@ export default function TestLogModal({ visible, onClose, log }: Props) {
           >
             <Text style={styles.learnMoreButtonText}>{t.learnMoreAboutBiomarkers}</Text>
           </ShrinkableTouchable>
+
+          {withinEditWindow && (
+            <View style={styles.editResultsSection}>
+              {needsRecheck && (
+                <Text style={styles.recheckResultsHint}>{t.recheckResultsHint}</Text>
+              )}
+              <ShrinkableTouchable
+                style={styles.journalEditButton}
+                onPress={handleEditResultsPress}
+                disabled={editingResults}
+                accessibilityRole="button"
+                accessibilityLabel={t.editResults}
+              >
+                <Text style={styles.journalEditButtonText}>
+                  {editingResults ? t.savingResults : t.editResults}
+                </Text>
+              </ShrinkableTouchable>
+            </View>
+          )}
 
           <View style={styles.divider} />
 
@@ -1356,6 +1436,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Poppins-SemiBold',
     color: Colors.light.rush,
+  },
+  editResultsSection: {
+    marginTop: 16,
+    marginBottom: 4,
+    gap: 12,
+  },
+  recheckResultsHint: {
+    fontSize: 13,
+    fontFamily: 'Poppins-Regular',
+    color: Colors.light.rush,
+    lineHeight: 20,
+    opacity: 0.85,
   },
 
   // Ask Santelle Button styles

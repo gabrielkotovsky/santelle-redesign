@@ -5,6 +5,7 @@ import {
     TestSession,
     createSession as apiCreate,
     fetchOpenSession as apiFetchOpen,
+    fetchSessionById as apiFetchById,
     setStep as apiSetStep,
     setPhResultsReadyAt as apiSetPhResults,
     setResultsReadyAt as apiSetResults,
@@ -21,6 +22,8 @@ type State = {
     error?: string;
     hydrateFromServer: () => Promise<void>;
     startSession: () => Promise<void>;
+    /** Put a (possibly completed) session in local state so results can be re-edited. */
+    loadSessionForEdit: (sessionId: string) => Promise<void>;
     setStep: (step: number) => Promise<void>;
     setPhResultsReadyAt: (iso: string) => Promise<void>;
     setResultsReadyAt: (iso: string) => Promise<void>;
@@ -70,6 +73,34 @@ export const useTestSession = create<State>()(
               results_ready_at: s.results_ready_at } });
           } catch (e: any) {
             set({ error: e.message ?? "Failed to start session" });
+          } finally {
+            set({ loading: false });
+          }
+        },
+
+        loadSessionForEdit: async (sessionId: string) => {
+          set({ loading: true, error: undefined });
+          try {
+            const s = await apiFetchById(sessionId);
+            if (!s) throw new Error("Session not found");
+            // Ensure timers are expired so pH/marker selectors show immediately.
+            const past = new Date(Date.now() - 1000).toISOString();
+            set({
+              session: {
+                id: s.id,
+                current_step: 5,
+                status: s.status,
+                ph_result_ready_at: s.ph_result_ready_at && new Date(s.ph_result_ready_at).getTime() <= Date.now()
+                  ? s.ph_result_ready_at
+                  : past,
+                results_ready_at: s.results_ready_at && new Date(s.results_ready_at).getTime() <= Date.now()
+                  ? s.results_ready_at
+                  : past,
+              },
+            });
+          } catch (e: any) {
+            set({ error: e.message ?? "Failed to load session for edit" });
+            throw e;
           } finally {
             set({ loading: false });
           }
