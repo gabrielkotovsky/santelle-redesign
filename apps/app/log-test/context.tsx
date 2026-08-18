@@ -16,6 +16,7 @@ import { usePretest, type PretestQuestion, type PretestChoice, type UUID, type P
 import { useTestSession } from '@/src/features/test-session/testSession.store';
 import { supabase } from '@/src/services/supabase';
 import { useAuthStore } from '@/src/features/auth/auth.store';
+import { useTranslations } from '@/src/i18n/useTranslations';
 
 // Helper function to get question by slug
 const getQuestionBySlug = (questions: PretestQuestion[], slug: string): PretestQuestion | undefined => {
@@ -78,6 +79,7 @@ export default function PreTestQuestions() {
   const { questions, answers, loading, canSubmit, setSingle, setMulti, toggleMulti, submit, saveAnswer } = usePretest(1);
   const { session: testSession, startSession } = useTestSession();
   const appLang = useAuthStore((s) => s.signUpLanguage ?? 'en');
+  const { t } = useTranslations();
   const skipText = appLang === 'de' ? 'Uberspringen' : appLang === 'fr' ? 'Passer' : appLang === 'it' ? 'Salta' : 'Skip';
   const continueText = appLang === 'de' ? 'Weiter' : appLang === 'fr' ? 'Continuer' : appLang === 'it' ? 'Continua' : 'Continue';
   const cancelText = appLang === 'de' ? 'Abbrechen' : appLang === 'fr' ? 'Annuler' : appLang === 'it' ? 'Annulla' : 'Cancel';
@@ -304,7 +306,7 @@ export default function PreTestQuestions() {
       return (
         <View style={styles.headerSection}>
           <LogoCrossIcon size={60} color="#721422" />
-          <Text style={styles.title}>Loading questions...</Text>
+          <Text style={styles.title}>{t.loadingQuestions}</Text>
         </View>
       );
     }
@@ -436,7 +438,7 @@ export default function PreTestQuestions() {
           <View style={styles.headerSection}>
             <LogoCrossIcon size={60} color="#721422" />
             <Text style={styles.title}>
-              {loadingExistingAnswers ? 'Loading your answers...' : 'Loading questions...'}
+              {loadingExistingAnswers ? t.loadingYourAnswers : t.loadingQuestions}
             </Text>
           </View>
         </View>

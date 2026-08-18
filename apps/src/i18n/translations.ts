@@ -207,6 +207,8 @@ const appTranslationsEn = {
   // Before You Begin (log-test questionnaire)
   beforeYouBeginTitle: 'Before You Begin',
   beforeYouBeginSubtitle: 'Please answer these questions to ensure accurate test results',
+  loadingQuestions: 'Loading questions...',
+  loadingYourAnswers: 'Loading your answers...',
   beforeYouBeginPeriodQuestion: 'Are you currently on your period?',
   beforeYouBeginSexQuestion: 'Have you had sex in the last 24 hours?',
   yes: 'Yes',
@@ -440,6 +442,8 @@ const appTranslationsFr = {
   // Before You Begin (log-test questionnaire)
   beforeYouBeginTitle: 'Avant de commencer',
   beforeYouBeginSubtitle: 'Répondez à ces questions pour des résultats de test précis',
+  loadingQuestions: 'Chargement des questions...',
+  loadingYourAnswers: 'Chargement de vos réponses...',
   beforeYouBeginPeriodQuestion: 'Avez-vous vos règles en ce moment?',
   beforeYouBeginSexQuestion: 'Avez-vous eu un rapport sexuel dans les 24 dernières heures?',
   yes: 'Oui',
@@ -687,6 +691,8 @@ const appTranslationsDe = {
   // Before You Begin
   beforeYouBeginTitle: 'Bevor Sie beginnen',
   beforeYouBeginSubtitle: 'Bitte beantworten Sie diese Fragen, um genaue Testergebnisse zu gewährleisten',
+  loadingQuestions: 'Fragen werden geladen...',
+  loadingYourAnswers: 'Ihre Antworten werden geladen...',
   beforeYouBeginPeriodQuestion: 'Haben Sie derzeit Ihre Menstruation?',
   beforeYouBeginSexQuestion: 'Hatten Sie in den letzten 24 Stunden Geschlechtsverkehr?',
   yes: 'Ja',
@@ -937,6 +943,8 @@ const appTranslationsIt = {
   // Before You Begin (log-test questionnaire)
   beforeYouBeginTitle: 'Prima di iniziare',
   beforeYouBeginSubtitle: 'Risponda a queste domande per garantire risultati del test accurati',
+  loadingQuestions: 'Caricamento delle domande...',
+  loadingYourAnswers: 'Caricamento delle sue risposte...',
   beforeYouBeginPeriodQuestion: 'Ha attualmente il ciclo?',
   beforeYouBeginSexQuestion: 'Ha avuto rapporti sessuali nelle ultime 24 ore?',
   yes: 'Sì',

@@ -1,23 +1,26 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  Alert, 
-  KeyboardAvoidingView, 
-  Platform, 
-  Pressable, 
-  StyleSheet, 
-  Text, 
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
   View
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
 import { ScreenBackground } from '@/src/components/layout/ScreenBackground';
 import { LogoCrossIcon } from '@/src/components/icons/svg/LogoCrossIcon';
 import { ArrowLeftIcon } from '@/src/components/icons/svg/ArrowLeftIcon';
 import { useAuthOnboardingTranslations } from '@/src/features/auth/useAuthOnboardingTranslations';
-import { 
-  getUser, 
-  updateOnboardingResponse 
+import {
+  getUser,
+  updateOnboardingResponse
 } from '@/src/features/auth/auth.api';
+
+const OPTION_HEIGHT = 44;
 
 export default function BirthDate() {
   const { t } = useAuthOnboardingTranslations();
@@ -25,43 +28,49 @@ export default function BirthDate() {
   const currentYear = new Date().getFullYear();
   const minYear = currentYear - 100; // 100 years ago
   const maxYear = currentYear - 16; // Must be at least 16 years old
-  
-  const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i);
-  
+
+  const years = useMemo(
+    () => Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i),
+    [maxYear, minYear]
+  );
+
   const [selectedYear, setSelectedYear] = useState<number>(maxYear - 25); // Default to ~25 years old
   const [selectedMonth, setSelectedMonth] = useState<number>(1); // Default to January
   const [selectedDay, setSelectedDay] = useState<number>(1); // Default to 1st
   const [loading, setLoading] = useState(false);
-
-  // Calculate days in the selected month/year
-  const daysInMonth = useMemo(() => {
-    const days = new Date(selectedYear, selectedMonth, 0).getDate();
-    return Array.from({ length: days }, (_, i) => i + 1);
-  }, [selectedYear, selectedMonth]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const yearListRef = useRef<ScrollView>(null);
 
   const clampDay = (year: number, month: number, day: number) => {
     const maxDay = new Date(year, month, 0).getDate();
     return Math.max(1, Math.min(day, maxDay));
   };
 
-  const handleMonthChange = (itemValue: number | string) => {
-    const month = Number(itemValue);
-    if (!Number.isFinite(month)) return;
+  const daysInMonth = useMemo(() => {
+    const days = new Date(selectedYear, selectedMonth, 0).getDate();
+    return Array.from({ length: days }, (_, i) => i + 1);
+  }, [selectedYear, selectedMonth]);
+
+  const selectedDayValue = clampDay(selectedYear, selectedMonth, selectedDay);
+  const selectedMonthLabel = months.find((month) => month.value === selectedMonth)?.label ?? '';
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const index = years.indexOf(selectedYear);
+    if (index < 0) return;
+    requestAnimationFrame(() => {
+      yearListRef.current?.scrollTo({ y: index * OPTION_HEIGHT, animated: false });
+    });
+  }, [pickerOpen, selectedYear, years]);
+
+  const handleMonthChange = (month: number) => {
     setSelectedMonth(month);
     setSelectedDay((prevDay) => clampDay(selectedYear, month, prevDay));
   };
 
-  const handleYearChange = (itemValue: number | string) => {
-    const year = Number(itemValue);
-    if (!Number.isFinite(year)) return;
+  const handleYearChange = (year: number) => {
     setSelectedYear(year);
     setSelectedDay((prevDay) => clampDay(year, selectedMonth, prevDay));
-  };
-
-  const handleDayChange = (itemValue: number | string) => {
-    const day = Number(itemValue);
-    if (!Number.isFinite(day)) return;
-    setSelectedDay(clampDay(selectedYear, selectedMonth, day));
   };
 
   const handleContinue = async () => {
@@ -91,7 +100,7 @@ export default function BirthDate() {
       await updateOnboardingResponse(user.id, {
         date_of_birth: dateOfBirth
       });
-      
+
       router.push('/(onboarding)/country');
     } catch (error: any) {
       Alert.alert(t.error, error.message || t.failedToSaveDob);
@@ -102,7 +111,7 @@ export default function BirthDate() {
 
   return (
     <ScreenBackground>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
@@ -123,12 +132,12 @@ export default function BirthDate() {
 
         <View style={styles.headerSection}>
           <View style={{ marginTop: 0 }}>
-            <LogoCrossIcon 
+            <LogoCrossIcon
               size={60}
               color="#721422"
             />
           </View>
-          
+
           <Text style={styles.title}>{t.whenBorn}</Text>
           <Text style={styles.subtitle}>
             {t.personalizeExperience}
@@ -138,65 +147,47 @@ export default function BirthDate() {
           </Text>
 
           <View style={styles.pickersRow}>
-            <View style={[styles.pickerContainer, styles.monthPicker]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${t.month}, ${selectedMonthLabel}`}
+              onPress={() => setPickerOpen(true)}
+              style={({ pressed }) => [
+                styles.pickerContainer,
+                styles.monthPicker,
+                pressed && styles.fieldPressed
+              ]}
+            >
               <Text style={styles.pickerLabel}>{t.month}</Text>
-              <Picker
-                selectedValue={selectedMonth}
-                onValueChange={handleMonthChange}
-                mode={Platform.OS === 'android' ? 'dropdown' : undefined}
-                dropdownIconColor="#721422"
-                style={styles.picker}
-                itemStyle={styles.pickerItem}
-              >
-                {months.map((month) => (
-                  <Picker.Item 
-                    key={month.value} 
-                    label={month.label} 
-                    value={month.value} 
-                  />
-                ))}
-              </Picker>
-            </View>
+              <Text style={styles.fieldValue} numberOfLines={1}>{selectedMonthLabel}</Text>
+            </Pressable>
 
-            <View style={[styles.pickerContainer, styles.dayPicker]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${t.day}, ${selectedDayValue}`}
+              onPress={() => setPickerOpen(true)}
+              style={({ pressed }) => [
+                styles.pickerContainer,
+                styles.dayPicker,
+                pressed && styles.fieldPressed
+              ]}
+            >
               <Text style={styles.pickerLabel}>{t.day}</Text>
-              <Picker
-                selectedValue={clampDay(selectedYear, selectedMonth, selectedDay)}
-                onValueChange={handleDayChange}
-                mode={Platform.OS === 'android' ? 'dropdown' : undefined}
-                dropdownIconColor="#721422"
-                style={styles.picker}
-                itemStyle={styles.pickerItem}
-              >
-                {daysInMonth.map((day) => (
-                  <Picker.Item 
-                    key={day} 
-                    label={day.toString()} 
-                    value={day} 
-                  />
-                ))}
-              </Picker>
-            </View>
+              <Text style={styles.fieldValue} numberOfLines={1}>{selectedDayValue}</Text>
+            </Pressable>
 
-            <View style={[styles.pickerContainer, styles.yearPicker]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${t.year}, ${selectedYear}`}
+              onPress={() => setPickerOpen(true)}
+              style={({ pressed }) => [
+                styles.pickerContainer,
+                styles.yearPicker,
+                pressed && styles.fieldPressed
+              ]}
+            >
               <Text style={styles.pickerLabel}>{t.year}</Text>
-              <Picker
-                selectedValue={selectedYear}
-                onValueChange={handleYearChange}
-                mode={Platform.OS === 'android' ? 'dropdown' : undefined}
-                dropdownIconColor="#721422"
-                style={styles.picker}
-                itemStyle={styles.pickerItem}
-              >
-                {years.map((year) => (
-                  <Picker.Item 
-                    key={year} 
-                    label={year.toString()} 
-                    value={year} 
-                  />
-                ))}
-              </Picker>
-            </View>
+              <Text style={styles.fieldValue} numberOfLines={1}>{selectedYear}</Text>
+            </Pressable>
           </View>
 
           <View style={styles.buttonContainer}>
@@ -219,6 +210,108 @@ export default function BirthDate() {
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={pickerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPickerOpen(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setPickerOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel={t.done}
+          />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>{t.whenBorn}</Text>
+              <Pressable
+                onPress={() => setPickerOpen(false)}
+                hitSlop={12}
+                style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+              >
+                <Text style={styles.doneText}>{t.done}</Text>
+              </Pressable>
+            </View>
+            <View style={styles.columnsRow}>
+              <ScrollView style={styles.monthColumn} showsVerticalScrollIndicator={false}>
+                {months.map((month) => (
+                  <Pressable
+                    key={month.value}
+                    onPress={() => handleMonthChange(month.value)}
+                    style={({ pressed }) => [
+                      styles.option,
+                      selectedMonth === month.value && styles.optionSelected,
+                      pressed && styles.fieldPressed
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.optionText,
+                        selectedMonth === month.value && styles.optionTextSelected
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {month.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+              <ScrollView style={styles.dayColumn} showsVerticalScrollIndicator={false}>
+                {daysInMonth.map((day) => (
+                  <Pressable
+                    key={day}
+                    onPress={() => setSelectedDay(day)}
+                    style={({ pressed }) => [
+                      styles.option,
+                      selectedDayValue === day && styles.optionSelected,
+                      pressed && styles.fieldPressed
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.optionText,
+                        selectedDayValue === day && styles.optionTextSelected
+                      ]}
+                    >
+                      {day}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+              <ScrollView
+                ref={yearListRef}
+                style={styles.yearColumn}
+                showsVerticalScrollIndicator={false}
+              >
+                {years.map((year) => (
+                  <Pressable
+                    key={year}
+                    onPress={() => handleYearChange(year)}
+                    style={({ pressed }) => [
+                      styles.option,
+                      selectedYear === year && styles.optionSelected,
+                      pressed && styles.fieldPressed
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.optionText,
+                        selectedYear === year && styles.optionTextSelected
+                      ]}
+                    >
+                      {year}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenBackground>
   );
 }
@@ -277,8 +370,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 0.5,
     borderColor: '#721422',
-    overflow: 'visible',
     justifyContent: 'center',
+    paddingHorizontal: 8,
   },
   monthPicker: {
     flex: 2,
@@ -292,6 +385,9 @@ const styles = StyleSheet.create({
     flex: 1.5,
     height: 84,
   },
+  fieldPressed: {
+    opacity: 0.8,
+  },
   pickerLabel: {
     fontSize: 12,
     fontFamily: 'Poppins-Medium',
@@ -300,16 +396,12 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     opacity: 0.7,
   },
-  picker: {
-    width: '100%',
-    height: 52,
-    color: '#721422',
-  },
-  pickerItem: {
+  fieldValue: {
     fontSize: 16,
     fontFamily: 'Poppins-Medium',
-    height: 52,
     color: '#721422',
+    textAlign: 'center',
+    paddingVertical: 10,
   },
   buttonContainer: {
     position: 'absolute',
@@ -335,5 +427,83 @@ const styles = StyleSheet.create({
   },
   continueButtonTextDisabled: {
     color: 'rgba(255, 255, 255, .5)',
+  },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(114, 20, 34, 0.25)',
+  },
+  sheet: {
+    backgroundColor: '#FFF7F4',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingBottom: 34,
+    paddingHorizontal: 12,
+    maxHeight: '70%',
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(114, 20, 34, 0.2)',
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  sheetTitle: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Medium',
+    color: '#721422',
+    flex: 1,
+    paddingRight: 12,
+  },
+  doneText: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Medium',
+    color: '#721422',
+    fontWeight: '600',
+  },
+  columnsRow: {
+    flexDirection: 'row',
+    height: 280,
+    gap: 6,
+  },
+  monthColumn: {
+    flex: 2,
+  },
+  dayColumn: {
+    flex: 1,
+  },
+  yearColumn: {
+    flex: 1.2,
+  },
+  option: {
+    height: OPTION_HEIGHT,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  optionSelected: {
+    backgroundColor: 'rgba(114, 20, 34, 0.12)',
+  },
+  optionText: {
+    fontSize: 15,
+    fontFamily: 'Poppins-Medium',
+    color: '#721422',
+    textAlign: 'center',
+  },
+  optionTextSelected: {
+    fontFamily: 'Poppins-SemiBold',
   },
 });

@@ -83,6 +83,7 @@ export const authOnboardingTranslations = {
     month: 'Month',
     day: 'Day',
     year: 'Year',
+    done: 'Done',
     months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
     failedToSaveDob: 'Failed to save your date of birth. Please try again.',
 
@@ -171,6 +172,7 @@ export const authOnboardingTranslations = {
     month: 'Mois',
     day: 'Jour',
     year: 'Année',
+    done: 'Terminé',
     months: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
     failedToSaveDob: 'Échec de l\'enregistrement de la date de naissance. Veuillez réessayer.',
 
@@ -259,6 +261,7 @@ export const authOnboardingTranslations = {
     month: 'Monat',
     day: 'Tag',
     year: 'Jahr',
+    done: 'Fertig',
     months: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
     failedToSaveDob: 'Ihr Geburtsdatum konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.',
 
@@ -347,6 +350,7 @@ export const authOnboardingTranslations = {
     month: 'Mese',
     day: 'Giorno',
     year: 'Anno',
+    done: 'Fatto',
     months: ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'],
     failedToSaveDob: 'Impossibile salvare la sua data di nascita. Riprova.',
 
