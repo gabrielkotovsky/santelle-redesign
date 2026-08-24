@@ -58,11 +58,11 @@ export default function ResultSelector({
 
   const getTestResultColor = (testType: BiomarkerKeyUI, intensity: string): string => {
     const colors: Record<BiomarkerKeyUI, Record<string, string>> = {
-      'H₂O₂': { '+': '#fdf7f9', '±': '#fee9f0', '-': '#fdd6db' },
-      'LE':   { '+++': '#a275a0', '++': '#d18eaf', '+': '#cfaebf', '±': '#d8c9ce', '-': '#f7ecea' },
-      'SNA':  { '+': '#fbd4e7', '±': '#fcedf2', '-': '#ffffff' },
-      'β-G':  { '+': '#bde4f3', '±': '#d8f1ed', '-': '#fcfef3' },
-      'NAG':  { '+': '#ffcbb7', '±': '#fee8da', '-': '#fefff8' },
+      'H₂O₂': { '+': '#fef8f9', '±': '#f0d3dc', '-': '#e1aac0' },
+      'LE':   { '+++': '#785d73', '++': '#a4768c', '+': '#b598a2', '±': '#d2c3c4', '-': '#f3eae5' },
+      'SNA':  { '+': '#f0d3dc', '±': '#faecef', '-': '#ffffff' },
+      'β-G':  { '+': '#c2dfe3', '±': '#e0efec', '-': '#ffffff' },
+      'NAG':  { '+': '#97a2af', '±': '#c1c0bc', '-': '#ffffff' },
     };
     return colors[testType]?.[intensity] ?? '#FFFFFF';
   };
@@ -211,9 +211,6 @@ export default function ResultSelector({
         <Text style={[styles.instructionText, dynamicStyles.instructionText]}>
         {t.testResultGuideInstruction}
         </Text>
-        <Text style={[styles.instructionTip, dynamicStyles.instructionText]}>
-          {t.kitColorCardTip}
-        </Text>
 
         <View style={styles.testResultsGrid}>
           {renderRow('H₂O₂', ['+', '±', '-'])}
@@ -293,15 +290,6 @@ const styles = StyleSheet.create({
     color: '#721422',
     textAlign: 'center',
     marginBottom: 12,
-  },
-  instructionTip: {
-    fontSize: 13,
-    fontFamily: 'Poppins-Regular',
-    color: '#721422',
-    textAlign: 'center',
-    marginTop: -6,
-    marginBottom: 12,
-    opacity: 0.85,
   },
   testResultsGrid: { width: '100%', flex: 1, justifyContent: 'flex-start' },
   testResultRow: { flexDirection: 'row', marginBottom: 14, paddingHorizontal: 0, justifyContent: 'space-between' },

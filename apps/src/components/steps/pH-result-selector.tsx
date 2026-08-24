@@ -85,11 +85,11 @@ export default function PHResultSelector({ title = "Log pH Results", SvgImage, o
   });
 
   const pHOptions = [
-    { value: 5.4, color: '#087ebe' },
-    { value: 4.8, color: '#38828d' },
-    { value: 4.6, color: '#3e958d' },
-    { value: 4.4, color: '#6fa68f' },
-    { value: 3.8, color: '#d2bd7a' },
+    { value: 5.4, color: '#165373' },
+    { value: 4.8, color: '#007990' },
+    { value: 4.6, color: '#376848' },
+    { value: 4.4, color: '#5f8747' },
+    { value: 3.8, color: '#e0c74a' },
   ];
 
   return (
@@ -100,9 +100,6 @@ export default function PHResultSelector({ title = "Log pH Results", SvgImage, o
       
       <Text style={[styles.instructionText, dynamicStyles.instructionText]}>
         {t.phResultGuideInstruction}
-      </Text>
-      <Text style={[styles.instructionTip, dynamicStyles.instructionText]}>
-        {t.kitColorCardTip}
       </Text>
       
       <View style={styles.phOptionsContainer}>
@@ -177,15 +174,6 @@ const styles = StyleSheet.create({
     color: '#721422',
     textAlign: 'center',
     marginBottom: 20,
-  },
-  instructionTip: {
-    fontSize: 14,
-    fontFamily: 'Poppins-Regular',
-    color: '#721422',
-    textAlign: 'center',
-    marginTop: -12,
-    marginBottom: 20,
-    opacity: 0.85,
   },
   
   /**
